@@ -1,0 +1,68 @@
+From 41f16faa050476b0050b2795cd6074e39470c70d Mon Sep 17 00:00:00 2001
+From: Madhurya Kandamuru <quic_madhurya@quicinc.com>
+Date: Tue, 23 Jul 2024 10:52:26 +0530
+Subject: [PATCH] fossid scan: FOSSID scan support in QSDK builds
+
+Change-Id: Ifc630abf3465d9620406990a2a1492d6d6883e5f
+Signed-off-by: Madhurya Kandamuru <quic_madhurya@quicinc.com>
+---
+ include/kernel-build.mk | 6 ++++++
+ include/package.mk      | 7 +++++++
+ package/Makefile        | 6 ++++++
+ 3 files changed, 19 insertions(+)
+
+diff --git a/include/kernel-build.mk b/include/kernel-build.mk
+index f2113ed9b55c..c954b71b85b5 100644
+--- a/include/kernel-build.mk
++++ b/include/kernel-build.mk
+@@ -126,6 +126,12 @@ define BuildKernel
+ 	) > $$@
+ 
+   $(STAMP_CONFIGURED): $(STAMP_PREPARED) $(LINUX_KCONFIG_LIST) $(TOPDIR)/.config FORCE
++	if [[ "$(CONFIG_FOSSID_SCAN)" == *'s'* ]]; then \
++		[[ -f "$(TOPDIR)/scripts/fossid.sh" ]] && \
++		$(TOPDIR)/scripts/fossid.sh --build_scan "$(BOARD)" "$(SUBTARGET)" \
++		"$(LINUX_DIR)" "$(BUILD_DIR)" "$(CONFIG_FOSSID_SCAN)" || \
++		echo "$(TOPDIR)/scripts/fossid.sh is missing"; \
++	fi
+ 	$(Kernel/Configure)
+ 	touch $$@
+ 
+diff --git a/include/package.mk b/include/package.mk
+index 78fa8fcb662a..8ba9ba6d3e1f 100644
+--- a/include/package.mk
++++ b/include/package.mk
+@@ -237,6 +237,13 @@ define Build/CoreTargets
+ 	$(Build/Configure)
+ 	$(foreach hook,$(Hooks/Configure/Post),$(call $(hook))$(sep))
+ 	touch $$@
++	if [[ "$(CONFIG_FOSSID_SCAN)" == *'s'* ]]; then \
++		[[ -f "$(TOPDIR)/scripts/fossid.sh" ]] && \
++		$(TOPDIR)/scripts/fossid.sh --build_scan "$(BOARD)" "$(SUBTARGET)" \
++		"$(PKG_BUILD_DIR)" "$(BUILD_DIR)" "$(CONFIG_FOSSID_SCAN)" || \
++		echo "$(TOPDIR)/scripts/fossid.sh is missing"; \
++        fi
++
+ 
+   $(call Build/Exports,$(STAMP_BUILT))
+   $(STAMP_BUILT): $(STAMP_CONFIGURED) $(STAMP_BUILT_DEPENDS)
+diff --git a/package/Makefile b/package/Makefile
+index 9e3bb52b6578..f0ea33416014 100644
+--- a/package/Makefile
++++ b/package/Makefile
+@@ -142,6 +142,12 @@ else
+ 		sed -i 's/, }}/}}/' index.json; \
+ 		gzip -9nc Packages > Packages.gz; \
+ 	); done
++ifdef CONFIG_FOSSID_SCAN
++	@echo Generating FOSSID report for this build
++	[[ -f "$(TOPDIR)/scripts/fossid.sh" ]] && \
++	$(TOPDIR)/scripts/fossid.sh --scan_complete "$(BOARD)" "$(SUBTARGET)" "$(BUILD_DIR)" || \
++	echo "$(TOPDIR)/scripts/fossid.sh is missing"
++endif
+ ifdef CONFIG_SIGNED_PACKAGES
+ 	@echo Signing package index...
+ 	@for d in $(PACKAGE_SUBDIRS); do ( \
+-- 
+2.34.1
+

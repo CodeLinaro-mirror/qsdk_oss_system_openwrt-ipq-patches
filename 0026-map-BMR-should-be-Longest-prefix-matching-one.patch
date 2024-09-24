@@ -1,0 +1,51 @@
+From fef9e2d8b94b4b1d9ae80e6c96aa1249d0acf7e3 Mon Sep 17 00:00:00 2001
+From: Ken Zhu <guigenz@codeaurora.org>
+Date: Tue, 11 Dec 2018 10:50:15 -0800
+Subject: [PATCH] map: BMR should be Longest prefix matching one
+
+When there are many rules matching the end-user ipv6 prefix, select
+the longest matching one.
+
+Change-Id: Ibf77a82a229a1f853dec2c78ef32f4199d0b4d73
+Signed-off-by: Ken Zhu <guigenz@codeaurora.org>
+---
+ package/network/ipv6/map/src/mapcalc.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/package/network/ipv6/map/src/mapcalc.c b/package/network/ipv6/map/src/mapcalc.c
+index aea81f8cc41a..0a83f45e3497 100644
+--- a/package/network/ipv6/map/src/mapcalc.c
++++ b/package/network/ipv6/map/src/mapcalc.c
+@@ -209,6 +209,8 @@ int main(int argc, char *argv[])
+ 	}
+ 
+ 	int rulecnt = 0;
++	int bmr_cnt = 0;
++	int bmr_prefix6len = 0;
+ 	for (int i = 2; i < argc; ++i) {
+ 		bool lw4o6 = false;
+ 		bool fmr = false;
+@@ -384,7 +386,10 @@ int main(int argc, char *argv[])
+ 			printf("RULE_%d_PD6LEN=%d\n", rulecnt, pdlen);
+ 			printf("RULE_%d_PD6IFACE=%s\n", rulecnt, iface);
+ 			printf("RULE_%d_IPV6ADDR=%s\n", rulecnt, ipv6addrbuf);
+-			printf("RULE_BMR=%d\n", rulecnt);
++			if (prefix6len > bmr_prefix6len) {
++				bmr_prefix6len = prefix6len;
++				bmr_cnt = rulecnt;
++			}
+ 		}
+ 
+ 		if (ipv4addr.s_addr) {
+@@ -414,6 +419,8 @@ int main(int argc, char *argv[])
+ 		if (br)
+ 			printf("RULE_%d_BR=%s\n", rulecnt, br);
+ 	}
++	if (bmr_cnt > 0)
++		printf("RULE_BMR=%d\n", bmr_cnt);
+ 
+ 	printf("RULE_COUNT=%d\n", rulecnt);
+ 	return status;
+-- 
+2.34.1
+

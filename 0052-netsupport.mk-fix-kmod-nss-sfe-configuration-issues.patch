@@ -1,0 +1,41 @@
+From dfad09b14d2de64cb6575657fadc5876c6a3963a Mon Sep 17 00:00:00 2001
+From: Ermine Jose <quic_erminejo@quicinc.com>
+Date: Wed, 1 Feb 2023 09:08:23 +0530
+Subject: [PATCH] netsupport.mk: fix kmod-nss-sfe configuration issues
+
+When kmod-ppp is mentioned as depends on in the makefile for kmod-pppoe
+and kmod-pptp, make is going through a recrusive dependency failure for
+kmod-nss-sfe package. so change kmod-ppp as select to resolve this issue.
+
+Change-Id: Ib05bb5dd35c145160fdabfb509edc823b0eeca27
+Signed-off-by: Ermine Jose <quic_erminejo@quicinc.com>
+(cherry picked from commit 0dc60e02c3b4e3786779568aa61593897af852d5)
+---
+ package/kernel/linux/modules/netsupport.mk | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/package/kernel/linux/modules/netsupport.mk b/package/kernel/linux/modules/netsupport.mk
+index 68044a391064..549f7532e231 100644
+--- a/package/kernel/linux/modules/netsupport.mk
++++ b/package/kernel/linux/modules/netsupport.mk
+@@ -600,7 +600,7 @@ $(eval $(call KernelPackage,pppox))
+ define KernelPackage/pppoe
+   SUBMENU:=$(NETWORK_SUPPORT_MENU)
+   TITLE:=PPPoE support
+-  DEPENDS:=kmod-ppp +kmod-pppox
++  DEPENDS:=+kmod-ppp +kmod-pppox
+   KCONFIG:=CONFIG_PPPOE
+   FILES:=$(LINUX_DIR)/drivers/net/ppp/pppoe.ko
+   AUTOLOAD:=$(call AutoProbe,pppoe)
+@@ -632,7 +632,7 @@ $(eval $(call KernelPackage,pppoa))
+ define KernelPackage/pptp
+   SUBMENU:=$(NETWORK_SUPPORT_MENU)
+   TITLE:=PPtP support
+-  DEPENDS:=kmod-ppp +kmod-gre +kmod-pppox
++  DEPENDS:=+kmod-ppp +kmod-gre +kmod-pppox
+   KCONFIG:=CONFIG_PPTP
+   FILES:=$(LINUX_DIR)/drivers/net/ppp/pptp.ko
+   AUTOLOAD:=$(call AutoProbe,pptp)
+-- 
+2.34.1
+

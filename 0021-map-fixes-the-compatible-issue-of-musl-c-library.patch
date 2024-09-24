@@ -1,0 +1,31 @@
+From a991d10e54918dfbde9a8e7a3cf130173037ab3b Mon Sep 17 00:00:00 2001
+From: Zhu Ken <guigenz@codeaurora.org>
+Date: Fri, 18 Aug 2017 11:33:24 -0700
+Subject: [PATCH] map: fixes the compatible issue of musl c library
+
+getsubopt return value with equal sign in the musl
+c library, which is different from ublic c library
+
+Change-Id: I1df01ce3174602cfc2c70d087729bab26c52fa58
+(cherry picked from commit e36835a49922724691a2194b35834b5843eecdc2)
+Signed-off-by: Ken Zhu <quic_guigenz@quicinc.com>
+---
+ package/network/ipv6/map/src/mapcalc.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/package/network/ipv6/map/src/mapcalc.c b/package/network/ipv6/map/src/mapcalc.c
+index 66610c4279dd..aea81f8cc41a 100644
+--- a/package/network/ipv6/map/src/mapcalc.c
++++ b/package/network/ipv6/map/src/mapcalc.c
+@@ -235,6 +235,8 @@ int main(int argc, char *argv[])
+ 			int idx = getsubopt(&rule, token, &value);
+ 			errno = 0;
+ 
++			if (*value == '=')
++				value++;
+ 			if (idx == OPT_TYPE) {
+ 				lw4o6 = (value && !strcmp(value, "lw4o6"));
+ 			} else if (idx == OPT_FMR) {
+-- 
+2.34.1
+

@@ -1,0 +1,27 @@
+From afdb1541c3e61f41c20619d1827c31199d16f673 Mon Sep 17 00:00:00 2001
+From: Atchaya R <quic_ratchaya@quicinc.com>
+Date: Fri, 12 Jul 2024 16:20:20 +0530
+Subject: [PATCH] squashfs4: add static flag in LDFLAGS to statically link
+ libraries for mksquashfs4 and unsquashfs4 binaries.
+
+Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
+Change-Id: Ib65435770bec8d3059d33df503b05b42387136e2
+---
+ tools/squashfs4/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/squashfs4/Makefile b/tools/squashfs4/Makefile
+index 38c3e5233fd0..65812368655f 100644
+--- a/tools/squashfs4/Makefile
++++ b/tools/squashfs4/Makefile
+@@ -26,6 +26,7 @@ define Host/Compile
+ 	$(MAKE) $(HOST_JOBS) -C $(HOST_BUILD_DIR)/squashfs-tools \
+ 		XZ_SUPPORT=1 \
+ 		LZMA_XZ_SUPPORT=1 \
++		LDFLAGS+=-static \
+ 		XZ_EXTENDED_OPTIONS=1 \
+ 		EXTRA_CFLAGS="-I$(STAGING_DIR_HOST)/include" \
+ 		mksquashfs unsquashfs
+-- 
+2.34.1
+

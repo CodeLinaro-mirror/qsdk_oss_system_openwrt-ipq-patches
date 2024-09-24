@@ -1,0 +1,36 @@
+From 59c5c738e75c5248c72ede8a87b619d6b24aa7eb Mon Sep 17 00:00:00 2001
+From: Harish Rachakonda <quic_rachakon@quicinc.com>
+Date: Mon, 22 Jul 2024 13:42:27 +0530
+Subject: [PATCH] Makefile: Removed make file changes for updating iw
+
+WLAN components needed to be upgraded for 3.0 branch. iw compinent
+is upgraded to 6.9.
+
+Removed Make file changes that downgrading iw to 5.9.
+
+Change-Id: I1754580434d015fc0c7d8922c37d17b098ba9b9d
+Signed-off-by: Harish Rachakonda <quic_rachakon@quicinc.com>
+---
+ package/network/utils/iw/Makefile | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/package/network/utils/iw/Makefile b/package/network/utils/iw/Makefile
+index 6e1f56b78dd6..1237c106a92c 100644
+--- a/package/network/utils/iw/Makefile
++++ b/package/network/utils/iw/Makefile
+@@ -15,12 +15,6 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+ PKG_SOURCE_URL:=@KERNEL/software/network/iw
+ PKG_HASH:=3f2db22ad41c675242b98ae3942dbf3112548c60a42ff739210f2de4e98e4894
+ 
+-EXTERNAL_MAKEFILE:=$(TOPDIR)/openwrt-patches/package/kernel/mac80211/
+-
+-ifneq (,$(findstring QSDK_Open,$(CONFIG_TARGET_PROFILE)))
+-	include $(EXTERNAL_MAKEFILE)/iw.mk
+-endif
+-
+ PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
+ PKG_LICENSE:=GPL-2.0
+ PKG_CPE_ID:=cpe:/a:kernel:iw
+-- 
+2.34.1
+

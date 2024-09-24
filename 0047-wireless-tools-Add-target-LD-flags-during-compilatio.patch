@@ -1,0 +1,27 @@
+From 41a9b6e232751ad6da3ec59a36264473dc71639f Mon Sep 17 00:00:00 2001
+From: ratchaya <quic_ratchaya@quicinc.com>
+Date: Thu, 16 Nov 2023 13:08:24 +0530
+Subject: [PATCH] wireless-tools: Add target LD flags during compilation
+
+Signed-off-by: ratchaya <quic_ratchaya@quicinc.com>
+Change-Id: I2184f5d9015dae61cf380aa128ae6eaa383506b1
+(cherry picked from commit c1c4da2dfe6e1d267c0d1ef8c85078584ab90bb9)
+---
+ package/network/utils/wireless-tools/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/package/network/utils/wireless-tools/Makefile b/package/network/utils/wireless-tools/Makefile
+index 6ac66a056a01..9a19970af8dc 100644
+--- a/package/network/utils/wireless-tools/Makefile
++++ b/package/network/utils/wireless-tools/Makefile
+@@ -60,6 +60,7 @@ define Build/Compile
+ 	$(MAKE) -C $(PKG_BUILD_DIR) \
+ 		$(TARGET_CONFIGURE_OPTS) \
+ 		CFLAGS="$(TARGET_CFLAGS) -I." \
++		LDFLAGS="$(TARGET_LDFLAGS)" \
+ 		BUILD_WE_ESSENTIAL=y \
+ 		LIBS="-lm -Wl,--gc-sections" \
+ 		libiw.so.$(PKG_VERSION) iwmulticall
+-- 
+2.34.1
+

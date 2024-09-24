@@ -1,0 +1,36 @@
+From 74e4fa758aaba25b950d515417a0cbfa639aa04d Mon Sep 17 00:00:00 2001
+From: Atchaya R <quic_ratchaya@quicinc.com>
+Date: Tue, 21 Mar 2023 11:10:26 +0530
+Subject: [PATCH] download.mk: This change includes the makefiles in the
+ openwrt-patches project to be evaluated for Download macros for packages.
+
+rename qsdk-package to openwrt-patches
+
+Change-Id: I6e8df254c9b2b37d8c7a2b7c5a697018d25acfa7
+Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
+---
+ include/download.mk | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/include/download.mk b/include/download.mk
+index 7f3430277350..65dd459c3965 100644
+--- a/include/download.mk
++++ b/include/download.mk
+@@ -331,7 +331,14 @@ define Download/default
+   $(if $(PKG_HASH),HASH:=$(PKG_HASH))
+ endef
+ 
++FindPackage?=$(strip $(shell find $(TOPDIR)/openwrt-patches -name $(1) 2>/dev/null))
++
++define Download/openwrt-patches
++  $(eval -include $(wildcard $(call FindPackage,$(basename $(notdir $(CURDIR))))/$(PKG_NAME).mk))
++endef
++
+ define Download
++  $(Download/openwrt-patches)
+   $(eval $(Download/Defaults))
+   $(eval $(Download/$(1)))
+   $(foreach FIELD,URL FILE $(Validate/$(call dl_method,$(URL),$(PROTO))),
+-- 
+2.34.1
+

@@ -1,0 +1,35 @@
+From a885b71b194e7c5658604b66b22f594a1e7d8566 Mon Sep 17 00:00:00 2001
+From: Atchaya R <quic_ratchaya@quicinc.com>
+Date: Wed, 31 May 2023 13:04:23 +0530
+Subject: [PATCH] include: add local development hook
+
+Local development hook allows to pull components in a predefined
+folder and use them directly rather than downloading archives.
+
+Change-Id: I9480b07235ab2544fe9415bc4b788e5a1635519c
+Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
+(cherry picked from commit 49e34ca6449f5cff6e69b42f004744d49cb65559)
+---
+ include/local-development.mk | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+ create mode 100644 include/local-development.mk
+
+diff --git a/include/local-development.mk b/include/local-development.mk
+new file mode 100644
+index 000000000000..fa898b6f0731
+--- /dev/null
++++ b/include/local-development.mk
+@@ -0,0 +1,10 @@
++# allow for local directory containing source to be used
++
++LOCAL_SRC ?= $(TOPDIR)/qca/src/$(PKG_NAME)
++
++ifeq (exists, $(shell [ -d $(LOCAL_SRC) ] && echo exists))
++PKG_REV=$(shell cd $(LOCAL_SRC)/; git describe --dirty --long --always --abbrev=7| sed 's/.*-g//g')
++PKG_VERSION:=g$(PKG_REV)
++PKG_SOURCE_URL:=
++PKG_UNPACK=mkdir -p $(PKG_BUILD_DIR); $(CP) $(LOCAL_SRC)/* $(PKG_BUILD_DIR)/
++endif
+-- 
+2.34.1
+

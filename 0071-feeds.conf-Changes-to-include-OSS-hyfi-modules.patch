@@ -1,0 +1,28 @@
+From 546218643cf8d30a9ba5b24f2034976eca6e4c51 Mon Sep 17 00:00:00 2001
+From: Manoj Sekar <quic_sekar@quicinc.com>
+Date: Wed, 21 Aug 2024 16:43:42 +0530
+Subject: [PATCH] feeds.conf: Changes to include OSS hyfi modules
+
+Create source link to include OSS hyfi modules
+
+Change-Id: Icb41305904b531db1ed96f42307154f0b25cc02b
+Signed-off-by: Manoj Sekar <quic_sekar@quicinc.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 91caeb32c1cf..4ce6b2d3a44b 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -37,6 +37,7 @@ src-link nss_userspace ../qca/feeds/nss-userspace
+ src-link art2 ../qca/feeds/art2
+ src-link shortcut_fe ../qca/feeds/shortcut-fe
+ src-link hyfi ../qca/feeds/hyfi
++src-link hyfi_oss ../qca/feeds/hyfi-oss
+ src-link whc ../qca/feeds/whc
+ src-link qca_mad ../qca/feeds/qca-mad
+ src-link healthmonitor ../qca/feeds/healthmonitor
+-- 
+2.34.1
+

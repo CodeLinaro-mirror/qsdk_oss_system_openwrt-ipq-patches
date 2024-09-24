@@ -1,0 +1,43 @@
+From 28df99bd67d9daa119562635ff79027ffd818a8b Mon Sep 17 00:00:00 2001
+From: Aravind Mosam <amosam@qti.qualcomm.com>
+Date: Sat, 21 Sep 2024 19:11:13 +0530
+Subject: [PATCH] qsdk: support kernel-6.6.3 subversion
+
+Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
+---
+ include/kernel-6.6                        | 4 ++--
+ package/kernel/linux/modules/netfilter.mk | 2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/include/kernel-6.6 b/include/kernel-6.6
+index 5fbb10e0524f..3f93ad37f99e 100644
+--- a/include/kernel-6.6
++++ b/include/kernel-6.6
+@@ -1,2 +1,2 @@
+-LINUX_VERSION-6.6 = .48
+-LINUX_KERNEL_HASH-6.6.48 = 6b16df7b2aba3116b78fdfd8aea0b6cd7abe8f0cb699b04a66d3169141772029
++LINUX_VERSION-6.6 = .3
++LINUX_KERNEL_HASH-6.6.3 = 28edfc3d4f90cd738f2a20f5a2d68510268176d6111f6278d8f495edfd9495a7
+diff --git a/package/kernel/linux/modules/netfilter.mk b/package/kernel/linux/modules/netfilter.mk
+index 3cf63982ba44..41cc7cb773fa 100644
+--- a/package/kernel/linux/modules/netfilter.mk
++++ b/package/kernel/linux/modules/netfilter.mk
+@@ -110,6 +110,7 @@ define KernelPackage/nf-conntrack
+ 	$(KCONFIG_NF_CONNTRACK)
+   FILES:=$(foreach mod,$(NF_CONNTRACK-m),$(LINUX_DIR)/net/$(mod).ko)
+   AUTOLOAD:=$(call AutoProbe,$(notdir $(NF_CONNTRACK-m)))
++  DEPENDS:=+kmod-pptp +kmod-lib-crc32c
+ endef
+ 
+ define KernelPackage/nf-conntrack/install
+@@ -327,6 +328,7 @@ $(eval $(call KernelPackage,ipt-offload))
+ 
+ define KernelPackage/ipt-ipopt
+   TITLE:=Modules for matching/changing IP packet options
++  DEPENDS:=+kmod-nf-conntrack
+   KCONFIG:=$(KCONFIG_IPT_IPOPT)
+   FILES:=$(foreach mod,$(IPT_IPOPT-m),$(LINUX_DIR)/net/$(mod).ko)
+   AUTOLOAD:=$(call AutoProbe,$(notdir $(IPT_IPOPT-m)))
+-- 
+2.34.1
+

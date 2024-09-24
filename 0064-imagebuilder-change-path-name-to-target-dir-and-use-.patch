@@ -1,0 +1,32 @@
+From dd573b209c215461ca553339469ff7209703f664 Mon Sep 17 00:00:00 2001
+From: Ermine Jose <quic_erminejo@quicinc.com>
+Date: Thu, 8 Feb 2024 17:11:10 +0530
+Subject: [PATCH] imagebuilder: change path name to target dir and use USE_CFG
+
+The path to the ipq soc's are changed to the feeds directory
+of the openwrt,
+
+Bring back USE_CFG option to pass cfg files as argument to
+build IB images.
+
+Signed-off-by: Ermine Jose <quic_erminejo@quicinc.com>
+Change-Id: I0f5f123bf2cf1e30b21924bdc4f8754e33bb0f17
+---
+ target/imagebuilder/files/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/target/imagebuilder/files/Makefile b/target/imagebuilder/files/Makefile
+index 7d01bc0e4201..c16f173f4321 100644
+--- a/target/imagebuilder/files/Makefile
++++ b/target/imagebuilder/files/Makefile
+@@ -314,6 +314,7 @@ image:
+ 		$(if $(PACKAGES),USER_PACKAGES="$(PACKAGES)") \
+ 		$(if $(BIN_DIR),BIN_DIR="$(BIN_DIR)") \
+ 		$(if $(DISABLED_SERVICES),DISABLED_SERVICES="$(DISABLED_SERVICES)") \
++		$(if $(USE_CFG),USER_PACKAGES="$(PACKAGES) $(shell cat $(USE_CFG))") \
+ 		$(if $(ROOTFS_PARTSIZE),CONFIG_TARGET_ROOTFS_PARTSIZE="$(ROOTFS_PARTSIZE)"))
+ 
+ manifest: FORCE
+-- 
+2.34.1
+

@@ -1,0 +1,32 @@
+From 14597424dca72b0eecc13e169405fd8318be0857 Mon Sep 17 00:00:00 2001
+From: Harish Rachakonda <quic_rachakon@quicinc.com>
+Date: Wed, 20 Mar 2024 16:49:13 +0530
+Subject: [PATCH] Makefile: Add compilation macro ATH12K_POWER_OPTIMIZATION
+
+Add compilation macro for power and thermal optimization
+feature enablement only for ipq5322.
+
+Change-Id: Ie9694ac7516920c7383eb1f4eff0c2ee97a1a3c6
+Signed-off-by: Harish Rachakonda <quic_rachakon@quicinc.com>
+(cherry picked from commit f3c1785831e4d5da98a0d2bbce1b47e9341ba2d8)
+(cherry picked from commit a348068242dcf8e8eaf31c029d09e3d51e2ab3d2)
+---
+ package/kernel/mac80211/ath.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/kernel/mac80211/ath.mk b/package/kernel/mac80211/ath.mk
+index f5c692948e8e..c2f3a9881439 100644
+--- a/package/kernel/mac80211/ath.mk
++++ b/package/kernel/mac80211/ath.mk
+@@ -65,7 +65,7 @@ config-$(CONFIG_ATH10K_LEDS) += ATH10K_LEDS
+ config-$(CONFIG_ATH10K_THERMAL) += ATH10K_THERMAL
+ config-$(CONFIG_ATH11K_THERMAL) += ATH11K_THERMAL
+ 
+-config-$(CONFIG_TARGET_ipq53xx) += ATH12K_AHB
++config-$(CONFIG_TARGET_ipq53xx) += ATH12K_AHB ATH12K_POWER_OPTIMIZATION
+ config-$(CONFIG_TARGET_ipq54xx) += ATH12K_AHB
+ 
+ config-$(call config_package,ath9k-htc) += ATH9K_HTC
+-- 
+2.34.1
+

@@ -1,0 +1,35 @@
+From 65e36a3ac0e68fd0b7fb34e3a712a078549fb115 Mon Sep 17 00:00:00 2001
+From: Hariharan Basuthkar <quic_hbasuthk@quicinc.com>
+Date: Tue, 31 Oct 2023 18:45:00 +0530
+Subject: [PATCH] hostapd: Copy nl80211_copy.h to staging directory
+
+Copy nl80211_copy.h to the staging directory, so that it can be used
+by other components.
+
+Change-Id: Ide4eedaf399872b2e40783ca0b1e6cc192cd4b13
+CRs-Fixed: 3677013
+Signed-off-by: Hariharan Basuthkar <quic_hbasuthk@quicinc.com>
+(cherry picked from commit fd0624dd5e80a3a7b23fc36a76488fd050900bac)
+---
+ package/network/services/hostapd/Makefile | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index c5c1ebe8f8f2..00793d77f3b2 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -601,6 +601,11 @@ define Build/Configure
+ 	)
+ endef
+ 
++define Build/InstallDev
++	$(INSTALL_DIR) $(1)/usr/include
++	$(CP) $(PKG_BUILD_DIR)/src/drivers/nl80211_copy.h $(1)/usr/include/
++endef
++
+ TARGET_CPPFLAGS := \
+ 	-I$(STAGING_DIR)/usr/include/libnl-tiny \
+ 	-I$(PKG_BUILD_DIR)/src/crypto \
+-- 
+2.34.1
+

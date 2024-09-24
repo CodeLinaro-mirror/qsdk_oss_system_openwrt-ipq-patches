@@ -1,0 +1,37 @@
+From d12f93d28fd861f3115995ccc20eddf4dfedf883 Mon Sep 17 00:00:00 2001
+From: Gautham Kumar Senthilkumaran <quic_gauthamk@quicinc.com>
+Date: Wed, 17 Jul 2024 11:05:27 +0530
+Subject: [PATCH] Makefile: Added new Makefile path for downgrade of iw
+
+WLAN components needed to be downgraded for SOD branch. iw component
+version is downgraded as similar to mainline branch. This downgrade
+required new Makefile to point to the older version of iw component.
+
+This downgrade is required for Marina bring-up in SOD branch.
+
+Change-Id: Iaac0f55803cd761eb816e07dc589f50801a13002
+Signed-off-by: Gautham Kumar Senthilkumaran <quic_gauthamk@quicinc.com>
+---
+ package/network/utils/iw/Makefile | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/package/network/utils/iw/Makefile b/package/network/utils/iw/Makefile
+index 1237c106a92c..6e1f56b78dd6 100644
+--- a/package/network/utils/iw/Makefile
++++ b/package/network/utils/iw/Makefile
+@@ -15,6 +15,12 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+ PKG_SOURCE_URL:=@KERNEL/software/network/iw
+ PKG_HASH:=3f2db22ad41c675242b98ae3942dbf3112548c60a42ff739210f2de4e98e4894
+ 
++EXTERNAL_MAKEFILE:=$(TOPDIR)/openwrt-patches/package/kernel/mac80211/
++
++ifneq (,$(findstring QSDK_Open,$(CONFIG_TARGET_PROFILE)))
++	include $(EXTERNAL_MAKEFILE)/iw.mk
++endif
++
+ PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
+ PKG_LICENSE:=GPL-2.0
+ PKG_CPE_ID:=cpe:/a:kernel:iw
+-- 
+2.34.1
+

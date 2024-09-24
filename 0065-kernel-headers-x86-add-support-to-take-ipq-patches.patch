@@ -1,0 +1,37 @@
+From e1a25f5868415d5dc563e8cd9da3c57038a2e4aa Mon Sep 17 00:00:00 2001
+From: Ermine Jose <quic_erminejo@quicinc.com>
+Date: Tue, 23 Jul 2024 10:54:11 +0530
+Subject: [PATCH] kernel-headers:x86: add support to take ipq patches
+
+Signed-off-by: Ermine Jose <quic_erminejo@quicinc.com>
+Change-Id: I29ce022a0a224f748b67c8ae6ef7aa3620fb709f
+---
+ toolchain/kernel-headers/Makefile | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/toolchain/kernel-headers/Makefile b/toolchain/kernel-headers/Makefile
+index dc70f32c907d..1b327821be65 100644
+--- a/toolchain/kernel-headers/Makefile
++++ b/toolchain/kernel-headers/Makefile
+@@ -18,6 +18,7 @@ PKG_NAME:=linux
+ PKG_VERSION:=$(LINUX_VERSION)
+ PKG_SOURCE:=$(LINUX_SOURCE)
+ PKG_CPE_ID:=cpe:/o:linux:linux_kernel
++PKG_PATCH_DIR:=$(TOPDIR)/target/linux/feeds
+ ifneq ($(call qstrip,$(CONFIG_KERNEL_GIT_CLONE_URI)),)
+   PKG_SOURCE_PROTO:=git
+   PKG_SOURCE_URL:=$(call qstrip,$(CONFIG_KERNEL_GIT_CLONE_URI))
+@@ -39,8 +40,8 @@ endif
+ HOST_BUILD_DIR:=$(KERNEL_BUILD_DIR)/linux-$(LINUX_VERSION)
+ PKG_HASH:=$(LINUX_KERNEL_HASH)
+ LINUX_DIR := $(HOST_BUILD_DIR)
+-FILES_DIR := 
+-PATCH_DIR := ./patches$(if $(wildcard ./patches-$(LINUX_VERSION)),-$(LINUX_VERSION))
++FILES_DIR := $(PKG_PATCH_DIR)/files$(if $(wildcard $(PKG_PATCH_DIR)/patches-$(KERNEL_PATCHVER)),-$(KERNEL_PATCHVER))
++PATCH_DIR := $(PKG_PATCH_DIR)/patches$(if $(wildcard $(PKG_PATCH_DIR)/patches-$(KERNEL_PATCHVER)),-$(KERNEL_PATCHVER))
+ 
+ include $(INCLUDE_DIR)/toolchain-build.mk
+ include $(INCLUDE_DIR)/kernel-defaults.mk
+-- 
+2.34.1
+

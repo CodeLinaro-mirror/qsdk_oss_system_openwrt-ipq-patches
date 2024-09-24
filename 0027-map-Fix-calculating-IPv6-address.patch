@@ -1,0 +1,46 @@
+From 207ac152f1fe0cd41174e2d925667277db66c603 Mon Sep 17 00:00:00 2001
+From: Naresh Kumar Mehta <naresh@codeaurora.org>
+Date: Thu, 25 Feb 2016 23:20:26 +0530
+Subject: [PATCH] map: Fix calculating IPv6 address
+
+When network.wan6.ip6prefix length is different with
+network.wan6_map.ip6prefix length plus ealen,
+the IPv6 address is not getting calculated correctly.
+
+e.g. if network.wan6.ip6prefix is '2001:506:101:ede8::5/64' and
+network.wan6_map.ip6prefix is '2001:506:101::/32' AND
+network.wan6_map.ealen is '14' and network.wan6_map.psidlen is '14'
+and ipv4address:68.114.0.0/16
+the ipv6 address calculated is 2001:506:101:ede8:0:4472:0:40.
+
+With this fix, new IPv6 address will be calculated as
+2001:506:100::4472:0:40
+
+Change-Id: I19d95a96272bc0037f4573f072b04c3ff84d54bd
+Signed-off-by: Naresh Kumar Mehta <naresh@codeaurora.org>
+Signed-off-by: Anto Norbert <norbrt@codeaurora.org>
+Signed-off-by: Ken Zhu <guigenz@codeaurora.org>
+(cherry picked from commit 014fb56ab4894bbcd24dc42c4c329c17975ce70a)
+---
+ package/network/ipv6/map/src/mapcalc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/package/network/ipv6/map/src/mapcalc.c b/package/network/ipv6/map/src/mapcalc.c
+index 0a83f45e3497..91f2a9dab2d0 100644
+--- a/package/network/ipv6/map/src/mapcalc.c
++++ b/package/network/ipv6/map/src/mapcalc.c
+@@ -354,9 +354,10 @@ int main(int argc, char *argv[])
+ 			continue;
+ 		} else if (pdlen >= 0) {
+ 			size_t v4offset = (legacy) ? 9 : 10;
++			size_t totsize = (ealen + prefix6len);
+ 			memcpy(&ipv6addr.s6_addr[v4offset], &ipv4addr, 4);
+ 			memcpy(&ipv6addr.s6_addr[v4offset + 4], &psid16, 2);
+-			bmemcpy(&ipv6addr, &pd, pdlen);
++			bmemcpy(&ipv6addr, &pd, (totsize >= pdlen) ? pdlen : totsize);
+ 		}
+ 
+ 		++rulecnt;
+-- 
+2.34.1
+

@@ -1,0 +1,49 @@
+From 9fc574e51a38ef5728b574b6e073548f68f49be4 Mon Sep 17 00:00:00 2001
+From: Ermine Jose <quic_erminejo@quicinc.com>
+Date: Thu, 16 Mar 2023 15:40:36 +0530
+Subject: [PATCH] config: invoke qsdk configurations from openwrt-patches
+
+This change helps to invoke the qsdk releated
+configuration which is moved to openwrt-patches
+directory as part of menuconfig
+
+Change-Id: I506ee236959ff106003edf5950aa56bbe4d4474e
+Signed-off-by: Ermine Jose <quic_erminejo@quicinc.com>
+(cherry picked from commit 0fbcede93e2846d45fb85e5d336166007d7c4426)
+---
+ config/Config-build.in  | 3 +++
+ config/Config-kernel.in | 1 +
+ 2 files changed, 4 insertions(+)
+
+diff --git a/config/Config-build.in b/config/Config-build.in
+index 02931a87c6b2..b30f83db65e4 100644
+--- a/config/Config-build.in
++++ b/config/Config-build.in
+@@ -143,9 +143,12 @@ menu "Global build settings"
+ 		  Useful for release builds, so that kernel issues can be debugged offline
+ 		  later.
+ 
++	source "openwrt-patches/config/Config-build.in"
++
+ 	menu "Kernel build options"
+ 
+ 	source "config/Config-kernel.in"
++	source "openwrt-patches/config/Config-kernel.in"
+ 
+ 	endmenu
+ 
+diff --git a/config/Config-kernel.in b/config/Config-kernel.in
+index ddf81d67dabf..ce4a2710bf74 100644
+--- a/config/Config-kernel.in
++++ b/config/Config-kernel.in
+@@ -1417,6 +1417,7 @@ config KERNEL_JFFS2_FS_SECURITY
+ 
+ config KERNEL_WERROR
+ 	bool "Compile the kernel with warnings as errors"
++	default n
+ 	help
+ 	  A kernel build should not cause any compiler warnings, and this
+ 	  enables the '-Werror' (for C) and '-Dwarnings' (for Rust) flags
+-- 
+2.34.1
+

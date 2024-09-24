@@ -1,0 +1,85 @@
+From d5ff47ca4f71087e4d6afb0c0e0e5fccf9be5e8d Mon Sep 17 00:00:00 2001
+From: ratchaya <quic_ratchaya@quicinc.com>
+Date: Tue, 10 Oct 2023 14:43:56 +0530
+Subject: [PATCH] include: Clean linux tree if using
+ CONFIG_EXTERNAL_KERNEL_TREE
+
+- Added kernel_clean in toplevel.mk file
+- clean the linux tree with below commands:
+  make clean
+  make dirclean
+  make distclean
+- Added wildcard check in linux clean command
+
+Change-Id: Ib01e9d9b1ffa7f03abed545a2db107c368fbc154
+Signed-off-by: ratchaya <quic_ratchaya@quicinc.com>
+(cherry picked from commit 890adff100de4764500bc3cebf26f1fdf787b381)
+---
+ Makefile                | 9 ++++++++-
+ include/kernel-build.mk | 5 +++++
+ include/toplevel.mk     | 5 ++++-
+ 3 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 7c52acccba41..744801bc316c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -55,7 +55,14 @@ printdb:
+ 
+ prepare: $(target/stamp-compile)
+ 
+-_clean: FORCE
++clean_kernel:
++ifdef CONFIG_EXTERNAL_KERNEL_TREE
++	make target/linux/clean
++else
++	@true
++endif
++
++_clean: FORCE clean_kernel
+ 	rm -rf $(BUILD_DIR) $(STAGING_DIR) $(BIN_DIR) $(OUTPUT_DIR)/packages/$(ARCH_PACKAGES) $(TOPDIR)/staging_dir/packages
+ 
+ clean: _clean
+diff --git a/include/kernel-build.mk b/include/kernel-build.mk
+index c42dae0049ba..f2113ed9b55c 100644
+--- a/include/kernel-build.mk
++++ b/include/kernel-build.mk
+@@ -177,7 +177,12 @@ define BuildKernel
+ 	+$(MAKE) -C image compile install TARGET_BUILD=
+ 
+   clean: FORCE
++  ifdef CONFIG_EXTERNAL_KERNEL_TREE
++	$(if $(wildcard $(LINUX_DIR)), \
++	$(MAKE) -C $(LINUX_DIR) clean)
++  else
+ 	rm -rf $(KERNEL_BUILD_DIR)
++  endif
+ 
+   image-prereq:
+ 	@+$(NO_TRACE_MAKE) -s -C image prereq TARGET_BUILD=
+diff --git a/include/toplevel.mk b/include/toplevel.mk
+index 54cd8e3a908c..e4fbc7b242b9 100644
+--- a/include/toplevel.mk
++++ b/include/toplevel.mk
+@@ -169,6 +169,9 @@ xconfig: scripts/config/qconf prepare-tmpinfo FORCE
+ 
+ prepare_kernel_conf: .config toolchain/install FORCE
+ 
++clean_kernel: FORCE
++	$(_SINGLE)$(NO_TRACE_MAKE) target/linux/clean
++
+ ifeq ($(wildcard $(STAGING_DIR_HOST)/bin/quilt),)
+   prepare_kernel_conf:
+ 	@+$(SUBMAKE) -r tools/quilt/compile
+@@ -275,7 +278,7 @@ package/symlinks-clean:
+ help:
+ 	cat README.md
+ 
+-distclean:
++distclean: clean_kernel
+ 	rm -rf bin build_dir .ccache .config* dl feeds key-build* logs package/feeds staging_dir tmp
+ 	@$(_SINGLE)$(SUBMAKE) -C scripts/config clean
+ 
+-- 
+2.34.1
+

@@ -1,0 +1,30 @@
+From 895057b661890ea10b413ffb78e343c6b44007be Mon Sep 17 00:00:00 2001
+From: Pavankumar Nandeshwar <quic_pnandesh@quicinc.com>
+Date: Thu, 12 Sep 2024 20:58:09 +0530
+Subject: [PATCH] Makefile: Copy ath_dp_accel_cfg.h to staging dir
+
+DS feature requires ath_dp_accel_cfg.h to be used by both nss-ecm and ath module.
+This file is created by ath module and copy to staging dir to get accessed by
+nss-ecm module
+
+Change-Id: Ifb7f0efd7edf280fa0a5d8949fd70d0a3c13b39b
+Signed-off-by: Balamurugan S <quic_bselvara@quicinc.com>
+---
+ package/kernel/mac80211/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
+index 0d9516f671f8..04bb29b46db0 100644
+--- a/package/kernel/mac80211/Makefile
++++ b/package/kernel/mac80211/Makefile
+@@ -436,6 +436,7 @@ define KernelPackage/ath/install
+ 	$(INSTALL_DIR) $(STAGING_DIR)/usr/include/
+ 	$(CP) $(PKG_BUILD_DIR)/include/ath/ath_sawf.h $(STAGING_DIR)/usr/include/
+ 	$(CP) $(PKG_BUILD_DIR)/include/ath/ath_fse.h $(STAGING_DIR)/usr/include/
++	$(CP) $(PKG_BUILD_DIR)/include/ath/ath_dp_accel_cfg.h $(STAGING_DIR)/usr/include/
+ endef
+ 
+ $(eval $(foreach drv,$(PKG_DRIVERS),$(call KernelPackage,$(drv))))
+-- 
+2.34.1
+

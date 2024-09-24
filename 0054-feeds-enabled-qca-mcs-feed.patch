@@ -1,0 +1,29 @@
+From d7ea0962dc3242d119ce047af651bc2132ba42aa Mon Sep 17 00:00:00 2001
+From: Ken Zhu <quic_guigenz@quicinc.com>
+Date: Mon, 8 Jul 2024 16:23:34 -0700
+Subject: [PATCH] [feeds]: enabled qca-mcs feed.
+
+enable qca-mcs feed.
+
+Change-Id: I75815dfa316def775661ba274085a94fac3c727b
+Signed-off-by: Ken Zhu <quic_guigenz@quicinc.com>
+---
+ feeds.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index 2a2d6bff7676..a6d5913f021f 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -23,7 +23,7 @@ src-link sigma_dut ../qca/feeds/sigma-dut
+ src-link wapid ../qca/feeds/wapid
+ src-link qca_wapi ../qca/feeds/qca-wapi
+ src-link wlan_utils ../qca/feeds/wlan_utils
+-#src-link qca_mcs ../qca/feeds/qca-mcs
++src-link qca_mcs ../qca/feeds/qca-mcs
+ src-link sigma_dut_open ../qca/feeds/sigma-dut-open
+ src-link control_app_open ../qca/feeds/control-app-open
+ #src-link bluetopia ../qca/feeds/bluetopia
+-- 
+2.34.1
+

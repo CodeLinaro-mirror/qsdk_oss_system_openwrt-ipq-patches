@@ -1,0 +1,27 @@
+From 75fbfe5b4d57b939670b62c19b4b0c283b763ba2 Mon Sep 17 00:00:00 2001
+From: Ram Chandra Jangir <quic_rjangir@quicinc.com>
+Date: Fri, 16 Aug 2024 16:32:29 +0530
+Subject: [PATCH] toolchain: Enable GNU libgompt support
+
+Change-Id: Ia29992789672a8a36c689ff0ac5a00f4eb5a6b65
+Signed-off-by: Ram Chandra Jangir <quic_rjangir@quicinc.com>
+---
+ toolchain/gcc/common.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/toolchain/gcc/common.mk b/toolchain/gcc/common.mk
+index 2161ce72e4a5..45f127a86bd3 100644
+--- a/toolchain/gcc/common.mk
++++ b/toolchain/gcc/common.mk
+@@ -100,7 +100,7 @@ GCC_CONFIGURE:= \
+ 		--target=$(REAL_GNU_TARGET_NAME) \
+ 		--with-gnu-ld \
+ 		--enable-target-optspace \
+-		--disable-libgomp \
++		--enable-libgomp \
+ 		--disable-libmudflap \
+ 		--disable-multilib \
+ 		--disable-libmpx \
+-- 
+2.34.1
+

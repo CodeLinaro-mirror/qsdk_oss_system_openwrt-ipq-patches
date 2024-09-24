@@ -1,0 +1,38 @@
+From c1231a0e302432bebcdaeb5c60d93e0db4b01cfe Mon Sep 17 00:00:00 2001
+From: Ermine Jose <quic_erminejo@quicinc.com>
+Date: Tue, 21 May 2024 15:55:53 +0530
+Subject: [PATCH] perf: add stdc++ as dependency and remove LIBTRACEEVENT,
+ JEVENTS
+
+Signed-off-by: Ermine Jose <quic_erminejo@quicinc.com>
+Change-Id: I796db9a3efdae7809be8d6d12b3f1c983d3183d6
+(cherry picked from commit 65d25ab65b27d0f4c207f7659068753721e40e37)
+---
+ package/devel/perf/Makefile | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/package/devel/perf/Makefile b/package/devel/perf/Makefile
+index 20be59516dad..2881312ed327 100644
+--- a/package/devel/perf/Makefile
++++ b/package/devel/perf/Makefile
+@@ -28,7 +28,7 @@ define Package/perf
+   SECTION:=devel
+   CATEGORY:=Development
+   DEPENDS:= +libelf +libdw +PACKAGE_libunwind:libunwind +libpthread +librt +objdump @!IN_SDK @KERNEL_PERF_EVENTS \
+-	    +PACKAGE_libbfd:libbfd +PACKAGE_libopcodes:libopcodes +libtraceevent
++	    +PACKAGE_libbfd:libbfd +PACKAGE_libopcodes:libopcodes +libtraceevent +libstdcpp
+   TITLE:=Linux performance monitoring tool
+   VERSION:=$(LINUX_VERSION)-$(PKG_RELEASE)
+   URL:=http://www.kernel.org
+@@ -50,6 +50,8 @@ MAKE_FLAGS = \
+ 	NO_LZMA=1 \
+ 	NO_BACKTRACE=1 \
+ 	NO_LIBNUMA=1 \
++	NO_LIBTRACEEVENT=1 \
++	NO_JEVENTS=1 \
+ 	NO_GTK2=1 \
+ 	NO_LIBAUDIT=1 \
+ 	NO_LIBCRYPTO=1 \
+-- 
+2.34.1
+

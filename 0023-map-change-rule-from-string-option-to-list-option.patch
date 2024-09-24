@@ -1,0 +1,43 @@
+From c290c5f9c7034a54c32c6c4e3ee3010ca0c102b0 Mon Sep 17 00:00:00 2001
+From: Ken Zhu <guigenz@codeaurora.org>
+Date: Tue, 16 Oct 2018 16:56:17 -0700
+Subject: [PATCH] map: change rule from string option to list option
+
+It is hard to add many rules in one time by the uci tool since
+the limitted characters in the shell script.
+
+Change the string option to list option, make it possible to add
+rules one by one using add_list command.
+
+Change-Id: I8817d4b0f1e37659a34060060c463ab260ee90d2
+Signed-off-by: Ken Zhu <guigenz@codeaurora.org>
+(cherry picked from commit 29f7597765d1d58ca394e69a7189bd443fda55b7)
+---
+ package/network/ipv6/map/files/map.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/package/network/ipv6/map/files/map.sh b/package/network/ipv6/map/files/map.sh
+index f56fa54ad4c9..40c7a3a90331 100755
+--- a/package/network/ipv6/map/files/map.sh
++++ b/package/network/ipv6/map/files/map.sh
+@@ -30,7 +30,7 @@ proto_map_setup() {
+ 	json_get_vars maptype type legacymap mtu ttl tunlink zone fmr mode encaplimit
+ 	json_get_vars rule ipaddr ip4prefixlen ip6prefix ip6prefixlen peeraddr ealen psidlen psid offset
+ 
+-	[ "$zone" = "-" ] && zone=""
++	[ -z "$zone" ] && zone="wan"
+ 
+ 	# Compatibility with older config: use $type if $maptype is missing
+ 	[ -z "$maptype" ] && maptype="$type"
+@@ -250,7 +250,7 @@ proto_map_init_config() {
+ 	available=1
+ 
+ 	proto_config_add_string "maptype"
+-	proto_config_add_string "rule"
++	config_add_array 'rule'
+ 	proto_config_add_string "ipaddr"
+ 	proto_config_add_int "ip4prefixlen"
+ 	proto_config_add_string "ip6prefix"
+-- 
+2.34.1
+

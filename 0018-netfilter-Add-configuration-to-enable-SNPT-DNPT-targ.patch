@@ -1,0 +1,31 @@
+From e17210f54a995bda0492fd9083e130a8cea033af Mon Sep 17 00:00:00 2001
+From: Suhas N Bhargav <quic_sbhargav@quicinc.com>
+Date: Mon, 6 May 2024 16:13:25 +0530
+Subject: [PATCH] netfilter: Add configuration to enable SNPT/DNPT targets
+
+This Patch enables the configuration to perform
+Network prefix translation(NPTv6) using nftables userspace
+utility
+
+Change-Id: I56dca998bc4c64daff9dbb6d2f9a7c8b1a2885b4
+Signed-off-by: Suhas N Bhargav <quic_sbhargav@quicinc.com>
+(cherry picked from commit 0ca1ec3486978454c153bf9fa38ca10816f439d1)
+---
+ include/netfilter.mk | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/netfilter.mk b/include/netfilter.mk
+index 81488fe5c8eb..99ed4200645c 100644
+--- a/include/netfilter.mk
++++ b/include/netfilter.mk
+@@ -339,6 +339,7 @@ $(eval $(if $(NF_KMOD),$(call nf_add,NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE, $(P_
+ $(eval $(if $(NF_KMOD),$(call nf_add,NFT_NAT,CONFIG_NFT_NAT, $(P_XT)nft_nat),))
+ $(eval $(if $(NF_KMOD),$(call nf_add,NFT_NAT,CONFIG_NFT_NAT, $(P_XT)nft_chain_nat),))
+ $(eval $(if $(NF_KMOD),$(call nf_add,NFT_NAT,CONFIG_NFT_MASQ, $(P_XT)nft_masq),))
++$(eval $(if $(NF_KMOD),$(call nf_add,NFT_NAT,CONFIG_NFT_NPT, $(P_XT)nft_npt),))
+ 
+ $(eval $(if $(NF_KMOD),$(call nf_add,NFT_FIB,CONFIG_NFT_FIB, $(P_XT)nft_fib),))
+ $(eval $(if $(NF_KMOD),$(call nf_add,NFT_FIB,CONFIG_NFT_FIB_INET, $(P_XT)nft_fib_inet),))
+-- 
+2.34.1
+

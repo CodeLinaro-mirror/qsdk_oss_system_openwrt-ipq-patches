@@ -1,0 +1,103 @@
+From 20139572351c27e42822279601920ec8ef490b2a Mon Sep 17 00:00:00 2001
+From: Atchaya R <quic_ratchaya@quicinc.com>
+Date: Thu, 23 Mar 2023 16:54:53 +0530
+Subject: [PATCH] verbose.mk: add V=e option to show start and stop for tasks
+
+Sometimes when running multiple jobs in parallel one of them will
+fail and it's difficult to determine which one. This adds a new
+V=e option to track when a job starts and stops. You can invoke
+via:
+
+ $ make -j24 V=e
+
+You can run something like this now to see when each task begins
+and completes:
+ $ make -j24 V=e toolchain/uClibc/compile | awk '{ print strftime("%H:%M:%S"), $0; }'
+
+without this change, for target/linux/prereq, SUCCESS_MESSAGE
+definition is not available leading to compilation issue
+when we make V=e.
+
+subdir.mk fix subvariant compilation issues
+
+Change-Id: I7303cdb17c7a1ee710be4e05d108d12219dd88f1
+Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
+(cherry picked from commit b3e6fc7b0f4e0142ae740e598b7a7e6076f475e5)
+(cherry picked from commit 47efe3ca16c33eb26b0f4a3034a07746f662aca3)
+---
+ include/subdir.mk  | 10 +++++++++-
+ include/verbose.mk | 11 +++++++++++
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/include/subdir.mk b/include/subdir.mk
+index b4edbf8b96c7..cfdabebb70de 100644
+--- a/include/subdir.mk
++++ b/include/subdir.mk
+@@ -35,6 +35,12 @@ subdir_make_opts = \
+ 		BUILD_VARIANT="$(4)" \
+ 		ALL_VARIANTS="$(5)"
+ 
++subdir_make_opts_V_e = \
++	$(if $(SUBDIR_MAKE_DEBUG),-d) -r -C $(1)/$(bd) $(target) \
++		BUILD_SUBDIR="$(1)" \
++		BUILD_VARIANT="$(filter-out __default,$(variant))" \
++		ALL_VARIANTS="$(5)"
++
+ # 1: subdir
+ # 2: target
+ # 3: build type
+@@ -68,6 +74,7 @@ define subdir
+       $(foreach btype,$(buildtypes-$(bd)),
+         $(call warn_eval,$(1)/$(bd),t,T,$(1)/$(bd)/$(btype)/$(target): $(if $(NO_DEPS)$(QUILT),,$($(1)/$(bd)/$(btype)/$(target)) $(call $(1)//$(btype)/$(target),$(1)/$(bd)/$(btype))))
+ 		  $(call log_make,$(1)/$(bd),$(target),$(btype),$(filter-out __default,$(variant)),$($(1)/$(bd)/variants)) \
++			  $(if $(findstring e,$(OPENWRT_VERBOSE)),&& $(call SUCCESS_MESSAGE, make $(subdir_make_opts_V_e) finished) || { $(call ERROR_MESSAGE, make $(subdir_make_opts_V_e) failed); fail; }) \
+ 			|| $(call ERROR,$(2),   ERROR: $(1)/$(bd) [$(btype)] failed to build.,$(findstring $(bd),$($(1)/builddirs-ignore-$(btype)-$(target))))
+         $(if $(call diralias,$(bd)),$(call warn_eval,$(1)/$(bd),l,T,$(1)/$(call diralias,$(bd))/$(btype)/$(target): $(1)/$(bd)/$(btype)/$(target)))
+       )
+@@ -76,7 +83,8 @@ define subdir
+ 			$(if $(BUILD_LOG),@mkdir -p $(BUILD_LOG_DIR)/$(1)/$(bd)/$(filter-out __default,$(variant)))
+ 			$(if $($(1)/autoremove),$(call rebuild_check,$(1)/$(bd),$(target),,$(filter-out __default,$(variant)),$($(1)/$(bd)/variants)))
+ 			$(call log_make,$(1)/$(bd),$(target),,$(filter-out __default,$(variant)),$($(1)/$(bd)/variants)) \
+-				|| $(call ERROR,$(1),   ERROR: $(1)/$(bd) failed to build$(if $(filter-out __default,$(variant)), (build variant: $(variant))).,$(findstring $(bd),$($(1)/builddirs-ignore-$(target)))) 
++			  $(if $(findstring e,$(OPENWRT_VERBOSE)),&& $(call SUCCESS_MESSAGE, make $(subdir_make_opts_V_e) finished) || { $(call ERROR_MESSAGE, make $(subdir_make_opts_V_e) failed); fail; }) \
++				|| $(call ERROR,$(1),   ERROR: $(1)/$(bd) failed to build$(if $(filter-out __default,$(variant)), (build variant: $(variant))).,$(findstring $(bd),$($(1)/builddirs-ignore-$(target))))
+         )
+       $(if $(PREREQ_ONLY)$(DUMP_TARGET_DB),,
+         # aliases
+diff --git a/include/verbose.mk b/include/verbose.mk
+index f6aa0d701213..f1aaa66ef635 100644
+--- a/include/verbose.mk
++++ b/include/verbose.mk
+@@ -24,6 +24,7 @@ endif
+ ifeq ($(IS_TTY),1)
+   ifneq ($(strip $(NO_COLOR)),1)
+     _Y:=\\033[33m
++    _G:=\\033[32m
+     _R:=\\033[31m
+     _N:=\\033[m
+   endif
+@@ -44,6 +45,14 @@ ifeq ($(findstring s,$(OPENWRT_VERBOSE)),)
+ 	} 2>/dev/null
+   endef
+ 
++  define SUCCESS_MESSAGE
++	printf "$(_G)%s$(_N)\n" "$(1)" >&8
++  endef
++
++  define ERROR_MESSAGE
++	printf "$(_R)%s$(_N)\n" "$(1)" >&8
++  endef
++
+   ifeq ($(QUIET),1)
+     ifneq ($(CURDIR),$(TOPDIR))
+       _DIR:=$(patsubst $(TOPDIR)/%,%,${CURDIR})
+@@ -69,4 +78,6 @@ else
+   define MESSAGE
+     printf "%s\n" "$(1)"
+   endef
++  ERROR_MESSAGE=$(MESSAGE)
++  SUCCESS_MESSAGE=$(MESSAGE)
+ endif
+-- 
+2.34.1
+

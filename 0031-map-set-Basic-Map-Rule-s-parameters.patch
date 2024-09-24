@@ -1,0 +1,56 @@
+From 7507818ca9b0703a403e85cbc64dea92daea01f9 Mon Sep 17 00:00:00 2001
+From: Ken Zhu <guigenz@codeaurora.org>
+Date: Wed, 27 Mar 2019 15:04:32 -0700
+Subject: [PATCH] map: set Basic Map Rule's parameters
+
+These parameters is used to validate the port number is in the range of
+this device's avaiable ports
+
+Change-Id: Ie39bc27a33254e9a849b2b5f20b11d563380134c
+Signed-off-by: Ken Zhu <guigenz@codeaurora.org>
+---
+ package/network/ipv6/map/files/map.sh  | 8 ++++++++
+ package/network/ipv6/map/src/mapcalc.c | 1 +
+ 2 files changed, 9 insertions(+)
+
+diff --git a/package/network/ipv6/map/files/map.sh b/package/network/ipv6/map/files/map.sh
+index 112ab0332b81..1b2149c1b0f0 100755
+--- a/package/network/ipv6/map/files/map.sh
++++ b/package/network/ipv6/map/files/map.sh
+@@ -176,6 +176,9 @@ proto_map_setup() {
+ 			    json_add_string target MARK
+ 			    json_close_object
+ 		    done
++		    echo $(eval "echo \$RULE_${k}_PSID") > /sys/module/nf_nat_ftp/parameters/psid
++		    echo $(eval "echo \$RULE_${k}_PSIDLEN") > /sys/module/nf_nat_ftp/parameters/psid_len
++		    echo $(eval "echo \$RULE_${k}_OFFSET") > /sys/module/nf_nat_ftp/parameters/offset
+ 		    ip rule add to $(eval "echo \$RULE_${k}_IPV4ADDR") iif $ifname fwmark 0x100/0x100 table local
+ 		    ip rule add to $(eval "echo \$RULE_${k}_IPV4ADDR") iif $ifname table main
+ 	    fi
+@@ -241,6 +244,11 @@ proto_map_teardown() {
+ 	[ -z "$maptype" ] && maptype="map-e"
+ 
+ 	case "$maptype" in
++		"map-e") {
++			echo 0 > /sys/module/nf_nat_ftp/parameters/psid
++			echo 0 > /sys/module/nf_nat_ftp/parameters/psid_len
++			echo 0 > /sys/module/nf_nat_ftp/parameters/offset
++		};;
+ 		"map-t") [ -f "/proc/net/nat46/control" ] && echo del $link > /proc/net/nat46/control ;;
+ 	esac
+ 
+diff --git a/package/network/ipv6/map/src/mapcalc.c b/package/network/ipv6/map/src/mapcalc.c
+index 0a83f45e3497..d1e8a40bd3eb 100644
+--- a/package/network/ipv6/map/src/mapcalc.c
++++ b/package/network/ipv6/map/src/mapcalc.c
+@@ -399,6 +399,7 @@ int main(int argc, char *argv[])
+ 
+ 
+ 		if (psidlen > 0 && psid >= 0) {
++			printf("RULE_%d_PSID=%d\n", rulecnt, (psid >> (16- psidlen)));
+ 			printf("RULE_%d_PORTSETS='", rulecnt);
+ 			for (int k = (offset) ? 1 : 0; k < (1 << offset); ++k) {
+ 				int start = (k << (16 - offset)) | (psid >> offset);
+-- 
+2.34.1
+

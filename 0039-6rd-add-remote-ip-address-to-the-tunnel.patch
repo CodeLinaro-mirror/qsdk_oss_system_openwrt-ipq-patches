@@ -1,0 +1,41 @@
+From 5c6745d868c0c02e6788e9d862637a5af8267a14 Mon Sep 17 00:00:00 2001
+From: Pavithra R <quic_pavir@quicinc.com>
+Date: Tue, 20 Jun 2023 13:02:04 -0700
+Subject: [PATCH] 6rd: add remote ip address to the tunnel
+
+The tunnel could not be correctly created because the
+remote ip address is not passed to netifd on creating.
+Add the remote ip address as a parameter.
+
+Change-Id: I4c1affb560f94a72b0042456fd7ee33f2c3bf69b
+Signed-off-by: Pavithra R <pavir@codeaurora.org>
+Signed-off-by: John Sanli <quic_jsanli@quicinc.com>
+Signed-off-by: Karthik T S <quic_kartikts@quicinc.com>
+---
+ package/network/ipv6/6rd/files/6rd.sh | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/package/network/ipv6/6rd/files/6rd.sh b/package/network/ipv6/6rd/files/6rd.sh
+index dad61118fe67..b60d004c3061 100644
+--- a/package/network/ipv6/6rd/files/6rd.sh
++++ b/package/network/ipv6/6rd/files/6rd.sh
+@@ -23,6 +23,8 @@ proto_6rd_setup() {
+ 		return
+ 	}
+ 
++	[ -z "$peeraddr" ] && peeraddr="0.0.0.0"
++
+ 	( proto_add_host_dependency "$cfg" "$peeraddr" "$tunlink" )
+ 
+ 	[ -z "$ipaddr" ] && {
+@@ -64,6 +66,7 @@ proto_6rd_setup() {
+ 	json_add_int ttl "${ttl:-64}"
+ 	[ -n "$tos" ] && json_add_string tos "$tos"
+ 	json_add_string local "$ipaddr"
++	json_add_string remote "$peeraddr"
+ 	[ -n "$tunlink" ] && json_add_string link "$tunlink"
+ 
+ 	json_add_object 'data'
+-- 
+2.34.1
+

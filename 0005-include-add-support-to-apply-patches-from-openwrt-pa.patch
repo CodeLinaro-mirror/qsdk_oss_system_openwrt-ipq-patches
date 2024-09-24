@@ -1,0 +1,53 @@
+From ab76f64cb9ce9d95cf3828fb2a8f029aa6f838ae Mon Sep 17 00:00:00 2001
+From: Ermine Jose <quic_erminejo@quicinc.com>
+Date: Tue, 21 May 2024 13:34:51 +0530
+Subject: [PATCH] include: add support to apply patches from openwrt-patches
+
+Signed-off-by: Ermine Jose <quic_erminejo@quicinc.com>
+Change-Id: Ica6e62a27a10254d956a6e8b8f02c22c299894eb
+(cherry picked from commit 42d3517fb1a3a428ad625a1ad7d9ff74759e073f)
+---
+ include/package.mk | 5 +++++
+ include/quilt.mk   | 2 ++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/include/package.mk b/include/package.mk
+index 8ee78415df24..5987f7c12b47 100644
+--- a/include/package.mk
++++ b/include/package.mk
+@@ -299,7 +299,12 @@ define Build/DefaultTargets
+   endef
+ endef
+ 
++define Build/openwrt-patches
++  $(eval -include $(wildcard $(call FindPackage,$(basename $(notdir $(CURDIR))))/$(PKG_NAME).mk))
++endef
++
+ define BuildPackage
++  $(Build/openwrt-patches)
+   $(eval $(Package/Default))
+   $(eval $(Package/$(1)))
+ 
+diff --git a/include/quilt.mk b/include/quilt.mk
+index a58390f6c547..74697f6ba939 100644
+--- a/include/quilt.mk
++++ b/include/quilt.mk
+@@ -34,6 +34,7 @@ endif
+ ifneq ($(if $(DUMP),1,$(__quilt_inc)),1)
+ __quilt_inc:=1
+ 
++FindPackage?=$(strip $(shell find $(TOPDIR)/openwrt-patches -name $(1) 2>/dev/null))
+ PATCH_DIR?=$(CURDIR)/patches
+ FILES_DIR?=$(CURDIR)/files
+ HOST_PATCH_DIR?=$(PATCH_DIR)
+@@ -87,6 +88,7 @@ endef
+ define Build/Patch/Default
+ 	$(if $(QUILT),rm -rf $(PKG_BUILD_DIR)/patches; mkdir -p $(PKG_BUILD_DIR)/patches)
+ 	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR),)
++	$(call PatchDir, $(PKG_BUILD_DIR),$(call FindPackage, $(basename $(notdir $(CURDIR))))/patches,)
+ 	$(if $(QUILT),touch $(PKG_BUILD_DIR)/.quilt_used)
+ endef
+ 
+-- 
+2.34.1
+

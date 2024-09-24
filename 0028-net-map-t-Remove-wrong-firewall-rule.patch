@@ -1,0 +1,39 @@
+From 60fa5881d59a0e5bd77ebf0bedde064103945f7f Mon Sep 17 00:00:00 2001
+From: ratheesh kannoth <rkannoth@codeaurora.org>
+Date: Tue, 24 Oct 2017 12:33:33 +0530
+Subject: [PATCH] net :map-t : Remove wrong firewall rule
+
+map-t netifd script installs a rule to accept connection
+from wan side. WAN to lan traffic should be only for
+established connection initiated from lan side
+
+Change-Id: If65600a78e18ae51daa6ae12372f2fd8d9cd43a8
+Signed-off-by: ratheesh kannoth <rkannoth@codeaurora.org>
+---
+ package/network/ipv6/map/files/map.sh | 10 ----------
+ 1 file changed, 10 deletions(-)
+
+diff --git a/package/network/ipv6/map/files/map.sh b/package/network/ipv6/map/files/map.sh
+index 112ab0332b81..0115286b2e5d 100755
+--- a/package/network/ipv6/map/files/map.sh
++++ b/package/network/ipv6/map/files/map.sh
+@@ -196,16 +196,6 @@ proto_map_setup() {
+ 				json_add_string src_ip $(eval "echo \$RULE_${k}_IPV6ADDR")
+ 				json_add_string target ACCEPT
+ 			json_close_object
+-			json_add_object ""
+-				json_add_string type rule
+-				json_add_string family inet6
+-				json_add_string proto all
+-				json_add_string direction out
+-				json_add_string dest "$zone"
+-				json_add_string src "$zone"
+-				json_add_string dest_ip $(eval "echo \$RULE_${k}_IPV6ADDR")
+-				json_add_string target ACCEPT
+-			json_close_object
+ 		}
+ 		proto_add_ipv6_route $(eval "echo \$RULE_${k}_IPV6ADDR") 128
+ 	  fi
+-- 
+2.34.1
+

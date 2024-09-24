@@ -1,0 +1,54 @@
+From a16e0ae6283e53729c47ceefb69e326982103ccd Mon Sep 17 00:00:00 2001
+From: Urvishkumar Pandya <quic_urvishku@quicinc.com>
+Date: Sun, 23 Jun 2024 01:42:22 +0530
+Subject: [PATCH] feeds.conf: update feed packages
+
+Adding source link for enable Wi-Fi Driver package
+and other necessary packages for new OpenWrt 24.0X
+hazelnut branch
+
+Disable afc, odd, and rsrcmgr package for hazelnut branch because
+compilation failed for open profile
+
+Change-Id: I05d51931674929f0a103ca1e54a1c83e07311138
+Signed-off-by: Urvishkumar Pandya <quic_urvishku@quicinc.com>
+(cherry picked from commit 4004a3566f8e4de1ffe373d1020b2cdee8d2f06c)
+---
+ feeds.conf | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index f102caae978b..f75fb1aa479f 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -16,12 +16,12 @@ src-link wifi_fw_headers ../qca/feeds/wifi-fw-headers
+ src-link athdiag ../qca/feeds/athdiag
+ src-link wlan ../qca/feeds/wlan
+ src-link nss_sap ../qca/feeds/nss-sap
+-#src-link qca ../qca/feeds/qca
+-#src-link qca_hk ../qca/feeds/qca_hk
+-#src-link qca_cp ../qca/feeds/qca-cp
+-#src-link sigma_dut ../qca/feeds/sigma-dut
+-#src-link wapid ../qca/feeds/wapid
+-#src-link qca_wapi ../qca/feeds/qca-wapi
++src-link qca ../qca/feeds/qca
++src-link qca_hk ../qca/feeds/qca_hk
++src-link qca_cp ../qca/feeds/qca-cp
++src-link sigma_dut ../qca/feeds/sigma-dut
++src-link wapid ../qca/feeds/wapid
++src-link qca_wapi ../qca/feeds/qca-wapi
+ src-link wlan_utils ../qca/feeds/wlan_utils
+ #src-link qca_mcs ../qca/feeds/qca-mcs
+ src-link sigma_dut_open ../qca/feeds/sigma-dut-open
+@@ -31,7 +31,7 @@ src-link control_app_open ../qca/feeds/control-app-open
+ src-link qca_lib ../qca/feeds/qca-lib
+ src-link snpe ../qca/feeds/snpe
+ #src-link ieee1905_security ../qca/feeds/ieee1905-security
+-#src-link athtestcmd ../qca/feeds/athtestcmd
++src-link athtestcmd ../qca/feeds/athtestcmd
+ #src-link nss_cust ../qca/feeds/nss_cust
+ src-link nss_userspace ../qca/feeds/nss-userspace
+ #src-link art2 ../qca/feeds/art2
+-- 
+2.34.1
+

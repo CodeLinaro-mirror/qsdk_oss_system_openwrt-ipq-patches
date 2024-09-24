@@ -1,0 +1,25 @@
+From 5b4b274872037a9024e5cbccc037eea863b13810 Mon Sep 17 00:00:00 2001
+From: ` <quic_ratchaya@quicinc.com>
+Date: Wed, 31 Jul 2024 12:01:10 +0530
+Subject: [PATCH] feeds.conf: add fallback commit for luci project from CLO
+
+Signed-off-by: ` <quic_ratchaya@quicinc.com>
+Change-Id: Ia1fa716267956f4e79c236205fd89ba9db5e4a18
+---
+ feeds.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index 518c61aeaccf..91caeb32c1cf 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -1,5 +1,5 @@
+ src-link packages ../qca/feeds/packages
+-src-git luci https://git.openwrt.org/project/luci.git^eb502af9084cda3fa21632f57ee03d0fd8e4e894
++src-git luci https://git.openwrt.org/project/luci.git^eb502af9084cda3fa21632f57ee03d0fd8e4e894 https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^eb502af9084cda3fa21632f57ee03d0fd8e4e894
+ src-link routing ../qca/feeds/routing
+ src-link bootloader ../qca/feeds/bootloader
+ src-link qcom_utils_internal ../qca/feeds/qcom-utils-internal
+-- 
+2.34.1
+

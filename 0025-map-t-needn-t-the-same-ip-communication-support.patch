@@ -1,0 +1,60 @@
+From 924e6fd3d76e7a22a63a129f00f4940f6a3dd762 Mon Sep 17 00:00:00 2001
+From: Ken Zhu <guigenz@codeaurora.org>
+Date: Thu, 25 Oct 2018 19:15:24 -0700
+Subject: [PATCH] map-t needn't the same ip communication support
+
+Support the devices with the same ip address could communicate each
+other in MAP-E only. MAP-T doesn't support Forwarding Mapping Rule.
+
+Change-Id: I71f68afae8732fd89c1020aec5925510e7a52fd1
+Signed-off-by: Ken Zhu <guigenz@codeaurora.org>
+---
+ package/network/ipv6/map/files/map.sh | 32 ++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
+
+diff --git a/package/network/ipv6/map/files/map.sh b/package/network/ipv6/map/files/map.sh
+index 40c7a3a90331..112ab0332b81 100755
+--- a/package/network/ipv6/map/files/map.sh
++++ b/package/network/ipv6/map/files/map.sh
+@@ -162,21 +162,23 @@ proto_map_setup() {
+ 	        json_close_object
+               done
+ 	    done
+-	    for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
+-	      json_add_object ""
+-	        json_add_string type rule
+-		json_add_string family inet
+-		json_add_string set_mark 0x100
+-		json_add_string dest_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
+-		json_add_string proto tcpudp
+-		json_add_string src "lan"
+-		json_add_string device "$ifname"
+-		json_add_string dest_port "$portset"
+-		json_add_string target MARK
+-              json_close_object
+-	    done
+-	    ip rule add to $(eval "echo \$RULE_${k}_IPV4ADDR") iif $ifname fwmark 0x100/0x100 table local
+-	    ip rule add to $(eval "echo \$RULE_${k}_IPV4ADDR") iif $ifname table main
++	    if [ "$type" = "map-e" ]; then
++		    for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
++			    json_add_object ""
++			    json_add_string type rule
++			    json_add_string family inet
++			    json_add_string set_mark 0x100
++			    json_add_string dest_ip $(eval "echo \$RULE_${k}_IPV4ADDR")
++			    json_add_string proto tcpudp
++			    json_add_string src "lan"
++			    json_add_string device "$ifname"
++			    json_add_string dest_port "$portset"
++			    json_add_string target MARK
++			    json_close_object
++		    done
++		    ip rule add to $(eval "echo \$RULE_${k}_IPV4ADDR") iif $ifname fwmark 0x100/0x100 table local
++		    ip rule add to $(eval "echo \$RULE_${k}_IPV4ADDR") iif $ifname table main
++	    fi
+ 	  fi
+ 	fi
+ 
+-- 
+2.34.1
+

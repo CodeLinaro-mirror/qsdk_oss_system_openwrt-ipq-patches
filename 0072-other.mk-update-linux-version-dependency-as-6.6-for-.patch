@@ -1,0 +1,28 @@
+From f190166f0aa9f0d269f986b8075a8f3f62d17fd0 Mon Sep 17 00:00:00 2001
+From: Atchaya R <quic_ratchaya@quicinc.com>
+Date: Tue, 10 Sep 2024 16:44:11 +0530
+Subject: [PATCH] other.mk: update linux version dependency as 6.6 for
+ mtd_test.ko file
+
+Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
+Change-Id: Ie1a5ee5e12324e85c84079019557f3974946c6be
+---
+ package/kernel/linux/modules/other.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/kernel/linux/modules/other.mk b/package/kernel/linux/modules/other.mk
+index 1d762e6b3382..edcc4b320719 100644
+--- a/package/kernel/linux/modules/other.mk
++++ b/package/kernel/linux/modules/other.mk
+@@ -597,7 +597,7 @@ define KernelPackage/mtdtests
+ 	$(LINUX_DIR)/drivers/mtd/tests/mtd_speedtest.ko \
+ 	$(LINUX_DIR)/drivers/mtd/tests/mtd_stresstest.ko \
+ 	$(LINUX_DIR)/drivers/mtd/tests/mtd_subpagetest.ko \
+-	$(LINUX_DIR)/drivers/mtd/tests/mtd_test.ko@ge6.1 \
++	$(LINUX_DIR)/drivers/mtd/tests/mtd_test.ko@gt6.6 \
+ 	$(LINUX_DIR)/drivers/mtd/tests/mtd_torturetest.ko
+ endef
+ 
+-- 
+2.34.1
+

@@ -1,0 +1,29 @@
+From 2e6b91e71ee4f20fc62405f9b32a182f1ae2a854 Mon Sep 17 00:00:00 2001
+From: Urvishkumar Pandya <quic_urvishku@quicinc.com>
+Date: Wed, 17 Jul 2024 00:40:43 +0530
+Subject: [PATCH] feeds.conf: update feed packages
+
+Enable afc daemon package for hazelnut branch OpenWrt 24.0x
+
+Change-Id: I54ace6199718c915b631d57d78ad39337fa33c3f
+Signed-off-by: Urvishkumar Pandya <quic_urvishku@quicinc.com>
+---
+ feeds.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index 2a2d6bff7676..3cd4dbe488e7 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -53,7 +53,7 @@ src-link nss_dpdk ../qca/feeds/nss-dpdk
+ #src-link qca_son_mem_debug ../qca/feeds/qca-son-mem-debug
+ src-link afc ../qca/feeds/afc
+ src-link qca_rsrcmgr ../qca/feeds/qca-rsrcmgr
+-#src-link qca_afc_daemon ../qca/feeds/qca-afc-daemon
++src-link qca_afc_daemon ../qca/feeds/qca-afc-daemon
+ #src-link lte_data_oss ../qca/feeds/lte-data-oss
+ #src-link lte_data_prop ../qca/feeds/lte-data-prop
+ #src-link data_modem_monitor ../qca/feeds/data-modem-monitor
+-- 
+2.34.1
+
