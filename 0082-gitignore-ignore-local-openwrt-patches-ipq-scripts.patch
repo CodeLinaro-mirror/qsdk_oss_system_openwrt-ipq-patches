@@ -1,0 +1,30 @@
+From f51ccef6e5d2d27baf8e66c427a0d1a77446c224 Mon Sep 17 00:00:00 2001
+From: Ram Chandra Jangir <quic_rjangir@quicinc.com>
+Date: Thu, 26 Sep 2024 16:25:30 +0530
+Subject: [PATCH] gitignore: ignore local openwrt-patches, ipq-scripts
+
+These are separate projects, so ignore them from openwrt
+
+Change-Id: I595f1521753035fa52f7d5532f56183baafbd59c
+Signed-off-by: Ram Chandra Jangir <quic_rjangir@quicinc.com>
+---
+ .gitignore | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/.gitignore b/.gitignore
+index ad0475591915..992717a6c595 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -16,6 +16,9 @@
+ /files
+ /target/linux/feeds
+ /overlay
++/openwrt-patches
++/opensync
++/ipq-scripts
+ /package/feeds
+ /package/openwrt-packages
+ /*.patch
+-- 
+2.34.1
+

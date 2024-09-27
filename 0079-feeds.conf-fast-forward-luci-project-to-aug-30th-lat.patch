@@ -1,0 +1,26 @@
+From 159763b5232fa9e9f0dcb111aa763e0601418824 Mon Sep 17 00:00:00 2001
+From: Atchaya R <quic_ratchaya@quicinc.com>
+Date: Mon, 23 Sep 2024 17:18:23 +0530
+Subject: [PATCH] feeds.conf: fast forward luci project to aug 30th latest
+ commit
+
+Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
+Change-Id: I4f7ebf508a1dc6e1178a62d2ffc22bc0361f166e
+---
+ feeds.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index 4ce6b2d3a44b..9ffa27b9e545 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -1,5 +1,5 @@
+ src-link packages ../qca/feeds/packages
+-src-git luci https://git.openwrt.org/project/luci.git^eb502af9084cda3fa21632f57ee03d0fd8e4e894 https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^eb502af9084cda3fa21632f57ee03d0fd8e4e894
++src-git luci https://git.openwrt.org/project/luci.git^648a09907ec2f3e8046be53519184ed7c5e5bd88 https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^648a09907ec2f3e8046be53519184ed7c5e5bd88
+ src-link routing ../qca/feeds/routing
+ src-link bootloader ../qca/feeds/bootloader
+ src-link qcom_utils_internal ../qca/feeds/qcom-utils-internal
+-- 
+2.34.1
+

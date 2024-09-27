@@ -1,0 +1,24 @@
+From 29abc0cefcd1a31f3b2d8b403b4f10925cb355d4 Mon Sep 17 00:00:00 2001
+From: Ahmed Qureshi <quic_ahmequre@quicinc.com>
+Date: Tue, 24 Sep 2024 17:43:36 -0700
+Subject: [PATCH] feeds.conf: Update src-link for container_apis
+
+Change-Id: I2ebdd91eeed58d71de68ef41726be167a08d9097
+Signed-off-by: Ahmed Qureshi <quic_ahmequre@quicinc.com>
+---
+ feeds.conf | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 372e106765ad..1226b34f5856 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -61,3 +61,5 @@ src-link data_modem_monitor ../qca/feeds/data-modem-monitor
+ src-link kickstart ../qca/feeds/kickstart
+ src-link qwes_tools ../qca/feeds/qwes_tools
+ src-link opensync ../qca/feeds/opensync
++src-link container_apis ../qca/feeds/container_apis
++src-link container_interfaces ../qca/feeds/container_interfaces
+-- 
+2.34.1
+

@@ -1,0 +1,23 @@
+From d9dc8d6a9e1928dc890027b235c412b3a8987ba4 Mon Sep 17 00:00:00 2001
+From: Deepak Kumar <quic_deepaku@quicinc.com>
+Date: Tue, 24 Sep 2024 17:14:10 +0530
+Subject: [PATCH] feeds.conf: Enable opensync in feeds.conf
+
+Change-Id: I5384892ccadc89675e6371e40b94e2e222be4f96
+Signed-off-by: Deepak Kumar <quic_deepaku@quicinc.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 4ce6b2d3a44b..f5e835cc18ee 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -60,3 +60,4 @@ src-link lte_data_prop ../qca/feeds/lte-data-prop
+ src-link data_modem_monitor ../qca/feeds/data-modem-monitor
+ src-link kickstart ../qca/feeds/kickstart
+ src-link qwes_tools ../qca/feeds/qwes_tools
++src-link opensync ../qca/feeds/opensync
+-- 
+2.34.1
+
