@@ -1,0 +1,30 @@
+From 9042d8cbac3ab823051b7771b866d17c11272c5a Mon Sep 17 00:00:00 2001
+From: ratchaya <quic_ratchaya@quicinc.com>
+Date: Mon, 4 Dec 2023 18:40:12 +0530
+Subject: [PATCH] config: Add new config for map symbol file generation
+
+Signed-off-by: ratchaya <quic_ratchaya@quicinc.com>
+Change-Id: Ia613ac5448a870603ce5391bec467ef052a01e09
+(cherry picked from commit b1d22dc5035c153d8bf3bab8eb90ecbbc9643623)
+(cherry picked from commit dfab65d7eeb3f3a15aa0674f92e71e9ba8e15aff)
+---
+ include/hardening.mk | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/include/hardening.mk b/include/hardening.mk
+index 4a8874261b92..a9ec384d6847 100644
+--- a/include/hardening.mk
++++ b/include/hardening.mk
+@@ -9,6 +9,9 @@ PKG_SSP ?= 1
+ PKG_FORTIFY_SOURCE ?= 1
+ PKG_RELRO ?= 1
+ 
++ifdef CONFIG_PKG_MAP_SYMBOL
++    TARGET_CFLAGS += -Wl,-Map,ipq-$(PKG_NAME).map
++endif
+ ifdef CONFIG_PKG_CHECK_FORMAT_SECURITY
+   ifeq ($(strip $(PKG_CHECK_FORMAT_SECURITY)),1)
+     TARGET_CFLAGS += -Wformat -Werror=format-security
+-- 
+2.34.1
+
