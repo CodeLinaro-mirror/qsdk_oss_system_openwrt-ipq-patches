@@ -1,0 +1,572 @@
+From fddac32bfcee6576479eda6cb9ca26bd446be972 Mon Sep 17 00:00:00 2001
+From: Aditya Kumar Singh <quic_adisi@quicinc.com>
+Date: Wed, 4 Sep 2024 14:18:34 +0530
+Subject: [PATCH] hostpad: Upgrade package to 13th Sept 2024
+
+Upgrade the hostap package to version ccba6921de63, dated 13th Sept 2024.
+
+Patches Deleted:
+  * 060-nl80211-fix-crash-when-adding-an-interface-fails.patch
+
+Change-Id: I3848b5f558010fd0a90ca79aa23c66a3675aa88d
+Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
+---
+ package/network/services/hostapd/Makefile     |  6 +-
+ ...crash-when-adding-an-interface-fails.patch | 21 -------
+ ...edtls-TLS-crypto-option-initial-port.patch | 22 +++----
+ .../hostapd/patches/301-mesh-noscan.patch     | 12 ++--
+ .../hostapd/patches/600-ubus_support.patch    | 60 +++++++++----------
+ .../hostapd/patches/761-shared_das_port.patch | 28 ++++-----
+ 6 files changed, 64 insertions(+), 85 deletions(-)
+ delete mode 100644 package/network/services/hostapd/patches/060-nl80211-fix-crash-when-adding-an-interface-fails.patch
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index a3faed8d45ad..4f1854c63612 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -9,9 +9,9 @@ PKG_RELEASE:=2
+ 
+ PKG_SOURCE_URL:=https://w1.fi/hostap.git
+ PKG_SOURCE_PROTO:=git
+-PKG_SOURCE_DATE:=2024-06-05
+-PKG_SOURCE_VERSION:=1b96745f1de8806e2c500ad781aa09b88fdae7b9
+-PKG_MIRROR_HASH:=d5ff4046dc8000a1c38e6920bf60a610b621ebb094525d3a076a8bd6c0792d54
++PKG_SOURCE_DATE:=2024-09-13
++PKG_SOURCE_VERSION:=ccba6921de6372a2220350bb5ed5776ea8c76bbb
++PKG_MIRROR_HASH:=e6ccdc31646e96c663d4948c897eddd0b1e73dd6af50686a6108e064073679e2
+ PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
+ PKG_LICENSE:=BSD-3-Clause
+ PKG_CPE_ID:=cpe:/a:w1.fi:hostapd
+diff --git a/package/network/services/hostapd/patches/060-nl80211-fix-crash-when-adding-an-interface-fails.patch b/package/network/services/hostapd/patches/060-nl80211-fix-crash-when-adding-an-interface-fails.patch
+deleted file mode 100644
+index 1df2eff3875f..000000000000
+--- a/package/network/services/hostapd/patches/060-nl80211-fix-crash-when-adding-an-interface-fails.patch
++++ /dev/null
+@@ -1,21 +0,0 @@
+-From: Felix Fietkau <nbd@nbd.name>
+-Date: Fri, 14 Jun 2024 14:41:16 +0200
+-Subject: [PATCH] nl80211: fix crash when adding an interface fails
+-
+-When adding an interface fails early, the bss link is still NULL.
+-Avoid crashing on deleting beacons.
+-
+-Signed-off-by: Felix Fietkau <nbd@nbd.name>
+----
+-
+---- a/src/drivers/driver_nl80211.c
+-+++ b/src/drivers/driver_nl80211.c
+-@@ -3071,7 +3071,7 @@ static int wpa_driver_nl80211_del_beacon
+- 	struct wpa_driver_nl80211_data *drv = bss->drv;
+- 	struct i802_link *link = nl80211_get_link(bss, link_id);
+- 
+--	if (!link->beacon_set)
+-+	if (!link || !link->beacon_set)
+- 		return 0;
+- 
+- 	wpa_printf(MSG_DEBUG, "nl80211: Remove beacon (ifindex=%d)",
+diff --git a/package/network/services/hostapd/patches/110-mbedtls-TLS-crypto-option-initial-port.patch b/package/network/services/hostapd/patches/110-mbedtls-TLS-crypto-option-initial-port.patch
+index b55c0b1f8450..ca56b38f6869 100644
+--- a/package/network/services/hostapd/patches/110-mbedtls-TLS-crypto-option-initial-port.patch
++++ b/package/network/services/hostapd/patches/110-mbedtls-TLS-crypto-option-initial-port.patch
+@@ -273,7 +273,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  ifdef CONFIG_RADIUS_SERVER
+  CFLAGS += -DRADIUS_SERVER
+-@@ -1341,7 +1426,9 @@ NOBJS += ../src/utils/trace.o
++@@ -1342,7 +1427,9 @@ NOBJS += ../src/utils/trace.o
+  endif
+  
+  HOBJS += hlr_auc_gw.o ../src/utils/common.o ../src/utils/wpa_debug.o ../src/utils/os_$(CONFIG_OS).o ../src/utils/wpabuf.o ../src/crypto/milenage.o
+@@ -283,7 +283,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef CONFIG_INTERNAL_AES
+  HOBJS += ../src/crypto/aes-internal.o
+  HOBJS += ../src/crypto/aes-internal-enc.o
+-@@ -1364,13 +1451,17 @@ SOBJS += ../src/common/sae.o
++@@ -1365,13 +1452,17 @@ SOBJS += ../src/common/sae.o
+  SOBJS += ../src/common/sae_pk.o
+  SOBJS += ../src/common/dragonfly.o
+  SOBJS += $(AESOBJS)
+@@ -7765,7 +7765,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  CONFIG_SIM_SIMULATOR=y
+ --- a/wpa_supplicant/Makefile
+ +++ b/wpa_supplicant/Makefile
+-@@ -1229,6 +1229,29 @@ endif
++@@ -1230,6 +1230,29 @@ endif
+  CFLAGS += -DTLS_DEFAULT_CIPHERS=\"$(CONFIG_TLS_DEFAULT_CIPHERS)\"
+  endif
+  
+@@ -7795,7 +7795,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifeq ($(CONFIG_TLS), gnutls)
+  ifndef CONFIG_CRYPTO
+  # default to libgcrypt
+-@@ -1421,9 +1444,11 @@ endif
++@@ -1422,9 +1445,11 @@ endif
+  
+  ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -7807,7 +7807,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef CONFIG_OPENSSL_INTERNAL_AES_WRAP
+  # Seems to be needed at least with BoringSSL
+  NEED_INTERNAL_AES_WRAP=y
+-@@ -1437,9 +1462,11 @@ endif
++@@ -1438,9 +1463,11 @@ endif
+  
+  ifdef NEED_INTERNAL_AES_WRAP
+  ifneq ($(CONFIG_TLS), linux)
+@@ -7819,7 +7819,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef NEED_AES_EAX
+  AESOBJS += ../src/crypto/aes-eax.o
+  NEED_AES_CTR=y
+-@@ -1449,35 +1476,45 @@ AESOBJS += ../src/crypto/aes-siv.o
++@@ -1450,35 +1477,45 @@ AESOBJS += ../src/crypto/aes-siv.o
+  NEED_AES_CTR=y
+  endif
+  ifdef NEED_AES_CTR
+@@ -7865,7 +7865,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef NEED_AES_ENC
+  ifdef CONFIG_INTERNAL_AES
+  AESOBJS += ../src/crypto/aes-internal-enc.o
+-@@ -1492,12 +1529,16 @@ ifneq ($(CONFIG_TLS), openssl)
++@@ -1493,12 +1530,16 @@ ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), linux)
+  ifneq ($(CONFIG_TLS), gnutls)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -7882,7 +7882,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef CONFIG_INTERNAL_SHA1
+  SHA1OBJS += ../src/crypto/sha1-internal.o
+  ifdef NEED_FIPS186_2_PRF
+-@@ -1509,29 +1550,37 @@ CFLAGS += -DCONFIG_NO_PBKDF2
++@@ -1510,29 +1551,37 @@ CFLAGS += -DCONFIG_NO_PBKDF2
+  else
+  ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -7920,7 +7920,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef NEED_MD5
+  ifdef CONFIG_INTERNAL_MD5
+  MD5OBJS += ../src/crypto/md5-internal.o
+-@@ -1586,12 +1635,17 @@ ifneq ($(CONFIG_TLS), openssl)
++@@ -1587,12 +1636,17 @@ ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), linux)
+  ifneq ($(CONFIG_TLS), gnutls)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -7938,7 +7938,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef CONFIG_INTERNAL_SHA256
+  SHA256OBJS += ../src/crypto/sha256-internal.o
+  endif
+-@@ -1604,50 +1658,68 @@ CFLAGS += -DCONFIG_INTERNAL_SHA512
++@@ -1605,50 +1659,68 @@ CFLAGS += -DCONFIG_INTERNAL_SHA512
+  SHA256OBJS += ../src/crypto/sha512-internal.o
+  endif
+  ifdef NEED_TLS_PRF_SHA256
+@@ -8007,7 +8007,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  ifdef NEED_ASN1
+  OBJS += ../src/tls/asn1.o
+-@@ -1822,10 +1894,12 @@ ifdef CONFIG_FIPS
++@@ -1823,10 +1895,12 @@ ifdef CONFIG_FIPS
+  CFLAGS += -DCONFIG_FIPS
+  ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), wolfssl)
+diff --git a/package/network/services/hostapd/patches/301-mesh-noscan.patch b/package/network/services/hostapd/patches/301-mesh-noscan.patch
+index 64a2eed30e52..e5fd05323270 100644
+--- a/package/network/services/hostapd/patches/301-mesh-noscan.patch
++++ b/package/network/services/hostapd/patches/301-mesh-noscan.patch
+@@ -47,7 +47,7 @@ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  		/*
+ --- a/wpa_supplicant/wpa_supplicant.c
+ +++ b/wpa_supplicant/wpa_supplicant.c
+-@@ -2770,7 +2770,7 @@ static bool ibss_mesh_can_use_vht(struct
++@@ -2903,7 +2903,7 @@ static bool ibss_mesh_can_use_vht(struct
+  				  const struct wpa_ssid *ssid,
+  				  struct hostapd_hw_modes *mode)
+  {
+@@ -56,7 +56,7 @@ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  		return false;
+  
+  	if (!drv_supports_vht(wpa_s, ssid))
+-@@ -2843,7 +2843,7 @@ static void ibss_mesh_select_40mhz(struc
++@@ -2976,7 +2976,7 @@ static void ibss_mesh_select_40mhz(struc
+  	int i, res;
+  	unsigned int j;
+  	static const int ht40plus[] = {
+@@ -65,16 +65,16 @@ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  		149, 157, 165, 173, 184, 192
+  	};
+  	int ht40 = -1;
+-@@ -3093,7 +3093,7 @@ void ibss_mesh_setup_freq(struct wpa_sup
++@@ -3227,7 +3227,7 @@ void ibss_mesh_setup_freq(struct wpa_sup
+  	int ieee80211_mode = wpas_mode_to_ieee80211_mode(ssid->mode);
+  	enum hostapd_hw_mode hw_mode;
+  	struct hostapd_hw_modes *mode = NULL;
+--	int i, obss_scan = 1;
+-+	int i, obss_scan = !(ssid->noscan);
++-	int obss_scan = 1;
+++	int obss_scan = !(ssid->noscan);
+  	u8 channel;
+  	bool is_6ghz, is_24ghz;
+  	bool dfs_enabled = wpa_s->conf->country[0] && (wpa_s->drv_flags & WPA_DRIVER_FLAGS_RADAR);
+-@@ -3143,6 +3143,8 @@ void ibss_mesh_setup_freq(struct wpa_sup
++@@ -3271,6 +3271,8 @@ void ibss_mesh_setup_freq(struct wpa_sup
+  		freq->he_enabled = ibss_mesh_can_use_he(wpa_s, ssid, mode,
+  							ieee80211_mode);
+  	freq->channel = channel;
+diff --git a/package/network/services/hostapd/patches/600-ubus_support.patch b/package/network/services/hostapd/patches/600-ubus_support.patch
+index 81d11378f215..d23f5f1ccdbd 100644
+--- a/package/network/services/hostapd/patches/600-ubus_support.patch
++++ b/package/network/services/hostapd/patches/600-ubus_support.patch
+@@ -53,7 +53,7 @@ probe/assoc/auth requests via object subscribe.
+  	}
+ --- a/src/ap/beacon.c
+ +++ b/src/ap/beacon.c
+-@@ -1357,6 +1357,12 @@ void handle_probe_req(struct hostapd_dat
++@@ -1418,6 +1418,12 @@ void handle_probe_req(struct hostapd_dat
+  	int mld_id;
+  	u16 links;
+  #endif /* CONFIG_IEEE80211BE */
+@@ -66,7 +66,7 @@ probe/assoc/auth requests via object subscribe.
+  
+  	if (hapd->iconf->rssi_ignore_probe_request && ssi_signal &&
+  	    ssi_signal < hapd->iconf->rssi_ignore_probe_request)
+-@@ -1543,6 +1549,12 @@ void handle_probe_req(struct hostapd_dat
++@@ -1604,6 +1610,12 @@ void handle_probe_req(struct hostapd_dat
+  	}
+  #endif /* CONFIG_P2P */
+  
+@@ -81,7 +81,7 @@ probe/assoc/auth requests via object subscribe.
+  
+ --- a/src/ap/dfs.c
+ +++ b/src/ap/dfs.c
+-@@ -1236,6 +1236,8 @@ int hostapd_dfs_pre_cac_expired(struct h
++@@ -1243,6 +1243,8 @@ int hostapd_dfs_pre_cac_expired(struct h
+  		"freq=%d ht_enabled=%d chan_offset=%d chan_width=%d cf1=%d cf2=%d",
+  		freq, ht_enabled, chan_offset, chan_width, cf1, cf2);
+  
+@@ -92,7 +92,7 @@ probe/assoc/auth requests via object subscribe.
+  		return 0;
+ --- a/src/ap/drv_callbacks.c
+ +++ b/src/ap/drv_callbacks.c
+-@@ -268,6 +268,10 @@ int hostapd_notif_assoc(struct hostapd_d
++@@ -316,6 +316,10 @@ int hostapd_notif_assoc(struct hostapd_d
+  	struct hostapd_iface *iface = hapd->iface;
+  #endif /* CONFIG_OWE */
+  	bool updated = false;
+@@ -103,7 +103,7 @@ probe/assoc/auth requests via object subscribe.
+  
+  	if (addr == NULL) {
+  		/*
+-@@ -412,6 +416,12 @@ int hostapd_notif_assoc(struct hostapd_d
++@@ -460,6 +464,12 @@ int hostapd_notif_assoc(struct hostapd_d
+  		goto fail;
+  	}
+  
+@@ -126,7 +126,7 @@ probe/assoc/auth requests via object subscribe.
+  	accounting_deinit(hapd);
+  	hostapd_deinit_wpa(hapd);
+  	vlan_deinit(hapd);
+-@@ -1303,6 +1304,8 @@ static int hostapd_start_beacon(struct h
++@@ -1316,6 +1317,8 @@ static int hostapd_start_beacon(struct h
+  	if (hapd->driver && hapd->driver->set_operstate)
+  		hapd->driver->set_operstate(hapd->drv_priv, 1);
+  
+@@ -135,7 +135,7 @@ probe/assoc/auth requests via object subscribe.
+  	return 0;
+  }
+  
+-@@ -2448,6 +2451,7 @@ static int hostapd_setup_interface_compl
++@@ -2525,6 +2528,7 @@ static int hostapd_setup_interface_compl
+  	if (err)
+  		goto fail;
+  
+@@ -143,7 +143,7 @@ probe/assoc/auth requests via object subscribe.
+  	wpa_printf(MSG_DEBUG, "Completing interface initialization");
+  	if (iface->freq) {
+  #ifdef NEED_AP_MLME
+-@@ -2667,6 +2671,7 @@ dfs_offload:
++@@ -2750,6 +2754,7 @@ dfs_offload:
+  
+  fail:
+  	wpa_printf(MSG_ERROR, "Interface initialization failed");
+@@ -151,7 +151,7 @@ probe/assoc/auth requests via object subscribe.
+  
+  	if (iface->is_no_ir) {
+  		hostapd_set_state(iface, HAPD_IFACE_NO_IR);
+-@@ -3383,6 +3388,7 @@ void hostapd_interface_deinit_free(struc
++@@ -3478,6 +3483,7 @@ void hostapd_interface_deinit_free(struc
+  		   (unsigned int) iface->conf->num_bss);
+  	driver = iface->bss[0]->driver;
+  	drv_priv = iface->bss[0]->drv_priv;
+@@ -169,7 +169,7 @@ probe/assoc/auth requests via object subscribe.
+  
+  #define OCE_STA_CFON_ENABLED(hapd) \
+  	((hapd->conf->oce & OCE_STA_CFON) && \
+-@@ -189,6 +190,7 @@ struct hostapd_data {
++@@ -206,6 +207,7 @@ struct hostapd_data {
+  	struct hostapd_iface *iface;
+  	struct hostapd_config *iconf;
+  	struct hostapd_bss_config *conf;
+@@ -177,7 +177,7 @@ probe/assoc/auth requests via object subscribe.
+  	int interface_added; /* virtual interface added for this BSS */
+  	unsigned int started:1;
+  	unsigned int disabled:1;
+-@@ -742,6 +744,7 @@ hostapd_alloc_bss_data(struct hostapd_if
++@@ -776,6 +778,7 @@ hostapd_alloc_bss_data(struct hostapd_if
+  		       struct hostapd_bss_config *bss);
+  int hostapd_setup_interface(struct hostapd_iface *iface);
+  int hostapd_setup_interface_complete(struct hostapd_iface *iface, int err);
+@@ -187,7 +187,7 @@ probe/assoc/auth requests via object subscribe.
+  struct hostapd_iface * hostapd_alloc_iface(void);
+ --- a/src/ap/ieee802_11.c
+ +++ b/src/ap/ieee802_11.c
+-@@ -2808,7 +2808,7 @@ static void handle_auth(struct hostapd_d
++@@ -2895,7 +2895,7 @@ static void handle_auth(struct hostapd_d
+  	u16 auth_alg, auth_transaction, status_code;
+  	u16 resp = WLAN_STATUS_SUCCESS;
+  	struct sta_info *sta = NULL;
+@@ -196,7 +196,7 @@ probe/assoc/auth requests via object subscribe.
+  	u16 fc;
+  	const u8 *challenge = NULL;
+  	u8 resp_ies[2 + WLAN_AUTH_CHALLENGE_LEN];
+-@@ -2819,6 +2819,11 @@ static void handle_auth(struct hostapd_d
++@@ -2906,6 +2906,11 @@ static void handle_auth(struct hostapd_d
+  #ifdef CONFIG_IEEE80211BE
+  	bool mld_sta = false;
+  #endif /* CONFIG_IEEE80211BE */
+@@ -208,7 +208,7 @@ probe/assoc/auth requests via object subscribe.
+  
+  	if (len < IEEE80211_HDRLEN + sizeof(mgmt->u.auth)) {
+  		wpa_printf(MSG_INFO, "handle_auth - too short payload (len=%lu)",
+-@@ -3012,6 +3017,13 @@ static void handle_auth(struct hostapd_d
++@@ -3102,6 +3107,13 @@ static void handle_auth(struct hostapd_d
+  		resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
+  		goto fail;
+  	}
+@@ -222,7 +222,7 @@ probe/assoc/auth requests via object subscribe.
+  	if (res == HOSTAPD_ACL_PENDING)
+  		return;
+  
+-@@ -5265,7 +5277,7 @@ static void handle_assoc(struct hostapd_
++@@ -5365,7 +5377,7 @@ static void handle_assoc(struct hostapd_
+  	int resp = WLAN_STATUS_SUCCESS;
+  	u16 reply_res = WLAN_STATUS_UNSPECIFIED_FAILURE;
+  	const u8 *pos;
+@@ -231,7 +231,7 @@ probe/assoc/auth requests via object subscribe.
+  	struct sta_info *sta;
+  	u8 *tmp = NULL;
+  #ifdef CONFIG_FILS
+-@@ -5507,6 +5519,11 @@ static void handle_assoc(struct hostapd_
++@@ -5607,6 +5619,11 @@ static void handle_assoc(struct hostapd_
+  		left = res;
+  	}
+  #endif /* CONFIG_FILS */
+@@ -243,9 +243,9 @@ probe/assoc/auth requests via object subscribe.
+  
+  	/* followed by SSID and Supported rates; and HT capabilities if 802.11n
+  	 * is used */
+-@@ -5609,6 +5626,13 @@ static void handle_assoc(struct hostapd_
++@@ -5709,6 +5726,13 @@ static void handle_assoc(struct hostapd_
+  	if (set_beacon)
+- 		ieee802_11_set_beacons(hapd->iface);
++ 		ieee802_11_update_beacons(hapd->iface);
+  
+ +	ubus_resp = hostapd_ubus_handle_event(hapd, &req);
+ +	if (ubus_resp) {
+@@ -257,7 +257,7 @@ probe/assoc/auth requests via object subscribe.
+   fail:
+  
+  	/*
+-@@ -5838,6 +5862,7 @@ static void handle_disassoc(struct hosta
++@@ -5938,6 +5962,7 @@ static void handle_disassoc(struct hosta
+  			   (unsigned long) len);
+  		return;
+  	}
+@@ -265,7 +265,7 @@ probe/assoc/auth requests via object subscribe.
+  
+  	sta = ap_get_sta(hapd, mgmt->sa);
+  	if (!sta) {
+-@@ -5869,6 +5894,8 @@ static void handle_deauth(struct hostapd
++@@ -5969,6 +5994,8 @@ static void handle_deauth(struct hostapd
+  	/* Clear the PTKSA cache entries for PASN */
+  	ptksa_cache_flush(hapd->ptksa, mgmt->sa, WPA_CIPHER_NONE);
+  
+@@ -296,7 +296,7 @@ probe/assoc/auth requests via object subscribe.
+  	default:
+ --- a/src/ap/sta_info.c
+ +++ b/src/ap/sta_info.c
+-@@ -541,6 +541,7 @@ void ap_handle_timer(void *eloop_ctx, vo
++@@ -542,6 +542,7 @@ void ap_handle_timer(void *eloop_ctx, vo
+  		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
+  			       HOSTAPD_LEVEL_INFO, "deauthenticated due to "
+  			       "local deauth request");
+@@ -304,7 +304,7 @@ probe/assoc/auth requests via object subscribe.
+  		ap_free_sta(hapd, sta);
+  		return;
+  	}
+-@@ -698,6 +699,7 @@ skip_poll:
++@@ -699,6 +700,7 @@ skip_poll:
+  		mlme_deauthenticate_indication(
+  			hapd, sta,
+  			WLAN_REASON_PREV_AUTH_NOT_VALID);
+@@ -312,7 +312,7 @@ probe/assoc/auth requests via object subscribe.
+  		ap_free_sta(hapd, sta);
+  		break;
+  	}
+-@@ -1520,15 +1522,28 @@ void ap_sta_set_authorized_event(struct
++@@ -1521,15 +1523,28 @@ void ap_sta_set_authorized_event(struct
+  		os_snprintf(buf, sizeof(buf), MACSTR, MAC2STR(sta->addr));
+  
+  	if (authorized) {
+@@ -341,7 +341,7 @@ probe/assoc/auth requests via object subscribe.
+  #ifdef CONFIG_P2P
+  		if (wpa_auth_get_ip_addr(sta->wpa_sm, ip_addr_buf) == 0) {
+  			os_snprintf(ip_addr, sizeof(ip_addr),
+-@@ -1539,6 +1554,13 @@ void ap_sta_set_authorized_event(struct
++@@ -1540,6 +1555,13 @@ void ap_sta_set_authorized_event(struct
+  		}
+  #endif /* CONFIG_P2P */
+  
+@@ -355,7 +355,7 @@ probe/assoc/auth requests via object subscribe.
+  		keyid = ap_sta_wpa_get_keyid(hapd, sta);
+  		if (keyid) {
+  			os_snprintf(keyid_buf, sizeof(keyid_buf),
+-@@ -1557,17 +1579,19 @@ void ap_sta_set_authorized_event(struct
++@@ -1558,17 +1580,19 @@ void ap_sta_set_authorized_event(struct
+  					 dpp_pkhash, SHA256_MAC_LEN);
+  		}
+  
+@@ -381,7 +381,7 @@ probe/assoc/auth requests via object subscribe.
+  		    hapd->msg_ctx_parent != hapd->msg_ctx)
+ --- a/src/ap/sta_info.h
+ +++ b/src/ap/sta_info.h
+-@@ -317,6 +317,7 @@ struct sta_info {
++@@ -304,6 +304,7 @@ struct sta_info {
+  #endif /* CONFIG_TESTING_OPTIONS */
+  #ifdef CONFIG_AIRTIME_POLICY
+  	unsigned int airtime_weight;
+@@ -469,7 +469,7 @@ probe/assoc/auth requests via object subscribe.
+  }
+ --- a/src/ap/wpa_auth_glue.c
+ +++ b/src/ap/wpa_auth_glue.c
+-@@ -278,6 +278,7 @@ static void hostapd_wpa_auth_psk_failure
++@@ -328,6 +328,7 @@ static void hostapd_wpa_auth_psk_failure
+  	struct hostapd_data *hapd = ctx;
+  	wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_POSSIBLE_PSK_MISMATCH MACSTR,
+  		MAC2STR(addr));
+@@ -674,7 +674,7 @@ probe/assoc/auth requests via object subscribe.
+  			break;
+ --- a/wpa_supplicant/wpa_supplicant.c
+ +++ b/wpa_supplicant/wpa_supplicant.c
+-@@ -7740,6 +7740,8 @@ struct wpa_supplicant * wpa_supplicant_a
++@@ -7920,6 +7920,8 @@ struct wpa_supplicant * wpa_supplicant_a
+  	}
+  #endif /* CONFIG_P2P */
+  
+@@ -683,7 +683,7 @@ probe/assoc/auth requests via object subscribe.
+  	return wpa_s;
+  }
+  
+-@@ -7766,6 +7768,8 @@ int wpa_supplicant_remove_iface(struct w
++@@ -7946,6 +7948,8 @@ int wpa_supplicant_remove_iface(struct w
+  	struct wpa_supplicant *parent = wpa_s->parent;
+  #endif /* CONFIG_MESH */
+  
+@@ -692,7 +692,7 @@ probe/assoc/auth requests via object subscribe.
+  	/* Remove interface from the global list of interfaces */
+  	prev = global->ifaces;
+  	if (prev == wpa_s) {
+-@@ -8112,8 +8116,12 @@ int wpa_supplicant_run(struct wpa_global
++@@ -8292,8 +8296,12 @@ int wpa_supplicant_run(struct wpa_global
+  	eloop_register_signal_terminate(wpa_supplicant_terminate, global);
+  	eloop_register_signal_reconfig(wpa_supplicant_reconfig, global);
+  
+diff --git a/package/network/services/hostapd/patches/761-shared_das_port.patch b/package/network/services/hostapd/patches/761-shared_das_port.patch
+index 5ca10d23bdb6..26aeacac76ab 100644
+--- a/package/network/services/hostapd/patches/761-shared_das_port.patch
++++ b/package/network/services/hostapd/patches/761-shared_das_port.patch
+@@ -7,14 +7,14 @@ Use the NAS identifier to find the right receiver context on incoming messages
+ 
+ --- a/src/ap/hostapd.c
+ +++ b/src/ap/hostapd.c
+-@@ -1510,6 +1510,7 @@ int hostapd_setup_bss(struct hostapd_dat
++@@ -1379,6 +1379,7 @@ static int hostapd_bss_radius_init(struc
+  
+- 			os_memset(&das_conf, 0, sizeof(das_conf));
+- 			das_conf.port = conf->radius_das_port;
+-+			das_conf.nas_identifier = conf->nas_identifier;
+- 			das_conf.shared_secret = conf->radius_das_shared_secret;
+- 			das_conf.shared_secret_len =
+- 				conf->radius_das_shared_secret_len;
++ 		os_memset(&das_conf, 0, sizeof(das_conf));
++ 		das_conf.port = conf->radius_das_port;
+++		das_conf.nas_identifier = conf->nas_identifier;
++ 		das_conf.shared_secret = conf->radius_das_shared_secret;
++ 		das_conf.shared_secret_len =
++ 			conf->radius_das_shared_secret_len;
+ --- a/src/radius/radius_das.c
+ +++ b/src/radius/radius_das.c
+ @@ -12,13 +12,26 @@
+@@ -45,7 +45,7 @@ Use the NAS identifier to find the right receiver context on incoming messages
+  	size_t shared_secret_len;
+  	struct hostapd_ip_addr client_addr;
+  	unsigned int time_window;
+-@@ -378,56 +391,17 @@ fail:
++@@ -388,56 +401,17 @@ fail:
+  }
+  
+  
+@@ -108,7 +108,7 @@ Use the NAS identifier to find the right receiver context on incoming messages
+  
+  	if (radius_msg_verify_das_req(msg, das->shared_secret,
+  				       das->shared_secret_len,
+-@@ -494,9 +468,8 @@ static void radius_das_receive(int sock,
++@@ -504,9 +478,8 @@ static void radius_das_receive(int sock,
+  			radius_msg_dump(reply);
+  
+  		rbuf = radius_msg_get_buf(reply);
+@@ -120,7 +120,7 @@ Use the NAS identifier to find the right receiver context on incoming messages
+  		if (res < 0) {
+  			wpa_printf(MSG_ERROR, "DAS: sendto(to %s:%d): %s",
+  				   abuf, from_port, strerror(errno));
+-@@ -508,6 +481,72 @@ fail:
++@@ -518,6 +491,72 @@ fail:
+  	radius_msg_free(reply);
+  }
+  
+@@ -193,7 +193,7 @@ Use the NAS identifier to find the right receiver context on incoming messages
+  
+  static int radius_das_open_socket(int port)
+  {
+-@@ -533,6 +572,49 @@ static int radius_das_open_socket(int po
++@@ -543,6 +582,49 @@ static int radius_das_open_socket(int po
+  }
+  
+  
+@@ -243,7 +243,7 @@ Use the NAS identifier to find the right receiver context on incoming messages
+  struct radius_das_data *
+  radius_das_init(struct radius_das_conf *conf)
+  {
+-@@ -553,6 +635,8 @@ radius_das_init(struct radius_das_conf *
++@@ -563,6 +645,8 @@ radius_das_init(struct radius_das_conf *
+  	das->ctx = conf->ctx;
+  	das->disconnect = conf->disconnect;
+  	das->coa = conf->coa;
+@@ -252,7 +252,7 @@ Use the NAS identifier to find the right receiver context on incoming messages
+  
+  	os_memcpy(&das->client_addr, conf->client_addr,
+  		  sizeof(das->client_addr));
+-@@ -565,19 +649,15 @@ radius_das_init(struct radius_das_conf *
++@@ -575,19 +659,15 @@ radius_das_init(struct radius_das_conf *
+  	}
+  	das->shared_secret_len = conf->shared_secret_len;
+  
+@@ -275,7 +275,7 @@ Use the NAS identifier to find the right receiver context on incoming messages
+  
+  	return das;
+  }
+-@@ -588,11 +668,14 @@ void radius_das_deinit(struct radius_das
++@@ -598,11 +678,14 @@ void radius_das_deinit(struct radius_das
+  	if (das == NULL)
+  		return;
+  
+-- 
+2.34.1
+
