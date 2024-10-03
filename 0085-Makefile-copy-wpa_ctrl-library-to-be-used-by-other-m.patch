@@ -1,0 +1,53 @@
+From 7cb768c94a974d79ba71646a59af374e0c070e18 Mon Sep 17 00:00:00 2001
+From: Aloka Dixit <quic_alokad@quicinc.com>
+Date: Thu, 26 Sep 2024 12:59:18 -0700
+Subject: [PATCH] Makefile: copy wpa_ctrl library to be used by other modules
+
+Copy necessary header files and create a static library for
+wpa_ctrl to be used outside of hostapd project.
+
+Add -fPIC to TARGET_CFLAGS to be able to export WPA ctrl
+library to different modules.
+
+Change-Id: Ie9079ebb517df2457ad2e663f6ac7ec1e9bf5fb4
+Signed-off-by: Aloka Dixit <quic_alokad@quicinc.com>
+---
+ package/network/services/hostapd/Makefile | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index a3faed8d45ad..d4849c75e282 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -598,8 +598,20 @@ endef
+ 
+ define Build/InstallDev
+ 	$(INSTALL_DIR) $(1)/usr/include
++	$(INSTALL_DIR) $(1)/usr/lib/
+ 	$(CP) $(PKG_BUILD_DIR)/src/common/qca-vendor.h $(1)/usr/include
+ 	$(CP) $(PKG_BUILD_DIR)/src/drivers/nl80211_copy.h $(1)/usr/include/
++	$(CP) $(PKG_BUILD_DIR)/src/common/wpa_ctrl.h $(1)/usr/include
++	$(CP) $(PKG_BUILD_DIR)/src/utils/os.h $(1)/usr/include
++	$(CP) $(PKG_BUILD_DIR)/src/utils/common.h $(1)/usr/include
++	$(CP) $(PKG_BUILD_DIR)/src/utils/wpa_debug.h $(1)/usr/include
++ifneq ($(LOCAL_VARIANT),macsec)
++	ar rcs $(1)/usr/lib/libwpa_ctrl.a \
++		$(PKG_BUILD_DIR)/build/hostapd/src/common/wpa_ctrl.o \
++		$(PKG_BUILD_DIR)/build/hostapd/src/utils/os_unix.o \
++		$(PKG_BUILD_DIR)/build/hostapd/src/utils/wpa_debug.o \
++		$(PKG_BUILD_DIR)/build/hostapd/src/utils/common.o
++endif
+ endef
+ 
+ TARGET_CPPFLAGS := \
+@@ -611,6 +623,7 @@ TARGET_CPPFLAGS := \
+ 	$(if $(CONFIG_WPA_MSG_MIN_PRIORITY),-DCONFIG_MSG_MIN_PRIORITY=$(CONFIG_WPA_MSG_MIN_PRIORITY))
+ 
+ TARGET_LDFLAGS += -lubox -lubus -lblobmsg_json -lucode -lm -lnl-tiny -ludebug
++TARGET_CFLAGS += -fPIC
+ 
+ ifdef CONFIG_DEBUG
+ 	TARGET_CFLAGS += -g3
+-- 
+2.34.1
+
