@@ -1,0 +1,25 @@
+From e2d7aa5c3203e0ed5065b7a2d38a046e5edd476e Mon Sep 17 00:00:00 2001
+From: Gaurao Chaudhari <quic_gaurchau@quicinc.com>
+Date: Fri, 30 Aug 2024 17:35:13 +0530
+Subject: [PATCH] [win-ai]: add winai link in feeds
+
+Change-Id: If30f6be49ff617a304102fb1b83ff29621937acb
+Signed-off-by: Amit Pandit <quicinc_pamit@quicinc.com>
+Signed-off-by: Gaurao Chaudhari <quic_gaurchau@quicinc.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 372e106765ad..bcac3899b108 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -60,4 +60,5 @@ src-link lte_data_prop ../qca/feeds/lte-data-prop
+ src-link data_modem_monitor ../qca/feeds/data-modem-monitor
+ src-link kickstart ../qca/feeds/kickstart
+ src-link qwes_tools ../qca/feeds/qwes_tools
++src-link winai ../qca/feeds/win-ai
+ src-link opensync ../qca/feeds/opensync
+-- 
+2.34.1
+
