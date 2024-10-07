@@ -1,16 +1,13 @@
-From dd94a65adbd79aba6c71a30c344e86662ced5352 Mon Sep 17 00:00:00 2001
+From e8ba9519d47d676eb3e0c500aa8863a96fbd9abb Mon Sep 17 00:00:00 2001
 From: Aravind Mosam <amosam@qti.qualcomm.com>
-Date: Sun, 22 Sep 2024 23:16:59 +0530
-Subject: [PATCH] openwrt: Patch changes missed in FFWD
+Date: Mon, 7 Oct 2024 02:47:18 +0530
+Subject: [PATCH] openwrt: Add openwrt changes missied with FFWD
 
 Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
 ---
- package/kernel/mac80211/Makefile          |   7 +-
- package/kernel/mac80211/ath.mk            |   2 +-
- package/kernel/mac80211/intel.mk          |   2 +-
- package/kernel/mac80211/realtek.mk        | 127 +---------------------
- package/network/services/hostapd/Makefile |   4 +-
- 5 files changed, 12 insertions(+), 130 deletions(-)
+ package/kernel/mac80211/Makefile   |   7 +-
+ package/kernel/mac80211/realtek.mk | 127 +----------------------------
+ 2 files changed, 8 insertions(+), 126 deletions(-)
 
 diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
 index 27e5a9d330e9..04bb29b46db0 100644
@@ -41,32 +38,6 @@ index 27e5a9d330e9..04bb29b46db0 100644
  	  cmp $(PKG_BUILD_DIR)/include/linux/ath5k_platform.h $(LINUX_DIR)/include/linux/ath5k_platform.h
  	  cmp $(PKG_BUILD_DIR)/include/linux/rt2x00_platform.h $(LINUX_DIR)/include/linux/rt2x00_platform.h
      endef
-diff --git a/package/kernel/mac80211/ath.mk b/package/kernel/mac80211/ath.mk
-index e8e3b02d81a5..c2f3a9881439 100644
---- a/package/kernel/mac80211/ath.mk
-+++ b/package/kernel/mac80211/ath.mk
-@@ -312,7 +312,7 @@ define KernelPackage/ath11k
-   $(call KernelPackage/mac80211/Default)
-   TITLE:=Qualcomm 802.11ax wireless chipset support (common code)
-   URL:=https://wireless.wiki.kernel.org/en/users/drivers/ath11k
--  DEPENDS+= +kmod-ath +@DRIVER_11AC_SUPPORT +@DRIVER_11AX_SUPPORT @!LINUX_5_15 \
-+  DEPENDS+= +kmod-ath +@DRIVER_11AC_SUPPORT +@DRIVER_11AX_SUPPORT \
-   +kmod-crypto-michael-mic +ATH11K_THERMAL:kmod-hwmon-core +ATH11K_THERMAL:kmod-thermal
-   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/ath/ath11k/ath11k.ko \
-         $(PKG_BUILD_DIR)/drivers/net/wireless/ath/ath11k/ath11k_ahb.ko \
-diff --git a/package/kernel/mac80211/intel.mk b/package/kernel/mac80211/intel.mk
-index 63b19a55c1c6..f2aceb96cd5a 100644
---- a/package/kernel/mac80211/intel.mk
-+++ b/package/kernel/mac80211/intel.mk
-@@ -6,7 +6,7 @@ config-$(CONFIG_PACKAGE_IWLWIFI_DEBUGFS)+= IWLWIFI_DEBUGFS
- 
- define KernelPackage/iwlwifi
-   $(call KernelPackage/mac80211/Default)
--  DEPENDS:= +kmod-mac80211 +kmod-ptp @PCI_SUPPORT +@DRIVER_11AC_SUPPORT +@DRIVER_11AX_SUPPORT @!LINUX_5_15
-+  DEPENDS:= +kmod-mac80211 +kmod-ptp @PCI_SUPPORT +@DRIVER_11AC_SUPPORT +@DRIVER_11AX_SUPPORT
-   TITLE:=Intel AGN Wireless support
-   FILES:= \
- 	$(PKG_BUILD_DIR)/drivers/net/wireless/intel/iwlwifi/iwlwifi.ko \
 diff --git a/package/kernel/mac80211/realtek.mk b/package/kernel/mac80211/realtek.mk
 index 221158bee613..28ea6a65718b 100644
 --- a/package/kernel/mac80211/realtek.mk
@@ -248,28 +219,6 @@ index 221158bee613..28ea6a65718b 100644
 -	$(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw89/rtw89_8852ce.ko
 -  AUTOLOAD:=$(call AutoProbe,rtw89_8852ce)
 -endef
-diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
-index 37449a8a1e71..a3faed8d45ad 100644
---- a/package/network/services/hostapd/Makefile
-+++ b/package/network/services/hostapd/Makefile
-@@ -5,7 +5,7 @@
- include $(TOPDIR)/rules.mk
- 
- PKG_NAME:=hostapd
--PKG_RELEASE:=3
-+PKG_RELEASE:=2
- 
- PKG_SOURCE_URL:=https://w1.fi/hostap.git
- PKG_SOURCE_PROTO:=git
-@@ -87,7 +87,7 @@ DRIVER_MAKEOPTS= \
- 	CONFIG_IEEE80211AC=$(HOSTAPD_IEEE80211AC) \
- 	CONFIG_IEEE80211AX=$(HOSTAPD_IEEE80211AX) \
- 	CONFIG_MBO=$(CONFIG_WPA_MBO_SUPPORT) \
--	CONFIG_UCODE=y CONFIG_APUP=y
-+	CONFIG_UCODE=y
- 
- ifeq ($(SSL_VARIANT),openssl)
-   DRIVER_MAKEOPTS += CONFIG_TLS=openssl CONFIG_SAE=y
 -- 
 2.34.1
 

@@ -1,15 +1,16 @@
-From cbf75d5d835c8dd16441a7890aef39b44ac324fa Mon Sep 17 00:00:00 2001
-From: Aravind Mosam <quic_amosam@quicinc.com>
-Date: Tue, 24 Sep 2024 15:06:13 +0530
+From e66a87bfc53a349d2435345afae70ec53eecc24d Mon Sep 17 00:00:00 2001
+From: Aravind Mosam <amosam@qti.qualcomm.com>
+Date: Mon, 7 Oct 2024 23:43:29 +0530
 Subject: [PATCH] patches: remove unused FFWD mac80211 & hostapd patches
 
-Change-Id: I6803b3536abcd78099bdc833a20b8224c7256383
-Signed-off-by: Aravind Mosam <quic_amosam@quicinc.com>
+Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
 ---
+ ...0-ath12k-prevent-ltssm-startup-crash.patch |  17 -
  .../build/005-fix-kconf-warnings.patch        |  76 ---
  .../build/200-iwlwifi_thermal_backport.patch  |  26 -
  .../build/210-backport_genl_split_ops.patch   |  32 --
  .../230-brcmfmac_usb_driver_backport.patch    |  14 -
+ ...chedule-rx-work-after-everything-is-.patch |  98 ----
  ...ear-vif-drv_priv-after-calling-remov.patch |  29 --
  ...tend-IEEE80211_KEY_FLAG_GENERATE_MMI.patch |  70 ---
  ...it-helper-function-from-nl80211_put_.patch | 145 ------
@@ -22,17 +23,15 @@ Signed-off-by: Aravind Mosam <quic_amosam@quicinc.com>
  ...ve-code-in-ieee80211_link_reserve_ch.patch | 175 -------
  ...d-wiphy-radio-assignment-and-validat.patch | 132 -----
  ...sim-add-support-for-multi-radio-wiph.patch | 199 --------
- ...ment-APuP-Access-Point-Micro-Peering.patch | 460 ------------------
- ...us-notification-when-a-peer-comes-up.patch |  81 ---
- ...-ucode-hook-for-when-a-peer-comes-up.patch |  79 ---
- ...valid-Rejected-Groups-element-length.patch |  43 --
- ...valid-Rejected-Groups-element-length.patch |  42 --
- ...id-Rejected-Groups-element-in-the-pa.patch |  30 --
- 22 files changed, 2698 deletions(-)
+ .../patches/180-fix_owe_ssid_update.patch     |  26 -
+ ...ment-APuP-Access-Point-Micro-Peering.patch | 458 ------------------
+ 20 files changed, 2562 deletions(-)
+ delete mode 100644 package/kernel/mac80211/patches/ath12k/100-ath12k-prevent-ltssm-startup-crash.patch
  delete mode 100644 package/kernel/mac80211/patches/build/005-fix-kconf-warnings.patch
  delete mode 100644 package/kernel/mac80211/patches/build/200-iwlwifi_thermal_backport.patch
  delete mode 100644 package/kernel/mac80211/patches/build/210-backport_genl_split_ops.patch
  delete mode 100644 package/kernel/mac80211/patches/build/230-brcmfmac_usb_driver_backport.patch
+ delete mode 100644 package/kernel/mac80211/patches/rtl/001-v6.10-wifi-rtw88-usb-schedule-rx-work-after-everything-is-.patch
  delete mode 100644 package/kernel/mac80211/patches/subsys/306-wifi-mac80211-clear-vif-drv_priv-after-calling-remov.patch
  delete mode 100644 package/kernel/mac80211/patches/subsys/331-wifi-mac80211-extend-IEEE80211_KEY_FLAG_GENERATE_MMI.patch
  delete mode 100644 package/kernel/mac80211/patches/subsys/340-wifi-nl80211-split-helper-function-from-nl80211_put_.patch
@@ -45,13 +44,32 @@ Signed-off-by: Aravind Mosam <quic_amosam@quicinc.com>
  delete mode 100644 package/kernel/mac80211/patches/subsys/347-wifi-mac80211-move-code-in-ieee80211_link_reserve_ch.patch
  delete mode 100644 package/kernel/mac80211/patches/subsys/348-wifi-mac80211-add-wiphy-radio-assignment-and-validat.patch
  delete mode 100644 package/kernel/mac80211/patches/subsys/349-wifi-mac80211_hwsim-add-support-for-multi-radio-wiph.patch
+ delete mode 100644 package/network/services/hostapd/patches/180-fix_owe_ssid_update.patch
  delete mode 100644 package/network/services/hostapd/patches/780-Implement-APuP-Access-Point-Micro-Peering.patch
- delete mode 100644 package/network/services/hostapd/patches/790-APuP-add-ubus-notification-when-a-peer-comes-up.patch
- delete mode 100644 package/network/services/hostapd/patches/800-APuP-add-ucode-hook-for-when-a-peer-comes-up.patch
- delete mode 100644 package/network/services/hostapd/patches/800-SAE-Check-for-invalid-Rejected-Groups-element-length.patch
- delete mode 100644 package/network/services/hostapd/patches/801-SAE-Check-for-invalid-Rejected-Groups-element-length.patch
- delete mode 100644 package/network/services/hostapd/patches/802-SAE-Reject-invalid-Rejected-Groups-element-in-the-pa.patch
 
+diff --git a/package/kernel/mac80211/patches/ath12k/100-ath12k-prevent-ltssm-startup-crash.patch b/package/kernel/mac80211/patches/ath12k/100-ath12k-prevent-ltssm-startup-crash.patch
+deleted file mode 100644
+index cd85a0f6aa26..000000000000
+--- a/package/kernel/mac80211/patches/ath12k/100-ath12k-prevent-ltssm-startup-crash.patch
++++ /dev/null
+@@ -1,17 +0,0 @@
+-Fix ltssm crashes on BPI-Rx boards.
+-Seems read32/write32 using wrong address which
+-is not a problem on x86/64 PCI controllers.
+-But have issues on BPI-Rx boards.
+-
+---- a/drivers/net/wireless/ath/ath12k/pci.c
+-+++ b/drivers/net/wireless/ath/ath12k/pci.c
+-@@ -277,6 +277,9 @@ static void ath12k_pci_enable_ltssm(stru
+- 	u32 val;
+- 	int i;
+- 
+-+	/* Prevent startup crash on BPI-Rx */
+-+	return;
+-+
+- 	val = ath12k_pci_read32(ab, PCIE_PCIE_PARF_LTSSM);
+- 
+- 	/* PCIE link seems very unstable after the Hot Reset*/
 diff --git a/package/kernel/mac80211/patches/build/005-fix-kconf-warnings.patch b/package/kernel/mac80211/patches/build/005-fix-kconf-warnings.patch
 deleted file mode 100644
 index 00e94003f27c..000000000000
@@ -224,6 +242,110 @@ index daeea38372f3..000000000000
 - 	int ret;
 - 
 - 	brcmf_dbg(USB, "Enter\n");
+diff --git a/package/kernel/mac80211/patches/rtl/001-v6.10-wifi-rtw88-usb-schedule-rx-work-after-everything-is-.patch b/package/kernel/mac80211/patches/rtl/001-v6.10-wifi-rtw88-usb-schedule-rx-work-after-everything-is-.patch
+deleted file mode 100644
+index 2fa581f28885..000000000000
+--- a/package/kernel/mac80211/patches/rtl/001-v6.10-wifi-rtw88-usb-schedule-rx-work-after-everything-is-.patch
++++ /dev/null
+@@ -1,98 +0,0 @@
+-From 25eaef533bf3ccc6fee5067aac16f41f280e343e Mon Sep 17 00:00:00 2001
+-From: =?UTF-8?q?Marcin=20=C5=9Alusarz?= <mslusarz@renau.com>
+-Date: Tue, 28 May 2024 13:02:46 +0200
+-Subject: [PATCH] wifi: rtw88: usb: schedule rx work after everything is set up
+-MIME-Version: 1.0
+-Content-Type: text/plain; charset=UTF-8
+-Content-Transfer-Encoding: 8bit
+-
+-[ Upstream commit adc539784c98a7cc602cbf557debfc2e7b9be8b3 ]
+-
+-Right now it's possible to hit NULL pointer dereference in
+-rtw_rx_fill_rx_status on hw object and/or its fields because
+-initialization routine can start getting USB replies before
+-rtw_dev is fully setup.
+-
+-The stack trace looks like this:
+-
+-rtw_rx_fill_rx_status
+-rtw8821c_query_rx_desc
+-rtw_usb_rx_handler
+-...
+-queue_work
+-rtw_usb_read_port_complete
+-...
+-usb_submit_urb
+-rtw_usb_rx_resubmit
+-rtw_usb_init_rx
+-rtw_usb_probe
+-
+-So while we do the async stuff rtw_usb_probe continues and calls
+-rtw_register_hw, which does all kinds of initialization (e.g.
+-via ieee80211_register_hw) that rtw_rx_fill_rx_status relies on.
+-
+-Fix this by moving the first usb_submit_urb after everything
+-is set up.
+-
+-For me, this bug manifested as:
+-[    8.893177] rtw_8821cu 1-1:1.2: band wrong, packet dropped
+-[    8.910904] rtw_8821cu 1-1:1.2: hw->conf.chandef.chan NULL in rtw_rx_fill_rx_status
+-because I'm using Larry's backport of rtw88 driver with the NULL
+-checks in rtw_rx_fill_rx_status.
+-
+-Link: https://lore.kernel.org/linux-wireless/CA+shoWQ7P49jhQasofDcTdQhiuarPTjYEDa--NiVVx494WcuQw@mail.gmail.com/
+-Signed-off-by: Marcin Ślusarz <mslusarz@renau.com>
+-Cc: Tim K <tpkuester@gmail.com>
+-Cc: Ping-Ke Shih <pkshih@realtek.com>
+-Cc: Larry Finger <Larry.Finger@lwfinger.net>
+-Cc: Kalle Valo <kvalo@kernel.org>
+-Cc: linux-wireless@vger.kernel.org
+-Cc: linux-kernel@vger.kernel.org
+-Signed-off-by: Ping-Ke Shih <pkshih@realtek.com>
+-Link: https://patch.msgid.link/20240528110246.477321-1-marcin.slusarz@gmail.com
+-Signed-off-by: Sasha Levin <sashal@kernel.org>
+----
+- drivers/net/wireless/realtek/rtw88/usb.c | 13 ++++++++++---
+- 1 file changed, 10 insertions(+), 3 deletions(-)
+-
+---- a/drivers/net/wireless/realtek/rtw88/usb.c
+-+++ b/drivers/net/wireless/realtek/rtw88/usb.c
+-@@ -740,7 +740,6 @@ static struct rtw_hci_ops rtw_usb_ops =
+- static int rtw_usb_init_rx(struct rtw_dev *rtwdev)
+- {
+- 	struct rtw_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+--	int i;
+- 
+- 	rtwusb->rxwq = create_singlethread_workqueue("rtw88_usb: rx wq");
+- 	if (!rtwusb->rxwq) {
+-@@ -752,13 +751,19 @@ static int rtw_usb_init_rx(struct rtw_de
+- 
+- 	INIT_WORK(&rtwusb->rx_work, rtw_usb_rx_handler);
+- 
+-+	return 0;
+-+}
+-+
+-+static void rtw_usb_setup_rx(struct rtw_dev *rtwdev)
+-+{
+-+	struct rtw_usb *rtwusb = rtw_get_usb_priv(rtwdev);
+-+	int i;
+-+
+- 	for (i = 0; i < RTW_USB_RXCB_NUM; i++) {
+- 		struct rx_usb_ctrl_block *rxcb = &rtwusb->rx_cb[i];
+- 
+- 		rtw_usb_rx_resubmit(rtwusb, rxcb);
+- 	}
+--
+--	return 0;
+- }
+- 
+- static void rtw_usb_deinit_rx(struct rtw_dev *rtwdev)
+-@@ -895,6 +900,8 @@ int rtw_usb_probe(struct usb_interface *
+- 		goto err_destroy_rxwq;
+- 	}
+- 
+-+	rtw_usb_setup_rx(rtwdev);
+-+
+- 	return 0;
+- 
+- err_destroy_rxwq:
 diff --git a/package/kernel/mac80211/patches/subsys/306-wifi-mac80211-clear-vif-drv_priv-after-calling-remov.patch b/package/kernel/mac80211/patches/subsys/306-wifi-mac80211-clear-vif-drv_priv-after-calling-remov.patch
 deleted file mode 100644
 index b0119988d3d3..000000000000
@@ -2111,13 +2233,45 @@ index 91fe6d83d9f9..000000000000
 - 	__HWSIM_ATTR_MAX,
 - };
 - #define HWSIM_ATTR_MAX (__HWSIM_ATTR_MAX - 1)
+diff --git a/package/network/services/hostapd/patches/180-fix_owe_ssid_update.patch b/package/network/services/hostapd/patches/180-fix_owe_ssid_update.patch
+deleted file mode 100644
+index 5581922b2778..000000000000
+--- a/package/network/services/hostapd/patches/180-fix_owe_ssid_update.patch
++++ /dev/null
+@@ -1,26 +0,0 @@
+---- a/src/ap/hostapd.c
+-+++ b/src/ap/hostapd.c
+-@@ -2420,7 +2420,11 @@ static int hostapd_owe_iface_iter(struct
+- 		if (!bss->conf->ssid.ssid_set || !bss->conf->ssid.ssid_len ||
+- 		    is_zero_ether_addr(bss->own_addr))
+- 			continue;
+--
+-+		if (!os_memcmp(hapd->conf->owe_transition_bssid, bss->own_addr, ETH_ALEN) &&
+-+		    hapd->conf->owe_transition_ssid_len == bss->conf->ssid.ssid_len &&
+-+		    !os_memcmp(hapd->conf->owe_transition_ssid, bss->conf->ssid.ssid,
+-+			       bss->conf->ssid.ssid_len))
+-+			return 0;
+- 		os_memcpy(hapd->conf->owe_transition_bssid, bss->own_addr,
+- 			  ETH_ALEN);
+- 		os_memcpy(hapd->conf->owe_transition_ssid,
+-@@ -2437,10 +2441,6 @@ static int hostapd_owe_iface_iter(struct
+- 
+- int hostapd_owe_trans_get_info(struct hostapd_data *hapd)
+- {
+--	if (hapd->conf->owe_transition_ssid_len > 0 &&
+--	    !is_zero_ether_addr(hapd->conf->owe_transition_bssid))
+--		return 0;
+--
+- 	/* Find transition mode SSID/BSSID information from a BSS operated by
+- 	 * this hostapd instance. */
+- 	if (!hapd->iface->interfaces ||
 diff --git a/package/network/services/hostapd/patches/780-Implement-APuP-Access-Point-Micro-Peering.patch b/package/network/services/hostapd/patches/780-Implement-APuP-Access-Point-Micro-Peering.patch
 deleted file mode 100644
-index b6e4ef9571a1..000000000000
+index 157b7dbb8230..000000000000
 --- a/package/network/services/hostapd/patches/780-Implement-APuP-Access-Point-Micro-Peering.patch
 +++ /dev/null
-@@ -1,460 +0,0 @@
--From 40041ecea334c0106c0e840a32aef92b0cbb004b Mon Sep 17 00:00:00 2001
+@@ -1,458 +0,0 @@
+-From 806c84ac8e8f60eaec22772b627f85eb5ac13544 Mon Sep 17 00:00:00 2001
 -From: Gioacchino Mazzurco <gio@polymathes.cc>
 -Date: Mon, 6 May 2024 13:53:48 +0200
 -Subject: [PATCH 1/3] Implement APuP Access Point Micro Peering
@@ -2137,11 +2291,14 @@ index b6e4ef9571a1..000000000000
 -routing daemon.
 -
 -Signed-off-by: Gioacchino Mazzurco <gio@polymathes.cc>
+-Reviewed-by: Hauke Mehrtens <hauke@hauke-m.de>
+-Reviewed-by: Moritz Warning <moritzwarning@web.de>
+-Hotfix-by: Sebastian Gottschall https://github.com/mirror/dd-wrt/commit/0c3001a69e8d8300569e416de856c96e903ad130
 ----
 - hostapd/Makefile             |   5 ++
 - hostapd/config_file.c        |   9 +++
 - src/ap/ap_config.h           |  29 +++++++
-- src/ap/ap_drv_ops.c          |  26 ++++++
+- src/ap/ap_drv_ops.c          |  28 ++++++-
 - src/ap/ap_drv_ops.h          |   3 +
 - src/ap/apup.c                | 152 +++++++++++++++++++++++++++++++++++
 - src/ap/apup.h                |  24 ++++++
@@ -2149,15 +2306,13 @@ index b6e4ef9571a1..000000000000
 - src/ap/ieee802_11.h          |   2 +
 - src/drivers/driver.h         |   2 +-
 - src/drivers/driver_nl80211.c |  14 +---
-- 11 files changed, 264 insertions(+), 16 deletions(-)
+- 11 files changed, 265 insertions(+), 17 deletions(-)
 - create mode 100644 src/ap/apup.c
 - create mode 100644 src/ap/apup.h
 -
--diff --git a/hostapd/Makefile b/hostapd/Makefile
--index 73048c1297..c890a7f29c 100644
 ---- a/hostapd/Makefile
 -+++ b/hostapd/Makefile
--@@ -1415,6 +1415,11 @@ ifdef CONFIG_NO_TKIP
+-@@ -1416,6 +1416,11 @@ ifdef CONFIG_NO_TKIP
 - CFLAGS += -DCONFIG_NO_TKIP
 - endif
 - 
@@ -2169,11 +2324,9 @@ index b6e4ef9571a1..000000000000
 - $(DESTDIR)$(BINDIR)/%: %
 - 	install -D $(<) $(@)
 - 
--diff --git a/hostapd/config_file.c b/hostapd/config_file.c
--index bba5b19164..ef906199ec 100644
 ---- a/hostapd/config_file.c
 -+++ b/hostapd/config_file.c
--@@ -5058,6 +5058,15 @@ static int hostapd_config_fill(struct hostapd_config *conf,
+-@@ -5200,6 +5200,15 @@ static int hostapd_config_fill(struct ho
 - 		bss->mld_indicate_disabled = atoi(pos);
 - #endif /* CONFIG_TESTING_OPTIONS */
 - #endif /* CONFIG_IEEE80211BE */
@@ -2189,11 +2342,9 @@ index b6e4ef9571a1..000000000000
 - 	} else {
 - 		wpa_printf(MSG_ERROR,
 - 			   "Line %d: unknown configuration item '%s'",
--diff --git a/src/ap/ap_config.h b/src/ap/ap_config.h
--index 0e52a9990d..9102db5ed0 100644
 ---- a/src/ap/ap_config.h
 -+++ b/src/ap/ap_config.h
--@@ -970,6 +970,35 @@ struct hostapd_bss_config {
+-@@ -999,6 +999,35 @@ struct hostapd_bss_config {
 - 	bool mld_indicate_disabled;
 - #endif /* CONFIG_TESTING_OPTIONS */
 - #endif /* CONFIG_IEEE80211BE */
@@ -2229,11 +2380,9 @@ index b6e4ef9571a1..000000000000
 - };
 - 
 - /**
--diff --git a/src/ap/ap_drv_ops.c b/src/ap/ap_drv_ops.c
--index e7396d9aea..05460e3d73 100644
 ---- a/src/ap/ap_drv_ops.c
 -+++ b/src/ap/ap_drv_ops.c
--@@ -382,9 +382,35 @@ int hostapd_set_wds_sta(struct hostapd_data *hapd, char *ifname_wds,
+-@@ -385,13 +385,39 @@ int hostapd_set_wds_sta(struct hostapd_d
 - 			const u8 *addr, int aid, int val)
 - {
 - 	const char *bridge = NULL;
@@ -2269,11 +2418,14 @@ index b6e4ef9571a1..000000000000
 - 	if (hapd->conf->wds_bridge[0])
 - 		bridge = hapd->conf->wds_bridge;
 - 	return hapd->driver->set_wds_sta(hapd->drv_priv, addr, aid, val,
--diff --git a/src/ap/ap_drv_ops.h b/src/ap/ap_drv_ops.h
--index fa89d2398e..ab4dc8eb16 100644
+--					 bridge, ifname_wds);
+-+					 bridge, ifName);
+- }
+- 
+- 
 ---- a/src/ap/ap_drv_ops.h
 -+++ b/src/ap/ap_drv_ops.h
--@@ -33,6 +33,9 @@ int hostapd_set_drv_ieee8021x(struct hostapd_data *hapd, const char *ifname,
+-@@ -35,6 +35,9 @@ int hostapd_set_drv_ieee8021x(struct hos
 - 			      int enabled);
 - int hostapd_vlan_if_add(struct hostapd_data *hapd, const char *ifname);
 - int hostapd_vlan_if_remove(struct hostapd_data *hapd, const char *ifname);
@@ -2282,13 +2434,10 @@ index b6e4ef9571a1..000000000000
 -+ */
 - int hostapd_set_wds_sta(struct hostapd_data *hapd, char *ifname_wds,
 - 			const u8 *addr, int aid, int val);
-- 
--diff --git a/src/ap/apup.c b/src/ap/apup.c
--new file mode 100644
--index 0000000000..3575f1b6c6
+- int hostapd_sta_add(struct hostapd_data *hapd,
 ---- /dev/null
 -+++ b/src/ap/apup.c
--@@ -0,0 +1,152 @@
+-@@ -0,0 +1,168 @@
 -+/*
 -+ * hostapd / APuP Access Point Micro Peering
 -+ *
@@ -2313,6 +2462,14 @@ index b6e4ef9571a1..000000000000
 -+#include "ieee802_11.h"
 -+#include "ap_drv_ops.h"
 -+#include "sta_info.h"
+-+
+-+#ifdef UBUS_SUPPORT
+-+#	include "ubus.h"
+-+#endif
+-+
+-+#ifdef UCODE_SUPPORT
+-+#	include "ucode.h"
+-+#endif
 -+
 -+void apup_process_beacon(struct hostapd_data *hapd,
 -+              const struct ieee80211_mgmt *mgmt, size_t len,
@@ -2440,10 +2597,15 @@ index b6e4ef9571a1..000000000000
 -+	           "apup_process_beacon(...) Added APuP peer at %s with flags: %d,"
 -+	           " capabilities %d",
 -+	           mIfname, sta_ret->flags, sta_ret->capability);
+-+
+-+#ifdef UBUS_SUPPORT
+-+	hostapd_ubus_notify_apup_newpeer(hapd, mgmt->bssid, mIfname);
+-+#endif
+-+
+-+#ifdef UCODE_SUPPORT
+-+	hostapd_ucode_apup_newpeer(hapd, mIfname);
+-+#endif
 -+}
--diff --git a/src/ap/apup.h b/src/ap/apup.h
--new file mode 100644
--index 0000000000..a14a283bb4
 ---- /dev/null
 -+++ b/src/ap/apup.h
 -@@ -0,0 +1,24 @@
@@ -2471,11 +2633,9 @@ index b6e4ef9571a1..000000000000
 -+void apup_process_beacon(struct hostapd_data *hapd,
 -+              const struct ieee80211_mgmt *mgmt, size_t len,
 -+              const struct ieee802_11_elems *elems );
--diff --git a/src/ap/ieee802_11.c b/src/ap/ieee802_11.c
--index 1c4dd22da1..09254f18f2 100644
 ---- a/src/ap/ieee802_11.c
 -+++ b/src/ap/ieee802_11.c
--@@ -59,6 +59,9 @@
+-@@ -60,6 +60,9 @@
 - #include "nan_usd_ap.h"
 - #include "pasn/pasn_common.h"
 - 
@@ -2485,7 +2645,7 @@ index b6e4ef9571a1..000000000000
 - 
 - #ifdef CONFIG_FILS
 - static struct wpabuf *
--@@ -3469,8 +3472,8 @@ static u16 check_multi_ap(struct hostapd_data *hapd, struct sta_info *sta,
+-@@ -3615,8 +3618,8 @@ static u16 check_multi_ap(struct hostapd
 - }
 - 
 - 
@@ -2496,7 +2656,7 @@ index b6e4ef9571a1..000000000000
 - {
 - 	/* Supported rates not used in IEEE 802.11ad/DMG */
 - 	if (hapd->iface->current_mode &&
--@@ -3855,7 +3858,7 @@ static int __check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
+-@@ -4003,7 +4006,7 @@ static int __check_assoc_ies(struct host
 - 			       elems->ext_capab_len);
 - 	if (resp != WLAN_STATUS_SUCCESS)
 - 		return resp;
@@ -2505,7 +2665,7 @@ index b6e4ef9571a1..000000000000
 - 	if (resp != WLAN_STATUS_SUCCESS)
 - 		return resp;
 - 
--@@ -5927,6 +5930,11 @@ static void handle_beacon(struct hostapd_data *hapd,
+-@@ -6058,6 +6061,11 @@ static void handle_beacon(struct hostapd
 - 				      0);
 - 
 - 	ap_list_process_beacon(hapd->iface, mgmt, &elems, fi);
@@ -2517,11 +2677,9 @@ index b6e4ef9571a1..000000000000
 - }
 - 
 - 
--diff --git a/src/ap/ieee802_11.h b/src/ap/ieee802_11.h
--index a35486d464..0861bef82e 100644
 ---- a/src/ap/ieee802_11.h
 -+++ b/src/ap/ieee802_11.h
--@@ -108,6 +108,8 @@ int hostapd_process_ml_assoc_req_addr(struct hostapd_data *hapd,
+-@@ -108,6 +108,8 @@ int hostapd_process_ml_assoc_req_addr(st
 - 				      const u8 *basic_mle, size_t basic_mle_len,
 - 				      u8 *mld_addr);
 - int hostapd_get_aid(struct hostapd_data *hapd, struct sta_info *sta);
@@ -2530,11 +2688,9 @@ index b6e4ef9571a1..000000000000
 - u16 copy_sta_ht_capab(struct hostapd_data *hapd, struct sta_info *sta,
 - 		      const u8 *ht_capab);
 - u16 copy_sta_vendor_vht(struct hostapd_data *hapd, struct sta_info *sta,
--diff --git a/src/drivers/driver.h b/src/drivers/driver.h
--index 1bbb9672cd..8d26561e97 100644
 ---- a/src/drivers/driver.h
 -+++ b/src/drivers/driver.h
--@@ -3976,7 +3976,7 @@ struct wpa_driver_ops {
+-@@ -4048,7 +4048,7 @@ struct wpa_driver_ops {
 - 	 * Returns: 0 on success, -1 on failure
 - 	 */
 - 	int (*set_wds_sta)(void *priv, const u8 *addr, int aid, int val,
@@ -2543,11 +2699,9 @@ index b6e4ef9571a1..000000000000
 - 
 - 	/**
 - 	 * send_action - Transmit an Action frame
--diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
--index aeb1e6beef..b6e4ddd86d 100644
 ---- a/src/drivers/driver_nl80211.c
 -+++ b/src/drivers/driver_nl80211.c
--@@ -8415,24 +8415,14 @@ static int have_ifidx(struct wpa_driver_nl80211_data *drv, int ifidx,
+-@@ -8559,25 +8559,15 @@ static int have_ifidx(struct wpa_driver_
 - 
 - 
 - static int i802_set_wds_sta(void *priv, const u8 *addr, int aid, int val,
@@ -2559,6 +2713,7 @@ index b6e4ef9571a1..000000000000
 --	char name[IFNAMSIZ + 1];
 -+	const char *name = ifname_wds; // Kept to reduce changes to the minimum
 - 	union wpa_event_data event;
+- 	bool add_br = false;
 - 	int ret;
 - 
 --	ret = os_snprintf(name, sizeof(name), "%s.sta%d", bss->ifname, aid);
@@ -2574,314 +2729,6 @@ index b6e4ef9571a1..000000000000
 - 	wpa_printf(MSG_DEBUG, "nl80211: Set WDS STA addr=" MACSTR
 - 		   " aid=%d val=%d name=%s", MAC2STR(addr), aid, val, name);
 - 	if (val) {
---- 
--2.44.2
--
-diff --git a/package/network/services/hostapd/patches/790-APuP-add-ubus-notification-when-a-peer-comes-up.patch b/package/network/services/hostapd/patches/790-APuP-add-ubus-notification-when-a-peer-comes-up.patch
-deleted file mode 100644
-index 3746dde00a7f..000000000000
---- a/package/network/services/hostapd/patches/790-APuP-add-ubus-notification-when-a-peer-comes-up.patch
-+++ /dev/null
-@@ -1,81 +0,0 @@
--From 9a265f70b5e4e048c568564aed5f9ac4a4fd76b0 Mon Sep 17 00:00:00 2001
--From: Gioacchino Mazzurco <gio@polymathes.cc>
--Date: Tue, 7 May 2024 10:37:54 +0200
--Subject: [PATCH 2/3] APuP add ubus notification when a peer comes up
--
--The notification ones get looks like
--{ "apup-newpeer": {"address":"02:0a:ab:45:5a:ab","ifname":"wlan0.peer1"} }
--
--Signed-off-by: Gioacchino Mazzurco <gio@polymathes.cc>
-----
-- src/ap/apup.c |  8 ++++++++
-- src/ap/ubus.c | 15 +++++++++++++++
-- src/ap/ubus.h |  5 +++++
-- 3 files changed, 28 insertions(+)
--
--diff --git a/src/ap/apup.c b/src/ap/apup.c
--index 3575f1b6c6..3a3991f4d6 100644
----- a/src/ap/apup.c
--+++ b/src/ap/apup.c
--@@ -23,6 +23,10 @@
-- #include "ap_drv_ops.h"
-- #include "sta_info.h"
-- 
--+#ifdef UBUS_SUPPORT
--+#	include "ubus.h"
--+#endif
--+
-- void apup_process_beacon(struct hostapd_data *hapd,
--               const struct ieee80211_mgmt *mgmt, size_t len,
--               const struct ieee802_11_elems *elems )
--@@ -149,4 +153,8 @@ void apup_process_beacon(struct hostapd_data *hapd,
-- 	           "apup_process_beacon(...) Added APuP peer at %s with flags: %d,"
-- 	           " capabilities %d",
-- 	           mIfname, sta_ret->flags, sta_ret->capability);
--+
--+#ifdef UBUS_SUPPORT
--+	hostapd_ubus_notify_apup_newpeer(hapd, mgmt->bssid, mIfname);
--+#endif
-- }
--diff --git a/src/ap/ubus.c b/src/ap/ubus.c
--index 8689494bcf..f21516fc3c 100644
----- a/src/ap/ubus.c
--+++ b/src/ap/ubus.c
--@@ -2004,3 +2004,18 @@ int hostapd_ubus_notify_bss_transition_query(
-- 	return ureq.resp;
-- #endif
-- }
--+
--+#ifdef CONFIG_APUP
--+void hostapd_ubus_notify_apup_newpeer(
--+	struct hostapd_data *hapd, const u8 *addr, const char *ifname)
--+{
--+	if (!hapd->ubus.obj.has_subscribers)
--+		return;
--+
--+	blob_buf_init(&b, 0);
--+	blobmsg_add_macaddr(&b, "address", addr);
--+	blobmsg_add_string(&b, "ifname", ifname);
--+
--+	ubus_notify(ctx, &hapd->ubus.obj, "apup-newpeer", b.head, -1);
--+}
--+#endif // def CONFIG_APUP
--diff --git a/src/ap/ubus.h b/src/ap/ubus.h
--index 22767d67ee..1c65e4dcb9 100644
----- a/src/ap/ubus.h
--+++ b/src/ap/ubus.h
--@@ -71,6 +71,11 @@ int hostapd_ubus_notify_bss_transition_query(
-- void hostapd_ubus_notify_authorized(struct hostapd_data *hapd, struct sta_info *sta,
-- 				    const char *auth_alg);
-- 
--+#ifdef CONFIG_APUP
--+void hostapd_ubus_notify_apup_newpeer(
--+	struct hostapd_data *hapd, const u8 *addr, const char *ifname);
--+#endif // def CONFIG_APUP
--+
-- #else
-- 
-- struct hostapd_ubus_bss {};
---- 
--2.44.2
--
-diff --git a/package/network/services/hostapd/patches/800-APuP-add-ucode-hook-for-when-a-peer-comes-up.patch b/package/network/services/hostapd/patches/800-APuP-add-ucode-hook-for-when-a-peer-comes-up.patch
-deleted file mode 100644
-index c3e3633060cb..000000000000
---- a/package/network/services/hostapd/patches/800-APuP-add-ucode-hook-for-when-a-peer-comes-up.patch
-+++ /dev/null
-@@ -1,79 +0,0 @@
--From aaeb60b39a72774c651187208ec47efd0daeb75b Mon Sep 17 00:00:00 2001
--From: Gioacchino Mazzurco <gio@polymathes.cc>
--Date: Tue, 7 May 2024 11:54:23 +0200
--Subject: [PATCH 3/3] APuP add ucode hook for when a peer comes up
--
--Signed-off-by: Gioacchino Mazzurco <gio@polymathes.cc>
-----
-- src/ap/apup.c  |  8 ++++++++
-- src/ap/ucode.c | 17 +++++++++++++++++
-- src/ap/ucode.h |  4 ++++
-- 3 files changed, 29 insertions(+)
--
--diff --git a/src/ap/apup.c b/src/ap/apup.c
--index 3a3991f4d6..f736ddc8e3 100644
----- a/src/ap/apup.c
--+++ b/src/ap/apup.c
--@@ -27,6 +27,10 @@
-- #	include "ubus.h"
-- #endif
-- 
--+#ifdef UCODE_SUPPORT
--+#	include "ucode.h"
--+#endif
--+
-- void apup_process_beacon(struct hostapd_data *hapd,
--               const struct ieee80211_mgmt *mgmt, size_t len,
--               const struct ieee802_11_elems *elems )
--@@ -157,4 +161,8 @@ void apup_process_beacon(struct hostapd_data *hapd,
-- #ifdef UBUS_SUPPORT
-- 	hostapd_ubus_notify_apup_newpeer(hapd, mgmt->bssid, mIfname);
-- #endif
--+
--+#ifdef UCODE_SUPPORT
--+	hostapd_ucode_apup_newpeer(hapd, mIfname);
--+#endif
-- }
--diff --git a/src/ap/ucode.c b/src/ap/ucode.c
--index d344190208..391002feae 100644
----- a/src/ap/ucode.c
--+++ b/src/ap/ucode.c
--@@ -811,3 +811,20 @@ void hostapd_ucode_free_bss(struct hostapd_data *hapd)
-- 	ucv_put(wpa_ucode_call(2));
-- 	ucv_gc(vm);
-- }
--+
--+#ifdef CONFIG_APUP
--+void hostapd_ucode_apup_newpeer(struct hostapd_data *hapd, const char *ifname)
--+{
--+	uc_value_t *val;
--+
--+	if (wpa_ucode_call_prepare("apup_newpeer"))
--+		return;
--+
--+	val = hostapd_ucode_bss_get_uval(hapd);
--+	uc_value_push(ucv_get(ucv_string_new(hapd->conf->iface))); // BSS ifname
--+	uc_value_push(ucv_get(val));
--+	uc_value_push(ucv_get(ucv_string_new(ifname))); // APuP peer ifname
--+	ucv_put(wpa_ucode_call(2));
--+	ucv_gc(vm);
--+}
--+#endif // def CONFIG_APUP
--diff --git a/src/ap/ucode.h b/src/ap/ucode.h
--index d00b787169..c9bdde6516 100644
----- a/src/ap/ucode.h
--+++ b/src/ap/ucode.h
--@@ -27,6 +27,10 @@ void hostapd_ucode_add_bss(struct hostapd_data *hapd);
-- void hostapd_ucode_free_bss(struct hostapd_data *hapd);
-- void hostapd_ucode_reload_bss(struct hostapd_data *hapd);
-- 
--+#ifdef CONFIG_APUP
--+void hostapd_ucode_apup_newpeer(struct hostapd_data *hapd, const char *ifname);
--+#endif // def CONFIG_APUP
--+
-- #else
-- 
-- static inline int hostapd_ucode_init(struct hapd_interfaces *ifaces)
---- 
--2.44.2
--
-diff --git a/package/network/services/hostapd/patches/800-SAE-Check-for-invalid-Rejected-Groups-element-length.patch b/package/network/services/hostapd/patches/800-SAE-Check-for-invalid-Rejected-Groups-element-length.patch
-deleted file mode 100644
-index 97402887bfe6..000000000000
---- a/package/network/services/hostapd/patches/800-SAE-Check-for-invalid-Rejected-Groups-element-length.patch
-+++ /dev/null
-@@ -1,43 +0,0 @@
--From 364c2da8741f0979dae497551e70b94c0e6c8636 Mon Sep 17 00:00:00 2001
--From: Jouni Malinen <j@w1.fi>
--Date: Sun, 7 Jul 2024 11:46:49 +0300
--Subject: [PATCH] SAE: Check for invalid Rejected Groups element length
-- explicitly
--
--Instead of practically ignoring an odd octet at the end of the element,
--check for such invalid case explicitly. This is needed to avoid a
--potential group downgrade attack.
--
--Signed-off-by: Jouni Malinen <j@w1.fi>
-----
-- src/ap/ieee802_11.c | 12 ++++++++++--
-- 1 file changed, 10 insertions(+), 2 deletions(-)
--
----- a/src/ap/ieee802_11.c
--+++ b/src/ap/ieee802_11.c
--@@ -1229,7 +1229,7 @@ static int check_sae_rejected_groups(str
-- 				     struct sae_data *sae)
-- {
-- 	const struct wpabuf *groups;
---	size_t i, count;
--+	size_t i, count, len;
-- 	const u8 *pos;
-- 
-- 	if (!sae->tmp)
--@@ -1239,7 +1239,15 @@ static int check_sae_rejected_groups(str
-- 		return 0;
-- 
-- 	pos = wpabuf_head(groups);
---	count = wpabuf_len(groups) / 2;
--+	len = wpabuf_len(groups);
--+	if (len & 1) {
--+		wpa_printf(MSG_DEBUG,
--+			   "SAE: Invalid length of the Rejected Groups element payload: %zu",
--+			   len);
--+		return 1;
--+	}
--+
--+	count = len / 2;
-- 	for (i = 0; i < count; i++) {
-- 		int enabled;
-- 		u16 group;
-diff --git a/package/network/services/hostapd/patches/801-SAE-Check-for-invalid-Rejected-Groups-element-length.patch b/package/network/services/hostapd/patches/801-SAE-Check-for-invalid-Rejected-Groups-element-length.patch
-deleted file mode 100644
-index 8d88a4aa13ac..000000000000
---- a/package/network/services/hostapd/patches/801-SAE-Check-for-invalid-Rejected-Groups-element-length.patch
-+++ /dev/null
-@@ -1,42 +0,0 @@
--From 593a7c2f8c93edd6b552f2d42e28164464b4e6ff Mon Sep 17 00:00:00 2001
--From: Jouni Malinen <j@w1.fi>
--Date: Tue, 9 Jul 2024 23:33:38 +0300
--Subject: [PATCH] SAE: Check for invalid Rejected Groups element length
-- explicitly on STA
--
--Instead of practically ignoring an odd octet at the end of the element,
--check for such invalid case explicitly. This is needed to avoid a
--potential group downgrade attack.
--
--Fixes: 444d76f74f65 ("SAE: Check that peer's rejected groups are not enabled")
--Signed-off-by: Jouni Malinen <j@w1.fi>
-----
-- wpa_supplicant/sme.c | 11 +++++++++--
-- 1 file changed, 9 insertions(+), 2 deletions(-)
--
----- a/wpa_supplicant/sme.c
--+++ b/wpa_supplicant/sme.c
--@@ -1561,14 +1561,21 @@ static int sme_sae_is_group_enabled(stru
-- static int sme_check_sae_rejected_groups(struct wpa_supplicant *wpa_s,
-- 					 const struct wpabuf *groups)
-- {
---	size_t i, count;
--+	size_t i, count, len;
-- 	const u8 *pos;
-- 
-- 	if (!groups)
-- 		return 0;
-- 
-- 	pos = wpabuf_head(groups);
---	count = wpabuf_len(groups) / 2;
--+	len = wpabuf_len(groups);
--+	if (len & 1) {
--+		wpa_printf(MSG_DEBUG,
--+			   "SAE: Invalid length of the Rejected Groups element payload: %zu",
--+			   len);
--+		return 1;
--+	}
--+	count = len / 2;
-- 	for (i = 0; i < count; i++) {
-- 		int enabled;
-- 		u16 group;
-diff --git a/package/network/services/hostapd/patches/802-SAE-Reject-invalid-Rejected-Groups-element-in-the-pa.patch b/package/network/services/hostapd/patches/802-SAE-Reject-invalid-Rejected-Groups-element-in-the-pa.patch
-deleted file mode 100644
-index 572a3f721f3f..000000000000
---- a/package/network/services/hostapd/patches/802-SAE-Reject-invalid-Rejected-Groups-element-in-the-pa.patch
-+++ /dev/null
-@@ -1,30 +0,0 @@
--From 9716bf1160beb677e965d9e6475d6c9e162e8374 Mon Sep 17 00:00:00 2001
--From: Jouni Malinen <j@w1.fi>
--Date: Tue, 9 Jul 2024 23:34:34 +0300
--Subject: [PATCH] SAE: Reject invalid Rejected Groups element in the parser
--
--There is no need to depend on all uses (i.e., both hostapd and
--wpa_supplicant) to verify that the length of the Rejected Groups field
--in the Rejected Groups element is valid (i.e., a multiple of two octets)
--since the common parser can reject the message when detecting this.
--
--Signed-off-by: Jouni Malinen <j@w1.fi>
-----
-- src/common/sae.c | 6 ++++++
-- 1 file changed, 6 insertions(+)
--
----- a/src/common/sae.c
--+++ b/src/common/sae.c
--@@ -2120,6 +2120,12 @@ static int sae_parse_rejected_groups(str
-- 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
-- 	epos++; /* skip ext ID */
-- 	len--;
--+	if (len & 1) {
--+		wpa_printf(MSG_DEBUG,
--+			   "SAE: Invalid length of the Rejected Groups element payload: %u",
--+			   len);
--+		return WLAN_STATUS_UNSPECIFIED_FAILURE;
--+	}
-- 
-- 	wpabuf_free(sae->tmp->peer_rejected_groups);
-- 	sae->tmp->peer_rejected_groups = wpabuf_alloc(len);
 -- 
 2.34.1
 

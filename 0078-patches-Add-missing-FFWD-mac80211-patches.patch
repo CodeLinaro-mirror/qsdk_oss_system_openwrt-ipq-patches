@@ -1,10 +1,9 @@
-From a0d707a7dfb9735bd38378a27fbba16e5d34db64 Mon Sep 17 00:00:00 2001
-From: Aravind Mosam <quic_amosam@quicinc.com>
-Date: Tue, 24 Sep 2024 15:26:29 +0530
+From 5542f7882a0f56ed356ea35f2db49c9a490a108d Mon Sep 17 00:00:00 2001
+From: Aravind Mosam <amosam@qti.qualcomm.com>
+Date: Mon, 7 Oct 2024 23:52:43 +0530
 Subject: [PATCH] patches: Add missing FFWD mac80211 patches
 
-Change-Id: I32c203fbe0440b4d13f3fd8f32c391d24d10e961
-Signed-off-by: Aravind Mosam <quic_amosam@quicinc.com>
+Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
 ---
  ...uct_group-for-struct-ath_cycle_count.patch | 117 +++++
  ...9170_re-fix_fortified-memset_warning.patch |  51 ++

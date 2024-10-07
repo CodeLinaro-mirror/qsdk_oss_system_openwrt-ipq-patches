@@ -1,14 +1,13 @@
-From c9bc41e9dcf6e6a41fb932f60482ed85cd99f48a Mon Sep 17 00:00:00 2001
-From: ` <quic_ratchaya@quicinc.com>
-Date: Wed, 31 Jul 2024 12:07:36 +0530
+From af11ab06fd50da809ce937b9e571ed3fc9a1e819 Mon Sep 17 00:00:00 2001
+From: Aravind Mosam <amosam@qti.qualcomm.com>
+Date: Sun, 6 Oct 2024 23:24:17 +0530
 Subject: [PATCH] feeds: Add support for fetching feeds from mirror
 
 In case of failure to fetch from one url, try for other urls
 in feeds.conf
 Add the support via option -b
 
-Signed-off-by: ` <quic_ratchaya@quicinc.com>
-Change-Id: I3a4202255c0a45752f442f4d6fa120d4bd7a195d
+Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
 ---
  include/toplevel.mk |  2 +-
  scripts/feeds       | 12 +++++++++---
@@ -28,25 +27,25 @@ index 658d30e414f6..594beb68ea32 100644
  
  # re-create index files, install symlinks
 diff --git a/scripts/feeds b/scripts/feeds
-index b5b943c70bf7..c2c46dc92db2 100755
+index 7cbe07f58e7c..0cdc00d433ba 100755
 --- a/scripts/feeds
 +++ b/scripts/feeds
-@@ -776,12 +776,13 @@ sub uninstall {
+@@ -788,12 +788,13 @@ sub uninstall {
  	return 0;
  }
  
--sub update_feed($$$$)
-+sub update_feed($$$$$)
+-sub update_feed($$$$$$)
++sub update_feed($$$$$$$)
  {
  	my $type=shift;
  	my $name=shift;
  	my $src=shift;
  	my $force_update=shift;
 +	my $fallback=shift;
+ 	my $rebase_update=shift;
+ 	my $stash_update=shift;
  	my $force_relocate=update_location( $name, "@$src" );
- 	my $rv=0;
- 
-@@ -803,6 +804,10 @@ sub update_feed($$$$)
+@@ -817,6 +818,10 @@ sub update_feed($$$$$$)
  				warn "failed, ignore.\n";
  				next;
  			}
@@ -57,26 +56,26 @@ index b5b943c70bf7..c2c46dc92db2 100755
  			last;
  		}
  		$failed = 0;
-@@ -822,7 +827,7 @@ sub update {
+@@ -836,7 +841,7 @@ sub update {
  	$ENV{SCAN_COOKIE} = $$;
  	$ENV{OPENWRT_VERBOSE} = 's';
  
--	getopts('ahif', \%opts);
-+	getopts('ahifb', \%opts);
+-	getopts('ahifrs', \%opts);
++	getopts('ahifbrs', \%opts);
  	%argv_feeds = map { $_ => 1 } @ARGV;
  
  	if ($opts{h}) {
-@@ -839,7 +844,7 @@ sub update {
+@@ -858,7 +863,7 @@ sub update {
  		my ($type, $name, $src) = @$feed;
  		next unless $#ARGV == -1 or $opts{a} or $argv_feeds{$name};
  		if (not $opts{i}) {
--			update_feed($type, $name, $src, $opts{f}) == 0 or $failed=1;
-+			update_feed($type, $name, $src, $opts{f}, $opts{b}) == 0 or $failed=1;
+-			update_feed($type, $name, $src, $opts{f}, $opts{r}, $opts{s}) == 0 or $failed=1;
++			update_feed($type, $name, $src, $opts{f}, $opts{b}, $opts{r}, $opts{s}) == 0 or $failed=1;
  		}
  		push @index_feeds, $name;
  	}
-@@ -906,6 +911,7 @@ Commands:
- 	    -a :           Update all feeds listed within feeds.conf. Otherwise the specified feeds will be updated.
+@@ -927,6 +932,7 @@ Commands:
+ 	    -s :           Update by rebase and autostash. (git only. Useful if local commits and uncommited changes exist)
  	    -i :           Recreate the index only. No feed update from repository is performed.
  	    -f :           Force updating feeds even if there are changed, uncommitted files.
 +	    -b :           Support fetching from mirrors

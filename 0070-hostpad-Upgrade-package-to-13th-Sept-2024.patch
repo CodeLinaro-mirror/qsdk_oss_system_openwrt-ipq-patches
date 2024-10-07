@@ -1,27 +1,31 @@
-From 9f068cae12855e9e31744f619ce4a2be07374a86 Mon Sep 17 00:00:00 2001
-From: Karthik M <quic_karm@quicinc.com>
-Date: Wed, 21 Aug 2024 10:35:35 +0530
-Subject: [PATCH] hostapd: package upgrade to 5th Jun 2024
+From b74a61ee6fe1ad8520d1c9abb5663f8afcf7c65f Mon Sep 17 00:00:00 2001
+From: Aravind Mosam <amosam@qti.qualcomm.com>
+Date: Mon, 7 Oct 2024 01:46:59 +0530
+Subject: [PATCH] hostpad: Upgrade package to 13th Sept 2024
 
-Upgrade the version to 1b96745f1de8 dated 5th Jun 2024
+Upgrade the hostap package to version ccba6921de63, dated 13th Sept 2024.
 
-Change-Id: Idf8a566f982dea218c952d35a7a4dd07ece5490e
-Signed-off-by: Karthik M <quic_karm@quicinc.com>
+Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
 ---
- package/network/services/hostapd/Makefile | 84 ++++++++++++-----------
- 1 file changed, 44 insertions(+), 40 deletions(-)
+ package/network/services/hostapd/Makefile | 101 +++++++++++++---------
+ 1 file changed, 59 insertions(+), 42 deletions(-)
 
 diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
-index 00793d77f3b2..a3faed8d45ad 100644
+index 932d4a7cf8c5..bc9ed7417cdb 100644
 --- a/package/network/services/hostapd/Makefile
 +++ b/package/network/services/hostapd/Makefile
-@@ -9,20 +9,13 @@ PKG_RELEASE:=2
+@@ -5,24 +5,17 @@
+ include $(TOPDIR)/rules.mk
+ 
+ PKG_NAME:=hostapd
+-PKG_RELEASE:=1
++PKG_RELEASE:=2
  
  PKG_SOURCE_URL:=https://w1.fi/hostap.git
  PKG_SOURCE_PROTO:=git
--PKG_SOURCE_DATE:=2024-03-09
--PKG_SOURCE_VERSION:=695277a5b3da08b9a8a4e7117b933deb8b4950a7
--PKG_MIRROR_HASH:=57b8e64d24707e37e0df3359cee15dd5184b824b8622568833a5b8a0cae163ae
+-PKG_SOURCE_DATE:=2024-09-15
+-PKG_SOURCE_VERSION:=5ace39b0a4cdbe18ddbc4e18f80ee3876233c20b
+-PKG_MIRROR_HASH:=43187d1ddd923970ef3821a0fe267880c2483f6f1a5acd0dd2d7906661ab1372
 -
 -EXTERNAL_MAKEFILE:=$(TOPDIR)/openwrt-patches/package/network/services/hostapd
 -
@@ -30,9 +34,9 @@ index 00793d77f3b2..a3faed8d45ad 100644
 -endif
 -PKG_SRC_DIR:=$(EXTERNAL_MAKEFILE)
 -
-+PKG_SOURCE_DATE:=2024-06-05
-+PKG_SOURCE_VERSION:=1b96745f1de8806e2c500ad781aa09b88fdae7b9
-+PKG_MIRROR_HASH:=d5ff4046dc8000a1c38e6920bf60a610b621ebb094525d3a076a8bd6c0792d54
++PKG_SOURCE_DATE:=2024-09-13
++PKG_SOURCE_VERSION:=ccba6921de6372a2220350bb5ed5776ea8c76bbb
++PKG_MIRROR_HASH:=e6ccdc31646e96c663d4948c897eddd0b1e73dd6af50686a6108e064073679e2
  PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
  PKG_LICENSE:=BSD-3-Clause
  PKG_CPE_ID:=cpe:/a:w1.fi:hostapd
@@ -40,6 +44,15 @@ index 00793d77f3b2..a3faed8d45ad 100644
  
  PKG_BUILD_PARALLEL:=1
  PKG_ASLR_PIE_REGULAR:=1
+@@ -94,7 +87,7 @@ DRIVER_MAKEOPTS= \
+ 	CONFIG_IEEE80211AC=$(HOSTAPD_IEEE80211AC) \
+ 	CONFIG_IEEE80211AX=$(HOSTAPD_IEEE80211AX) \
+ 	CONFIG_MBO=$(CONFIG_WPA_MBO_SUPPORT) \
+-	CONFIG_UCODE=y CONFIG_APUP=y
++	CONFIG_UCODE=y
+ 
+ ifeq ($(SSL_VARIANT),openssl)
+   DRIVER_MAKEOPTS += CONFIG_TLS=openssl CONFIG_SAE=y
 @@ -184,6 +177,16 @@ endef
  
  Package/hostapd-openssl/description = $(Package/hostapd/description)
@@ -113,27 +126,41 @@ index 00793d77f3b2..a3faed8d45ad 100644
  define Build/Configure
  	$(Build/Configure/rebuild)
  	$(if $(wildcard ./files/hostapd-$(CONFIG_VARIANT).config), \
-@@ -603,6 +598,7 @@ endef
+@@ -603,7 +598,20 @@ endef
  
  define Build/InstallDev
  	$(INSTALL_DIR) $(1)/usr/include
++	$(INSTALL_DIR) $(1)/usr/lib/
 +	$(CP) $(PKG_BUILD_DIR)/src/common/qca-vendor.h $(1)/usr/include
  	$(CP) $(PKG_BUILD_DIR)/src/drivers/nl80211_copy.h $(1)/usr/include/
++	$(CP) $(PKG_BUILD_DIR)/src/common/wpa_ctrl.h $(1)/usr/include
++	$(CP) $(PKG_BUILD_DIR)/src/utils/os.h $(1)/usr/include
++	$(CP) $(PKG_BUILD_DIR)/src/utils/common.h $(1)/usr/include
++	$(CP) $(PKG_BUILD_DIR)/src/utils/wpa_debug.h $(1)/usr/include
++ifneq ($(LOCAL_VARIANT),macsec)
++	ar rcs $(1)/usr/lib/libwpa_ctrl.a \
++		$(PKG_BUILD_DIR)/build/hostapd/src/common/wpa_ctrl.o \
++		$(PKG_BUILD_DIR)/build/hostapd/src/utils/os_unix.o \
++		$(PKG_BUILD_DIR)/build/hostapd/src/utils/wpa_debug.o \
++		$(PKG_BUILD_DIR)/build/hostapd/src/utils/common.o
++endif
  endef
  
-@@ -616,6 +612,11 @@ TARGET_CPPFLAGS := \
+ TARGET_CPPFLAGS := \
+@@ -615,6 +623,12 @@ TARGET_CPPFLAGS := \
+ 	$(if $(CONFIG_WPA_MSG_MIN_PRIORITY),-DCONFIG_MSG_MIN_PRIORITY=$(CONFIG_WPA_MSG_MIN_PRIORITY))
  
  TARGET_LDFLAGS += -lubox -lubus -lblobmsg_json -lucode -lm -lnl-tiny -ludebug
- 
++TARGET_CFLAGS += -fPIC
++
 +ifdef CONFIG_DEBUG
 +	TARGET_CFLAGS += -g3
 +endif
 +
-+
+ 
  ifdef CONFIG_WPA_ENABLE_WEP
      DRIVER_MAKEOPTS += CONFIG_WEP=y
- endif
-@@ -747,20 +748,11 @@ endef
+@@ -747,20 +761,11 @@ endef
  
  define Package/hostapd-common/install
  	$(INSTALL_DIR) $(1)/etc/capabilities $(1)/etc/rc.button $(1)/etc/hotplug.d/ieee80211 $(1)/etc/init.d $(1)/lib/netifd  $(1)/usr/share/acl.d $(1)/usr/share/hostap
@@ -154,7 +181,7 @@ index 00793d77f3b2..a3faed8d45ad 100644
  endef
  
  define Package/hostapd/install
-@@ -775,14 +767,20 @@ Package/hostapd-mini/install = $(Package/hostapd/install)
+@@ -775,14 +780,20 @@ Package/hostapd-mini/install = $(Package/hostapd/install)
  Package/hostapd-openssl/install = $(Package/hostapd/install)
  Package/hostapd-wolfssl/install = $(Package/hostapd/install)
  Package/hostapd-mbedtls/install = $(Package/hostapd/install)
@@ -176,7 +203,7 @@ index 00793d77f3b2..a3faed8d45ad 100644
  
  define Package/wpad/install
  	$(call Install/hostapd,$(1))
-@@ -816,14 +814,20 @@ Package/wpa-supplicant-mbedtls/install = $(Package/wpa-supplicant/install)
+@@ -816,14 +827,20 @@ Package/wpa-supplicant-mbedtls/install = $(Package/wpa-supplicant/install)
  Package/wpa-supplicant-mesh-openssl/install = $(Package/wpa-supplicant/install)
  Package/wpa-supplicant-mesh-wolfssl/install = $(Package/wpa-supplicant/install)
  Package/wpa-supplicant-mesh-mbedtls/install = $(Package/wpa-supplicant/install)
