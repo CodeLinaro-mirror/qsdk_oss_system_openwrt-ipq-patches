@@ -1,0 +1,38 @@
+From a13acb377986055c550a63e883ccca77bc30a03f Mon Sep 17 00:00:00 2001
+From: Maharaja Kennadyrajan <quic_mkenna@quicinc.com>
+Date: Thu, 19 Sep 2024 17:14:25 +0530
+Subject: [PATCH] wifi-scripts: netifd-wireless.sh: Add new handler function to
+ add mlo link
+
+Add a new wdev_handler function which helps to add mlo link
+via wifi command.
+
+Change-Id: I14a81e06a832a9a1198e27385e36f1b0f3ed7c2b
+Signed-off-by: Maharaja Kennadyrajan <quic_mkenna@quicinc.com>
+---
+ .../wifi-scripts/files/lib/netifd/netifd-wireless.sh     | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/netifd-wireless.sh b/package/network/config/wifi-scripts/files/lib/netifd/netifd-wireless.sh
+index 5b852e093763..8b9346f87129 100644
+--- a/package/network/config/wifi-scripts/files/lib/netifd/netifd-wireless.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/netifd-wireless.sh
+@@ -82,6 +82,15 @@ _wdev_prepare_channel() {
+ 	esac
+ }
+ 
++_wdev_handler_1() {
++	interface=$4
++	json_load "$1"
++	json_select config
++	_wdev_prepare_channel
++	json_select ..
++	eval "drv_$2_$3 \"$interface\""
++}
++
+ _wdev_handler() {
+ 	json_load "$data"
+ 
+-- 
+2.34.1
+

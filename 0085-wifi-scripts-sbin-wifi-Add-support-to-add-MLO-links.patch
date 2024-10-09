@@ -1,0 +1,118 @@
+From a1d246a2338e52119af53c6d30ab3837b6718557 Mon Sep 17 00:00:00 2001
+From: Maharaja Kennadyrajan <quic_mkenna@quicinc.com>
+Date: Fri, 4 Oct 2024 17:47:57 +0530
+Subject: [PATCH] wifi-scripts: sbin/wifi: Add support to add MLO links
+
+Add a new wifi command to add MLO links dynamically.
+
+Usage:
+wifi mlo_add_link <phy> <band> <interface-name> <vap-mac-addr>
+
+Example:
+wifi mlo_add_link phy00 2g wlan1 00:03:7f:12:12:61
+
+Note:
+interface-name is present in the /etc/config/wireless file.
+
+Limitation with 6G link addition:
+1. User can't add 6G link with this command when only one 6G vap
+is brought up via wireless file.
+2. User can add 6G link with this command when atleast two or more
+6G vaps are brought up via wireless file.
+3. Alder + WKK combination RDPs are not supported yet.
+
+iw output before mlo_add_link command:
+root@OpenWrt:/# iw dev
+phy#0
+        Interface wlan1
+                ifindex 23
+                wdev 0x6
+                addr 00:03:7f:01:59:68
+                ssid miami_primary_link1
+                type AP
+                Power mode: 0
+                link 0:
+                  addr 00:03:7f:01:59:68
+                  channel 49 (6195 MHz), width: 160 MHz, center1: 6185 MHz
+                  txpower 19.00 dBm
+                link 1:
+                  addr 00:03:7f:15:15:61
+                  channel 36 (5180 MHz), width: 80 MHz, center1: 5210 MHz
+                  txpower 28.00 dBm
+        Interface wlan0
+                ifindex 22
+                wdev 0x5
+                addr 00:03:7f:01:59:69
+                ssid miami_primary_link
+                type AP
+                Power mode: 0
+                link 0:
+                  addr 00:03:7f:01:59:69
+                  channel 49 (6195 MHz), width: 160 MHz, center1: 6185 MHz
+                  txpower 19.00 dBm
+
+iw output after mlo_add_link command:
+root@OpenWrt:/# iw dev
+phy#0
+        Interface wlan1
+                ifindex 23
+                wdev 0x6
+                addr 00:03:7f:01:59:68
+                ssid miami_primary_link1
+                type AP
+                Power mode: 0
+                link 0:
+                  addr 00:03:7f:01:59:68
+                  channel 49 (6195 MHz), width: 160 MHz, center1: 6185 MHz
+                  txpower 19.00 dBm
+                link 1:
+                  addr 00:03:7f:15:15:61
+                  channel 36 (5180 MHz), width: 80 MHz, center1: 5210 MHz
+                  txpower 28.00 dBm
+                link 2:
+                  addr 00:03:7f:12:12:61
+                  channel 6 (2437 MHz), width: 20 MHz, center1: 2437 MHz
+                  txpower 27.00 dBm
+        Interface wlan0
+                ifindex 22
+                wdev 0x5
+                addr 00:03:7f:01:59:69
+                ssid miami_primary_link
+                type AP
+                Power mode: 0
+                link 0:
+                  addr 00:03:7f:01:59:69
+                  channel 49 (6195 MHz), width: 160 MHz, center1: 6185 MHz
+                  txpower 19.00 dBm
+
+Change-Id: I161897a07babccd922450527458f13e2bf712f8d
+Co-authored-by: Rajat Soni <quic_rajson@quicinc.com>
+Signed-off-by: Maharaja Kennadyrajan <quic_mkenna@quicinc.com>
+---
+ package/network/config/wifi-scripts/files/sbin/wifi | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/package/network/config/wifi-scripts/files/sbin/wifi b/package/network/config/wifi-scripts/files/sbin/wifi
+index 3ef603b17618..35592ea3c7b9 100755
+--- a/package/network/config/wifi-scripts/files/sbin/wifi
++++ b/package/network/config/wifi-scripts/files/sbin/wifi
+@@ -6,7 +6,7 @@
+ 
+ usage() {
+ 	cat <<EOF
+-Usage: $0 [config|up|down|reconf|reload|status|isup]
++Usage: $0 [config|up|down|reconf|reload|status|isup|mlo_add_link <phy> <band> <interface-name> <vap-mac-addr>]
+ enables (default), disables or configures devices not yet configured.
+ EOF
+ 	exit 1
+@@ -362,6 +362,7 @@ case "$1" in
+ 	unload) wifi_unload "$2";;
+ 	recover) wifi_recover "$2";;
+ 	mlo) mlo "$@";;
++	mlo_add_link) mlo_add_link "$2" "$3" "$4" "$5";;
+ 	standby) standby_wifi_radio_updown "$@" ;;
+         multi_up|\
+         multi_down) [ "$DISABLE_NET_RELOAD" == "1" ] || multi_radio_wifi_updown "$@";;
+-- 
+2.34.1
+
