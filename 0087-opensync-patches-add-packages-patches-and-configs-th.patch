@@ -1,0 +1,83 @@
+From f76ad5f4e2448480ccdb27dfa3617a191fe8c7f6 Mon Sep 17 00:00:00 2001
+From: Atchaya R <quic_ratchaya@quicinc.com>
+Date: Fri, 27 Sep 2024 19:31:36 +0530
+Subject: [PATCH] opensync-patches: add packages, patches and configs that are
+ defined inside ipq-patches and qca-patches for opensync build
+
+Change-Id: I456fd692d21e6202749334ceb3fff2e5f13409f5
+Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
+---
+ include/download.mk         | 2 ++
+ include/package-dumpinfo.mk | 2 ++
+ include/package.mk          | 1 +
+ include/quilt.mk            | 3 +++
+ 4 files changed, 8 insertions(+)
+
+diff --git a/include/download.mk b/include/download.mk
+index 659e4b7754af..918081800ebb 100644
+--- a/include/download.mk
++++ b/include/download.mk
+@@ -348,9 +348,11 @@ define Download/default
+ endef
+ 
+ FindPackage?=$(strip $(shell find $(TOPDIR)/openwrt-patches -name $(1) 2>/dev/null))
++FindOpensyncPackage?=$(strip $(shell find $(TOPDIR)/opensync -name $(1) 2>/dev/null))
+ 
+ define Download/openwrt-patches
+   $(eval -include $(wildcard $(call FindPackage,$(basename $(notdir $(CURDIR))))/$(PKG_NAME).mk))
++  $(if $(CONFIG_OPENSYNC_SUPPORTED),$(eval -include $(wildcard $(call FindOpensyncPackage,$(basename $(notdir $(CURDIR))))/$(PKG_NAME).mk)))
+ endef
+ 
+ define Download
+diff --git a/include/package-dumpinfo.mk b/include/package-dumpinfo.mk
+index f97adfd74778..fca19b5f7d01 100644
+--- a/include/package-dumpinfo.mk
++++ b/include/package-dumpinfo.mk
+@@ -14,9 +14,11 @@ $(if $(PKG_BUILD_DEPENDS),Build-Depends: $(PKG_BUILD_DEPENDS)
+ endef
+ 
+ FindPackage ?=$(strip $(shell find $(TOPDIR)/openwrt-patches -name $(1) 2>/dev/null))
++FindOpensyncPackage?=$(strip $(shell find $(TOPDIR)/opensync -name $(1) 2>/dev/null))
+ 
+ define Dumpinfo/Package
+ $(eval -include $(wildcard $(call FindPackage, $(1))/$(1).mk))
++$(if $(CONFIG_OPENSYNC_SUPPORTED),$(eval -include $(wildcard $(call FindOpensyncPackage, $(1))/$(1).mk)))
+ $(info $(SOURCE_INFO)Package: $(1)
+ $(if $(MENU),Menu: $(MENU)
+ )$(if $(SUBMENU),Submenu: $(SUBMENU)
+diff --git a/include/package.mk b/include/package.mk
+index 0da4f24bcb9b..8118cd81d3e4 100644
+--- a/include/package.mk
++++ b/include/package.mk
+@@ -309,6 +309,7 @@ endef
+ 
+ define Build/openwrt-patches
+   $(eval -include $(wildcard $(call FindPackage,$(basename $(notdir $(CURDIR))))/$(PKG_NAME).mk))
++  $(if $(CONFIG_OPENSYNC_SUPPORTED),$(eval -include $(wildcard $(call FindOpensyncPackage,$(basename $(notdir $(CURDIR))))/$(PKG_NAME).mk)))
+ endef
+ 
+ define BuildPackage
+diff --git a/include/quilt.mk b/include/quilt.mk
+index 74697f6ba939..611c091b0059 100644
+--- a/include/quilt.mk
++++ b/include/quilt.mk
+@@ -35,6 +35,8 @@ ifneq ($(if $(DUMP),1,$(__quilt_inc)),1)
+ __quilt_inc:=1
+ 
+ FindPackage?=$(strip $(shell find $(TOPDIR)/openwrt-patches -name $(1) 2>/dev/null))
++FindOpensyncPackage?=$(strip $(shell find $(TOPDIR)/opensync -name $(1) 2>/dev/null))
++
+ PATCH_DIR?=$(CURDIR)/patches
+ FILES_DIR?=$(CURDIR)/files
+ HOST_PATCH_DIR?=$(PATCH_DIR)
+@@ -89,6 +91,7 @@ define Build/Patch/Default
+ 	$(if $(QUILT),rm -rf $(PKG_BUILD_DIR)/patches; mkdir -p $(PKG_BUILD_DIR)/patches)
+ 	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR),)
+ 	$(call PatchDir, $(PKG_BUILD_DIR),$(call FindPackage, $(basename $(notdir $(CURDIR))))/patches,)
++	$(if $(CONFIG_OPENSYNC_SUPPORTED),$(call PatchDir, $(PKG_BUILD_DIR),$(call FindOpensyncPackage, $(basename $(notdir $(CURDIR))))/patches,))
+ 	$(if $(QUILT),touch $(PKG_BUILD_DIR)/.quilt_used)
+ endef
+ 
+-- 
+2.34.1
+
