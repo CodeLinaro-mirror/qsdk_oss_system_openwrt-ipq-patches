@@ -1,0 +1,32 @@
+From 16b15aec4d763269ac83eb5cba079849cb2ab761 Mon Sep 17 00:00:00 2001
+From: Suruchi Agarwal <quic_suruchia@quicinc.com>
+Date: Wed, 9 Oct 2024 14:57:30 -0700
+Subject: [PATCH] map: added missing changes from "change rule from string
+ option to list option"
+
+During recent porting, some changes were missed due to which
+rules from uci add_list were not read correctly.
+
+Change-Id: Ife76449ee4cbd8983511e78d475e6570101a8134
+Signed-off-by: Suruchi Agarwal <quic_suruchia@quicinc.com>
+---
+ package/network/ipv6/map/files/map.sh | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/package/network/ipv6/map/files/map.sh b/package/network/ipv6/map/files/map.sh
+index 4a59cbadf561..a0d8e5750231 100755
+--- a/package/network/ipv6/map/files/map.sh
++++ b/package/network/ipv6/map/files/map.sh
+@@ -28,7 +28,8 @@ proto_map_setup() {
+ 	local maptype type legacymap mtu ttl tunlink zone encaplimit
+ 	local rule ipaddr ip4prefixlen ip6prefix ip6prefixlen peeraddr ealen psidlen psid offset mode fmr
+ 	json_get_vars maptype type legacymap mtu ttl tunlink zone fmr mode encaplimit draft03
+-	json_get_vars rule ipaddr ip4prefixlen ip6prefix ip6prefixlen peeraddr ealen psidlen psid offset
++	json_get_vars ipaddr ip4prefixlen ip6prefix ip6prefixlen peeraddr ealen psidlen psid offset
++	json_get_values rule rule
+ 
+ 	[ -z "$zone" ] && zone="wan"
+ 
+-- 
+2.34.1
+
