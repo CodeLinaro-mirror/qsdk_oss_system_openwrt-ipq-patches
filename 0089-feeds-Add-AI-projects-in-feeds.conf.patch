@@ -1,0 +1,28 @@
+From 66396263109bc6e3f304801ce00a28e7031ec79a Mon Sep 17 00:00:00 2001
+From: Sandhya KS <quic_sandhyks@quicinc.com>
+Date: Sat, 12 Oct 2024 23:45:47 +0530
+Subject: [PATCH] feeds : Add AI projects in feeds.conf
+
+Change-Id: Ib75172da8639b0c214cd702cb1e0fe4e527d3118
+Signed-off-by: Sandhya KS <quic_sandhyks@quicinc.com>
+---
+ feeds.conf | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index f8330ae88b66..652f53ce14df 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -61,6 +61,9 @@ src-link data_modem_monitor ../qca/feeds/data-modem-monitor
+ src-link kickstart ../qca/feeds/kickstart
+ src-link qwes_tools ../qca/feeds/qwes_tools
+ src-link winai ../qca/feeds/win-ai
++src-link qti_data_logger ../qca/feeds/qti-data-logger
++src-link ai_cloud_agent ../qca/feeds/ai_cloud_agent
++src-link ai_cloud_lib ../qca/feeds/ai_cloud_lib
+ src-link opensync ../qca/feeds/opensync
+ src-link container_apis ../qca/feeds/container_apis
+ src-link container_interfaces ../qca/feeds/container_interfaces
+-- 
+2.34.1
+
