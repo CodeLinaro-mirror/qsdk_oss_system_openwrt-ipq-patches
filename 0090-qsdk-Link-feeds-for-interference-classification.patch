@@ -1,0 +1,26 @@
+From 3ecaa9a9c9196b339cc718a4d5ee68d6b5d61213 Mon Sep 17 00:00:00 2001
+From: Sourav Poddar <quic_souravp@quicinc.com>
+Date: Mon, 14 Oct 2024 21:01:49 +0530
+Subject: [PATCH] [qsdk] Link feeds for interference classification
+
+Change-Id: I8d48465cbb2ad7719f60f7413b93672637198fa5
+Signed-off-by: Sourav Poddar <quic_souravp@quicinc.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 652f53ce14df..82aa0ebb7e89 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -61,6 +61,7 @@ src-link data_modem_monitor ../qca/feeds/data-modem-monitor
+ src-link kickstart ../qca/feeds/kickstart
+ src-link qwes_tools ../qca/feeds/qwes_tools
+ src-link winai ../qca/feeds/win-ai
++src-link interferenceclassify ../qca/feeds/interferenceclassify
+ src-link qti_data_logger ../qca/feeds/qti-data-logger
+ src-link ai_cloud_agent ../qca/feeds/ai_cloud_agent
+ src-link ai_cloud_lib ../qca/feeds/ai_cloud_lib
+-- 
+2.34.1
+
