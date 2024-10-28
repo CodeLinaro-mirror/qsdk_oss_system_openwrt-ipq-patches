@@ -1,0 +1,38 @@
+From 24a6646851a9632d8bdd9089ffd4cebe77c81b91 Mon Sep 17 00:00:00 2001
+From: Md Sadre Alam <quic_mdalam@quicinc.com>
+Date: Wed, 28 Aug 2024 12:32:58 +0530
+Subject: [PATCH] kernel: modules: Add hash value for kernel 6.6.47
+
+Also add mtd_module dependancy.
+
+Change-Id: I7819adfbda08f9103b7a7bbfb661d4dbcfe60502
+Signed-off-by: Md Sadre Alam <quic_mdalam@quicinc.com>
+---
+ include/kernel-6.6                    | 4 ++--
+ package/kernel/linux/modules/other.mk | 1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/kernel-6.6 b/include/kernel-6.6
+index 3f93ad37f99e..c0e8471c8364 100644
+--- a/include/kernel-6.6
++++ b/include/kernel-6.6
+@@ -1,2 +1,2 @@
+-LINUX_VERSION-6.6 = .3
+-LINUX_KERNEL_HASH-6.6.3 = 28edfc3d4f90cd738f2a20f5a2d68510268176d6111f6278d8f495edfd9495a7
++LINUX_VERSION-6.6 = .47
++LINUX_KERNEL_HASH-6.6.47 = 122ae8f5df5141640a8a2a2068348e81505b932828aeed44330542ac6809940d
+diff --git a/package/kernel/linux/modules/other.mk b/package/kernel/linux/modules/other.mk
+index 4d18c4b888e5..f5913a854600 100644
+--- a/package/kernel/linux/modules/other.mk
++++ b/package/kernel/linux/modules/other.mk
+@@ -590,6 +590,7 @@ define KernelPackage/mtdtests
+   KCONFIG:=CONFIG_MTD_TESTS
+   FILES:=\
+ 	$(LINUX_DIR)/drivers/mtd/tests/mtd_nandbiterrs.ko \
++	$(LINUX_DIR)/drivers/mtd/tests/mtd_test.ko@gt6.6.3 \
+ 	$(LINUX_DIR)/drivers/mtd/tests/mtd_nandecctest.ko \
+ 	$(LINUX_DIR)/drivers/mtd/tests/mtd_oobtest.ko \
+ 	$(LINUX_DIR)/drivers/mtd/tests/mtd_pagetest.ko \
+-- 
+2.34.1
+
