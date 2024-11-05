@@ -1,0 +1,25 @@
+From 8358587f8437c8e7c428c129689f8cf4c3e57e5b Mon Sep 17 00:00:00 2001
+From: Adesh Keremane <quic_adeshk@quicinc.com>
+Date: Tue, 29 Oct 2024 11:36:13 -0700
+Subject: [PATCH] link feeds for fault detection
+
+added fault detection to feeds.conf
+
+Change-Id: I9bc60fcc664a0743120b803be394058fe0d1c0d3
+Signed-off-by: Adesh keremane <adeshk@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 82aa0ebb7e89..9ccf7c986035 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -68,3 +68,4 @@ src-link ai_cloud_lib ../qca/feeds/ai_cloud_lib
+ src-link opensync ../qca/feeds/opensync
+ src-link container_apis ../qca/feeds/container_apis
+ src-link container_interfaces ../qca/feeds/container_interfaces
++src-link fault_detection ../qca/feeds/faultdetection
+-- 
+2.34.1
+
