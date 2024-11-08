@@ -1,0 +1,65 @@
+From 741184f1ad96ef43332b307fa5e93ef2358fd150 Mon Sep 17 00:00:00 2001
+From: Hari Chandrakanthan <quic_haric@quicinc.com>
+Date: Wed, 28 Aug 2024 15:41:59 +0530
+Subject: [PATCH] qsdk: wifi: add qsdk config to enable ATH memory debug
+ support
+
+ATHMEMDEBUG debug infrastructure tracks memory allocation and
+deallocation in a red-black tree. This help to track memory
+comsumption and memory leak at memory allocating function level
+at run time.
+
+Hence add qsdk configs to enable ATHMEMDEBUG support. Below is
+the configs:
+
+  - CONFIG_PACKAGE_MAC80211_ATHMEMDEBUG: This config enable the
+    support for mac80211 package backport compilation.
+
+Steps to enable ATHMEMDEBUG infrastructure in QSDK build:
+
+  - Include the following configurations to enable ATHMEMDEBUG
+    infrastructure in QSDK config
+
+    echo "CONFIG_KERNEL_ATHMEMDEBUG=y" >> .config
+    echo "CONFIG_PACKAGE_MAC80211_ATHMEMDEBUG=y" >> .config
+
+  - Compile QSDK
+
+These configs are disabled by-default.
+
+Change-Id: If2b43e30a4c244fc9b1ae110b251d3228f80332e
+Signed-off-by: Hari Chandrakanthan <quic_haric@quicinc.com>
+Signed-off-by: Raj Kumar Bhagat <quic_rajkbhag@quicinc.com>
+(cherry picked from commit 9a7dddbfee76693776f8354ac330131ce6071ef4)
+---
+ package/kernel/mac80211/Makefile | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
+index 04bb29b46db0..42f061131c64 100644
+--- a/package/kernel/mac80211/Makefile
++++ b/package/kernel/mac80211/Makefile
+@@ -171,6 +171,12 @@ define KernelPackage/mac80211/config
+ 		     This option enables support for qca sfe in QCA boards
+         endif
+ 
++	config PACKAGE_MAC80211_ATHMEMDEBUG
++		bool "Enable memory debug support"
++		default n
++		help
++		  This option enables ATH memory debug support.
++
+ 	config PACKAGE_MAC80211_DEBUGFS
+ 		bool "Export mac80211 internals in DebugFS"
+ 		select KERNEL_DEBUG_FS
+@@ -299,6 +305,7 @@ config-$(CONFIG_PACKAGE_MAC80211_MESSAGE_TRACING) += MAC80211_MESSAGE_TRACING AT
+ config-$(CONFIG_PACKAGE_MAC80211_DEBUG_MENU) += MAC80211_DEBUG_MENU
+ config-$(CONFIG_PACKAGE_MAC80211_VERBOSE_DEBUG) += MAC80211_VERBOSE_DEBUG
+ config-$(CONFIG_PACKAGE_MAC80211_PS_DEBUG) += MAC80211_PS_DEBUG
++config-$(CONFIG_PACKAGE_MAC80211_ATHMEMDEBUG) += MAC80211_ATHMEMDEBUG
+ 
+ config-$(call config_package,mac80211-hwsim) += MAC80211_HWSIM
+ config-$(call config_package,mt7601u) += MT7601U
+-- 
+2.34.1
+
