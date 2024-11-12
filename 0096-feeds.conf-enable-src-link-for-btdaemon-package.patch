@@ -1,0 +1,23 @@
+From dc81562e86589dc409d91be3b5b5cca50fc7697b Mon Sep 17 00:00:00 2001
+From: Atchaya R <quic_ratchaya@quicinc.com>
+Date: Thu, 1 Aug 2024 16:42:54 +0530
+Subject: [PATCH] feeds.conf: enable src-link for btdaemon package
+
+Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
+Change-Id: If3759f023b36aae3903f79e836cf08acdf9e6f05
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 9ccf7c986035..59d8c92b5868 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -69,3 +69,4 @@ src-link opensync ../qca/feeds/opensync
+ src-link container_apis ../qca/feeds/container_apis
+ src-link container_interfaces ../qca/feeds/container_interfaces
+ src-link fault_detection ../qca/feeds/faultdetection
++src-link btdaemon ../qca/feeds/btdaemon
+-- 
+2.34.1
+
