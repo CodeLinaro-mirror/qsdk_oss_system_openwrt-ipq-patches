@@ -1,0 +1,35 @@
+From 4bc62dac334e98af949e68d5bd2ea2f492fa75fa Mon Sep 17 00:00:00 2001
+From: Thomas Wu <quic_wthomas@quicinc.com>
+Date: Wed, 9 Oct 2024 11:42:50 -0700
+Subject: [PATCH] QSDK: mac80211: Add new config in Makefile
+
+Added ATH12K_POWER_BOOST config flag to enable
+Power Boost feature in driver.
+
+Power Boost feature allows driver to the interface
+between userspace and firmware for control commands
+and data.
+
+Patch-dependancy: None
+
+Change-Id: Ib19b519d658d3f054b6a2011c2f602c01b7472f2
+Signed-off-by: Thomas Wu <quic_wthomas@quicinc.com>
+---
+ package/kernel/mac80211/ath.mk | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/package/kernel/mac80211/ath.mk b/package/kernel/mac80211/ath.mk
+index c2f3a9881439..b7402518518b 100644
+--- a/package/kernel/mac80211/ath.mk
++++ b/package/kernel/mac80211/ath.mk
+@@ -27,6 +27,7 @@ ifdef CONFIG_PACKAGE_MAC80211_DEBUGFS
+ 	ATH11K_SMART_ANT_ALG \
+ 	ATH12K_DEBUGFS \
+ 	ATH12K_CFR \
++	ATH12K_POWER_BOOST \
+ 	ATH12K_PKTLOG \
+ 	CARL9170_DEBUGFS \
+ 	ATH5K_DEBUG \
+-- 
+2.34.1
+
