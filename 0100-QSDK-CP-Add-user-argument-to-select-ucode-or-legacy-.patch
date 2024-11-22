@@ -1,0 +1,58 @@
+From a0d7bfb468e87652aa183f5013ad5bb9964e7cf8 Mon Sep 17 00:00:00 2001
+From: Gunaal R <quic_gunar@quicinc.com>
+Date: Fri, 15 Nov 2024 17:40:33 +0530
+Subject: [PATCH] QSDK: CP: Add user argument to select ucode or legacy script
+
+Add user argument to select ucode or legacy script
+for config file generation.
+
+To apply ucode scripts use "wifi config > /etc/config/wireless" command
+and for legacy case use  "wifi config legacy > /etc/config/wireless" command.
+
+Change-Id: Ie130532f91a00214554396a1056099d5cd6970ae
+Signed-off-by: Gunaal R <quic_gunar@quicinc.com>
+---
+ .../config/wifi-scripts/files/sbin/wifi       | 26 +++++++++++--------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files/sbin/wifi b/package/network/config/wifi-scripts/files/sbin/wifi
+index 11d1f964d35f..6cedaa0667ba 100755
+--- a/package/network/config/wifi-scripts/files/sbin/wifi
++++ b/package/network/config/wifi-scripts/files/sbin/wifi
+@@ -198,18 +198,22 @@ wifi_detect_notice() {
+ }
+ 
+ wifi_config() {
++	local cmd="$1"
++	file_path="/lib/wifi/mac80211.uc"
+ 	pre_wifi_config
+-	ucode /usr/share/hostap/wifi-detect.uc
+-	[ ! -f /etc/config/wireless ] && touch /etc/config/wireless
+-	ucode /lib/wifi/mac80211.uc | uci -q batch
+-
+-	for driver in $DRIVERS; do (
+-		if eval "type detect_$driver" 2>/dev/null >/dev/null; then
+-			eval "detect_$driver" "$1" || echo "$driver: Detect failed" >&2
+-		else
+-			echo "$driver: Hardware detection not supported" >&2
+-		fi
+-	); done
++	if [ "$cmd" != "legacy" ] && [ -f "$file_path" ]; then
++		ucode /usr/share/hostap/wifi-detect.uc
++		[ ! -f /etc/config/wireless ] && touch /etc/config/wireless
++		ucode /lib/wifi/mac80211.uc | uci -q batch
++	else
++		for driver in $DRIVERS; do (
++			if eval "type detect_$driver" 2>/dev/null >/dev/null; then
++				eval "detect_$driver" "$1" || echo "$driver: Detect failed" >&2
++			else
++				echo "$driver: Hardware detection not supported" >&2
++			fi
++		); done
++	fi
+ 	post_wifi_config
+ }
+ 
+-- 
+2.34.1
+
