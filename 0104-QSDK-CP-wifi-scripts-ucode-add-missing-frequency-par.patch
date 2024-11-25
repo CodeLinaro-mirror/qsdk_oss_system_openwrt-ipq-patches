@@ -1,0 +1,71 @@
+From d5881590cd0a0c4e707995bcb24a76ec766b1877 Mon Sep 17 00:00:00 2001
+From: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+Date: Sat, 16 Nov 2024 01:39:49 +0530
+Subject: [PATCH] QSDK:CP:wifi-scripts:ucode: add missing frequency params
+
+Change-Id: Ib30aec1fa59198949985e5777a160a69570bef88
+Signed-off-by: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+---
+ package/network/services/hostapd/files/hostapd.uc      |  6 +++++-
+ .../network/services/hostapd/files/wpa_supplicant.uc   | 10 ++++++++--
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
+index 2d9ce2874901..940b26cc2a95 100644
+--- a/package/network/services/hostapd/files/hostapd.uc
++++ b/package/network/services/hostapd/files/hostapd.uc
+@@ -112,7 +112,8 @@ function iface_freq_info(iface, config, params)
+        if (freq < 4000)
+                width = 0;
+
+-       return hostapd.freq_info(freq, sec_offset, width);
++       return hostapd.freq_info(freq, sec_offset, width, params.chan_width,
++                                params.center_freq1, params.center_freq2);
+ }
+
+ function iface_add(phy, config, phy_status)
+@@ -840,7 +841,10 @@ let main_obj = {
+                        radio: 0,
+                        up: true,
+                        frequency: 0,
++                       chan_width: 0,
+                        sec_chan_offset: 0,
++                       center_freq1: 0,
++                       center_freq2: 0,
+                        csa: true,
+                        csa_count: 0,
+                },
+diff --git a/package/network/services/hostapd/files/wpa_supplicant.uc b/package/network/services/hostapd/files/wpa_supplicant.uc
+index fbea27628e34..3f0cb6ecb548 100644
+--- a/package/network/services/hostapd/files/wpa_supplicant.uc
++++ b/package/network/services/hostapd/files/wpa_supplicant.uc
+@@ -329,7 +329,10 @@ function iface_hostapd_notify(phy, ifname, iface, state)
+        case "COMPLETED":
+                msg.up = true;
+                msg.frequency = status.frequency;
++               msg.chan_width = status.chan_width;
+                msg.sec_chan_offset = status.sec_chan_offset;
++               msg.center_freq1 = status.center_freq1;
++               msg.center_freq2 = status.center_freq2;
+                break;
+        default:
+                return;
+@@ -343,10 +346,13 @@ function iface_channel_switch(phy, ifname, iface, info)
+        let msg = {
+                phy: phy,
+                up: true,
+-               csa: true,
+-               csa_count: info.csa_count ? info.csa_count - 1 : 0,
+                frequency: info.frequency,
++               chan_width: info.chan_width,
+                sec_chan_offset: info.sec_chan_offset,
++               center_freq1: info.center_freq1,
++               center_freq2: info.center_freq2,
++               csa: true,
++               csa_count: info.csa_count ? info.csa_count - 1 : 0,
+        };
+        ubus.call("hostapd", "apsta_state", msg);
+ }
+--
+2.34.1
+
