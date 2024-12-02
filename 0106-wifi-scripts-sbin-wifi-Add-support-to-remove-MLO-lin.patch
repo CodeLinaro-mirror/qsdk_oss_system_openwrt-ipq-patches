@@ -1,0 +1,102 @@
+From 64ac68410090808972f09cb8dc91108a81b994c6 Mon Sep 17 00:00:00 2001
+From: Maharaja Kennadyrajan <quic_mkenna@quicinc.com>
+Date: Tue, 19 Nov 2024 17:10:51 +0530
+Subject: [PATCH] wifi-scripts: sbin/wifi: Add support to remove MLO links
+
+Add a new wifi command to remove MLO links dynamically.
+
+Usage:
+wifi mlo_remove_link <phy> <band> <interface-name> <link_id> <removal_timer(5-50)>
+
+Example:
+wifi mlo_remove_link phy00 5g wlan1 1 10
+
+Note:
+interface-name is present in the /etc/config/wireless file.
+
+iw output before mlo_remove_link command:
+root@OpenWrt:/# iw dev
+phy#0
+        Interface wlan1
+                ifindex 23
+                wdev 0x6
+                addr 00:03:7f:01:59:68
+                ssid miami_primary_link1
+                type AP
+                Power mode: 0
+                link 0:
+                  addr 00:03:7f:01:59:68
+                  channel 49 (6195 MHz), width: 160 MHz, center1: 6185 MHz
+                  txpower 19.00 dBm
+                link 1:
+                  addr 00:03:7f:15:15:61
+                  channel 36 (5180 MHz), width: 80 MHz, center1: 5210 MHz
+                  txpower 28.00 dBm
+        Interface wlan0
+                ifindex 22
+                wdev 0x5
+                addr 00:03:7f:01:59:69
+                ssid miami_primary_link
+                type AP
+                Power mode: 0
+                link 0:
+                  addr 00:03:7f:01:59:69
+                  channel 49 (6195 MHz), width: 160 MHz, center1: 6185 MHz
+                  txpower 19.00 dBm
+
+iw output after mlo_remove_link command:
+root@OpenWrt:/# iw dev
+phy#0
+        Interface wlan1
+                ifindex 23
+                wdev 0x6
+                addr 00:03:7f:01:59:68
+                ssid miami_primary_link1
+                type AP
+                Power mode: 0
+                link 0:
+                  addr 00:03:7f:01:59:68
+                  channel 49 (6195 MHz), width: 160 MHz, center1: 6185 MHz
+                  txpower 19.00 dBm
+        Interface wlan0
+                ifindex 22
+                wdev 0x5
+                addr 00:03:7f:01:59:69
+                ssid miami_primary_link
+                type AP
+                Power mode: 0
+                link 0:
+                  addr 00:03:7f:01:59:69
+                  channel 49 (6195 MHz), width: 160 MHz, center1: 6185 MHz
+                  txpower 19.00 dBm
+
+Change-Id: Ic59c7d1ede4e3dc4d509ebe8891a97613da505a4
+Signed-off-by: Maharaja Kennadyrajan <quic_mkenna@quicinc.com>
+---
+ package/network/config/wifi-scripts/files/sbin/wifi | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/package/network/config/wifi-scripts/files/sbin/wifi b/package/network/config/wifi-scripts/files/sbin/wifi
+index 11d1f964d35f..a8d36b5a7412 100755
+--- a/package/network/config/wifi-scripts/files/sbin/wifi
++++ b/package/network/config/wifi-scripts/files/sbin/wifi
+@@ -6,7 +6,7 @@
+ 
+ usage() {
+ 	cat <<EOF
+-Usage: $0 [config|up|down|reconf|reload|status|isup|mlo_add_link <phy> <band> <interface-name> <vap-mac-addr>]
++Usage: $0 [config|up|down|reconf|reload|status|isup|mlo_add_link <phy> <band> <interface-name> <vap-mac-addr>|mlo_remove_link <phy> <band> <interface-name> <link_id> <removal_timer(5-50)]
+ enables (default), disables or configures devices not yet configured.
+ EOF
+ 	exit 1
+@@ -364,6 +364,7 @@ case "$1" in
+ 	recover) wifi_recover "$2";;
+ 	mlo) mlo "$@";;
+ 	mlo_add_link) mlo_add_link "$2" "$3" "$4" "$5";;
++	mlo_remove_link) mlo_remove_link "$2" "$3" "$4" "$5" "$6";;
+ 	standby) standby_wifi_radio_updown "$@" ;;
+         multi_up|\
+         multi_down) [ "$DISABLE_NET_RELOAD" == "1" ] || multi_radio_wifi_updown "$@";;
+-- 
+2.34.1
+
