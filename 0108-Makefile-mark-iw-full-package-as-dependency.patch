@@ -1,0 +1,31 @@
+From 38978924243bd69a80ca629661778972e7cf798b Mon Sep 17 00:00:00 2001
+From: Aditya Kumar Singh <quic_adisi@quicinc.com>
+Date: Tue, 12 Nov 2024 12:33:20 +0530
+Subject: [PATCH] Makefile: mark iw-full package as dependency
+
+There is a requirement to use iw vendor infra which is available in iw-full
+package. Hence instead of iw, mark iw-full as the dependency so that it
+will get enabled.
+
+Change-Id: I2e6cea4ef8cb3cd0d2af90a0570a18077a423328
+Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
+---
+ package/kernel/mac80211/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
+index 42f061131c64..83aaf503e49a 100644
+--- a/package/kernel/mac80211/Makefile
++++ b/package/kernel/mac80211/Makefile
+@@ -104,7 +104,7 @@ PKG_CONFIG_DEPENDS += \
+ define KernelPackage/cfg80211
+   $(call KernelPackage/mac80211/Default)
+   TITLE:=cfg80211 - wireless configuration API
+-  DEPENDS+= +iw +iwinfo +wifi-scripts +wireless-regdb +USE_RFKILL:kmod-rfkill
++  DEPENDS+= +iw-full +iwinfo +wifi-scripts +wireless-regdb +USE_RFKILL:kmod-rfkill
+   ABI_VERSION:=$(PKG_VERSION)-$(PKG_RELEASE)
+   FILES:= \
+ 	$(PKG_BUILD_DIR)/compat/compat.ko \
+-- 
+2.34.1
+
