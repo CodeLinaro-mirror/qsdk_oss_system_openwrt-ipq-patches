@@ -1,0 +1,30 @@
+From c6caf2b1ef3207d8d663d0fc1c2b37a53bf372ce Mon Sep 17 00:00:00 2001
+From: Nagarajan Maran <quic_nmaran@quicinc.com>
+Date: Thu, 21 Nov 2024 12:05:58 +0530
+Subject: [PATCH] QSDK:CP:wdev.uc: Add ru-punct bitmap config for mesh
+
+Add ru-punct-bitmap config for mesh
+
+Change-Id: I6a9d07ff5e09284f5f6349b4de40e83fe4ecdc3e
+Signed-off-by: Nagarajan Maran <quic_nmaran@quicinc.com>
+Signed-off-by: Harshitha Prem <quic_hprem@quicinc.com>
+---
+ .../network/config/wifi-scripts/files/usr/share/hostap/wdev.uc  | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/network/config/wifi-scripts/files/usr/share/hostap/wdev.uc b/package/network/config/wifi-scripts/files/usr/share/hostap/wdev.uc
+index d836a930fc4f..89255dc9fda3 100644
+--- a/package/network/config/wifi-scripts/files/usr/share/hostap/wdev.uc
++++ b/package/network/config/wifi-scripts/files/usr/share/hostap/wdev.uc
+@@ -45,7 +45,7 @@ function iface_start(wdev)
+ 		system(cmd);
+ 	} else if (wdev.mode == "mesh") {
+ 		let cmd = [ "iw", "dev", ifname, "mesh", "join", wdev.ssid, "freq", wdev.freq, htmode ];
+-		for (let key in [ "mcast-rate", "beacon-interval" ])
++		for (let key in [ "mcast-rate", "beacon-interval", "ru-puncturing-bitmap" ])
+ 			if (wdev[key])
+ 				push(cmd, key, wdev[key]);
+ 		system(cmd);
+-- 
+2.34.1
+
