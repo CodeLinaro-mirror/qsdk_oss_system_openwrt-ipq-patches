@@ -1,0 +1,63 @@
+From 38fe8d5763345d388536737e6ea8aa77a57d81cf Mon Sep 17 00:00:00 2001
+From: Kathiravan Thirumoorthy <quic_kathirav@quicinc.com>
+Date: Thu, 28 Nov 2024 20:35:35 +0530
+Subject: [PATCH] Config-kernel: Comment out the compile optimizations kconfig
+
+For certain targets, CONFIG_KERNEL_CC_OPTIMIZE_FOR_PERFORMANCE needs to be enabled for the performance improvement. So, in order to make the option as target specific, comment out the Kconfig definition so that target specific changes to take effect.
+
+Change-Id: I16c36bf17955ae06363241330ec6a46bf653e710
+Signed-off-by: Kathiravan Thirumoorthy <quic_kathirav@quicinc.com>
+---
+ config/Config-kernel.in | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/config/Config-kernel.in b/config/Config-kernel.in
+index d8e67de803be..46a6e4a73ffd 100644
+--- a/config/Config-kernel.in
++++ b/config/Config-kernel.in
+@@ -1354,24 +1354,24 @@ config KERNEL_SQUASHFS_XATTR
+ #
+ # compile optimization setting
+ #
+-choice
+-	prompt "Compiler optimization level"
+-	default KERNEL_CC_OPTIMIZE_FOR_SIZE if SMALL_FLASH
+-
+-config KERNEL_CC_OPTIMIZE_FOR_PERFORMANCE
+-	bool "Optimize for performance"
+-	help
+-	  This is the default optimization level for the kernel, building
+-	  with the "-O2" compiler flag for best performance and most
+-	  helpful compile-time warnings.
+-
+-config KERNEL_CC_OPTIMIZE_FOR_SIZE
+-	bool "Optimize for size"
+-	help
+-	  Enabling this option will pass "-Os" instead of "-O2" to
+-	  your compiler resulting in a smaller kernel.
+-
+-endchoice
++#choice
++#	prompt "Compiler optimization level"
++#	default KERNEL_CC_OPTIMIZE_FOR_SIZE if SMALL_FLASH
++
++#config KERNEL_CC_OPTIMIZE_FOR_PERFORMANCE
++#	bool "Optimize for performance"
++#	help
++#	  This is the default optimization level for the kernel, building
++#	  with the "-O2" compiler flag for best performance and most
++#	  helpful compile-time warnings.
++
++#config KERNEL_CC_OPTIMIZE_FOR_SIZE
++#	bool "Optimize for size"
++#	help
++#	  Enabling this option will pass "-Os" instead of "-O2" to
++#	  your compiler resulting in a smaller kernel.
++
++#endchoice
+ 
+ config KERNEL_AUDIT
+ 	bool "Auditing support"
+-- 
+2.34.1
+
