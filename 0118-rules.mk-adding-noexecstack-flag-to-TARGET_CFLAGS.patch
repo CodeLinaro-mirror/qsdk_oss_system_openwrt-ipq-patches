@@ -1,0 +1,27 @@
+From c96bbdd6ee4339a18f861ec0e7a581a25f75b5dc Mon Sep 17 00:00:00 2001
+From: Madhurya Kandamuru <quic_madhurya@quicinc.com>
+Date: Wed, 4 Dec 2024 11:57:40 +0530
+Subject: [PATCH] rules.mk: adding noexecstack flag to TARGET_CFLAGS
+
+Change-Id: I128bdfaedd3dcb5a81af20f314036faa162fb280
+Signed-off-by: Madhurya Kandamuru <quic_madhurya@quicinc.com>
+---
+ rules.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rules.mk b/rules.mk
+index fe83c9ca1d92..f72a56931805 100644
+--- a/rules.mk
++++ b/rules.mk
+@@ -164,7 +164,7 @@ STAGING_DIR_HOSTPKG:=$(abspath $(STAGING_DIR)/../hostpkg)
+ TARGET_PATH:=$(subst $(space),:,$(filter-out .,$(filter-out ./,$(subst :,$(space),$(PATH)))))
+ TARGET_INIT_PATH:=$(call qstrip,$(CONFIG_TARGET_INIT_PATH))
+ TARGET_INIT_PATH:=$(if $(TARGET_INIT_PATH),$(TARGET_INIT_PATH),/usr/sbin:/sbin:/usr/bin:/bin)
+-TARGET_CFLAGS:=$(TARGET_OPTIMIZATION)$(if $(CONFIG_DEBUG), -g3) $(call qstrip,$(CONFIG_EXTRA_OPTIMIZATION))
++TARGET_CFLAGS:=$(TARGET_OPTIMIZATION)$(if $(CONFIG_DEBUG), -g3) $(call qstrip,$(CONFIG_EXTRA_OPTIMIZATION)) -Wa,--noexecstack
+ TARGET_CXXFLAGS = $(TARGET_CFLAGS)
+ TARGET_ASFLAGS_DEFAULT = $(TARGET_CFLAGS)
+ TARGET_ASFLAGS = $(TARGET_ASFLAGS_DEFAULT)
+-- 
+2.34.1
+
