@@ -1,0 +1,26 @@
+From 16bb1ecabbdc8e6a2f1b4ddc722d743f3090f67a Mon Sep 17 00:00:00 2001
+From: Suruchi Agarwal <quic_suruchia@quicinc.com>
+Date: Fri, 22 Nov 2024 10:31:59 -0800
+Subject: [PATCH] feeds.conf: Added support of udp-clf
+
+Change-Id: Ife865257adbd87b4929436845434d99b3cf287c9
+Signed-off-by: Suruchi Agarwal <quic_suruchia@quicinc.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 82aa0ebb7e89..b1a4e827d6a1 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -8,6 +8,7 @@ src-link qca_platform_utils ../qca/feeds/qca-platform-utils
+ src-link networking ../qca/feeds/networking
+ src-link nss_flowid ../qca/feeds/nss-flowid
+ src-link nss_prop ../qca/feeds/nss-prop
++src-link udp_clf ../qca/feeds/udp-clf
+ src-link nss_host ../qca/feeds/nss-host
+ src-link nss ../qca/feeds/nss
+ src-link ssdk ../qca/feeds/ssdk
+-- 
+2.34.1
+
