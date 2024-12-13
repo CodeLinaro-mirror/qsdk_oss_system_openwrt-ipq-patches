@@ -1,0 +1,46 @@
+From da18ef942b9df9ff4156e6e0eba5fa5ab2d55182 Mon Sep 17 00:00:00 2001
+From: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+Date: Wed, 4 Dec 2024 18:23:20 +0530
+Subject: [PATCH] QSDK:CP: hostapd.uc: pass config file to ADD bss_config
+
+Instead of passing huge buffer with config file contents to hostapd,
+pass the hostapd config file path in ADD bss_config command to prevent
+the parsing issues in hostapd.
+
+This parsing issue caused client association issues in multi-MLD
+tests due to missing security parameters for 4-way handshake.
+
+No client association issues seen with config file based parsing.
+
+Change-Id: I3e7ef2d9cf47f60f7541610eee7c5c7607f1b3e7
+Signed-off-by: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+(cherry picked from commit e971205ebd8207a764c1ffb170c54f23d3f315c4)
+---
+ package/network/services/hostapd/files/hostapd.uc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
+index 47ee73dea3f6..3b3be2a213a1 100644
+--- a/package/network/services/hostapd/files/hostapd.uc
++++ b/package/network/services/hostapd/files/hostapd.uc
+@@ -163,7 +163,6 @@ function iface_freq_info(iface, config, params)
+ 
+ function iface_add(phy, config, phy_status)
+ {
+-	let config_inline = iface_gen_config(config, !!phy_status);
+ 	let id;
+ 	let bss = config.bss[0];
+ 
+@@ -172,7 +171,8 @@ function iface_add(phy, config, phy_status)
+ 	else
+ 		id = config.radio_idx;
+ 
+-	let ret = hostapd.add_iface(`bss_config=${phy}:${config_inline}`, id, bss.ifname);
++	hostapd.printf(`iface_add phy ${phy} id ${id}`);
++	let ret = hostapd.add_iface(`bss_config=${phy}:/var/run/hostapd-${phy}.conf`, id, bss.ifname);
+ 	if (ret < 0)
+ 		return false;
+ 
+-- 
+2.34.1
+

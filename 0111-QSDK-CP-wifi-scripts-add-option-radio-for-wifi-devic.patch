@@ -1,0 +1,73 @@
+From 80d28ab79d1a4cfca95a023b06dbbae75fc0a68d Mon Sep 17 00:00:00 2001
+From: Harshitha Prem <quic_hprem@quicinc.com>
+Date: Thu, 21 Nov 2024 12:02:30 +0530
+Subject: [PATCH] QSDK:CP:wifi-scripts: add option radio for wifi-device
+
+As per latest scripts, "option radio" should be configured default
+in wifi-device section in case of single wiphy architecture.
+
+Change-Id: Ia4d5001b86d8e022e5c2ea2ef7345e14c8cd6c09
+Signed-off-by: Harshitha Prem <quic_hprem@quicinc.com>
+(cherry picked from commit 00a64b9d870e4f46156070539a11159b6e4ca0bc)
+---
+ .../wifi-scripts/files/lib/wifi/mac80211.uc      |  5 +++++
+ .../files/usr/share/hostap/wifi-detect.uc        | 16 +++++++---------
+ 2 files changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc b/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
+index dd6cf44d69a7..b03a69447179 100644
+--- a/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
++++ b/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
+@@ -145,6 +145,11 @@ set ${s}.band='${lc(band_name)}'
+ set ${s}.channel='${channel}'
+ `);
+ 
++if (radio_idx != null) {
++	print(`set ${s}.radio='${radio_idx.idx}'
++`);
++}
++
+ if (channels)
+ 	print(`set ${s}.channels='${channels}'`);
+ 
+diff --git a/package/network/config/wifi-scripts/files/usr/share/hostap/wifi-detect.uc b/package/network/config/wifi-scripts/files/usr/share/hostap/wifi-detect.uc
+index 9b68f97e53ad..4c207c672785 100644
+--- a/package/network/config/wifi-scripts/files/usr/share/hostap/wifi-detect.uc
++++ b/package/network/config/wifi-scripts/files/usr/share/hostap/wifi-detect.uc
+@@ -198,8 +198,11 @@ function wiphy_detect() {
+ 		}
+ 		if (phy.radios) {
+ 			let radios = phy.radios;
++			sort(radios, (a, b) => a.freq_ranges[0].start - b.freq_ranges[0].start);
++
+ 			for (let i=0; i< length(radios) ; i++) {
+ 				let range = radios[i];
++				let radio_name = "radio" + i;
+ 				for (let j=0; j < length(range.freq_ranges); j++) {
+ 					let freq_range = range.freq_ranges[j];
+ 					let start_freq = (range.freq_ranges[0]["start"] / 1000) + 10;
+@@ -207,17 +210,12 @@ function wiphy_detect() {
+ 					start_freq_list[i] = start_freq;
+ 					end_freq_list[i] = end_freq;
+ 				}
+-			}
+-			let first_freq = sort(start_freq_list);
+-			let last_freq = sort(end_freq_list);
+-
+-			for (let i=0; i < length(phy.radios); i++){
+-				let radio_name = "radio" + i;
+ 				multi_radio[radio_name] = {
+-					"idx" : i,
+-					"first_freq" : first_freq[i],
+-					"last_freq" : last_freq[i]
++					"idx" : range.index,
++					"first_freq" : start_freq_list[i],
++					"last_freq" : end_freq_list[i],
+ 				};
++
+ 			}
+ 		}
+ 
+-- 
+2.34.1
+
