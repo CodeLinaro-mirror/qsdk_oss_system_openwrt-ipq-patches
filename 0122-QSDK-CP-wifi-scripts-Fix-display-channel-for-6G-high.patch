@@ -1,0 +1,33 @@
+From 97d4bed6fb26eb8dcd9080b38b3dd3d011583274 Mon Sep 17 00:00:00 2001
+From: Gunaal R <quic_gunar@quicinc.com>
+Date: Fri, 13 Dec 2024 12:26:53 +0530
+Subject: [PATCH] QSDK:CP:wifi-scripts: Fix display channel for 6G high radio
+
+Due to mis-check in radio channel number, 6G high and
+6G low radios dispalyed same radio channel number which
+Due to this 6G high radio VAP is not up.
+
+Fix it by checking appropriate radio channel number.
+
+Change-Id: I91d6e275aa5383ac8e8a13a2dadf3a8756cae70e
+Signed-off-by: Gunaal R <quic_gunar@quicinc.com>
+---
+ package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc b/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
+index b03a69447179..fe564a0d67e0 100644
+--- a/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
++++ b/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
+@@ -96,7 +96,7 @@ function generate_config(info, name, single_wiphy, id, radio_idx) {
+ 		channels = get_channel_list(start_freq, end_freq);
+ 		if (band_name == "6G") {
+ 			let start_freq = radio_idx.first_freq;
+-			if (freq_to_channel(start_freq) == 189)
++			if (freq_to_channel(start_freq) >= 129)
+ 				channel = 197;
+ 			else
+ 				channel = 49;
+-- 
+2.34.1
+
