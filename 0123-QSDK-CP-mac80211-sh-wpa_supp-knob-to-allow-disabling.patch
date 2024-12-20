@@ -1,0 +1,73 @@
+From 2677bd5d0b32da39d260f9a18ea132061a22e1c8 Mon Sep 17 00:00:00 2001
+From: Manish Dharanenthiran <quic_mdharane@quicinc.com>
+Date: Tue, 17 Dec 2024 15:56:08 +0530
+Subject: [PATCH] QSDK:CP: mac80211:sh:  wpa_supp knob to allow disabling
+ reconfig
+
+Current implementation has a behavior where when less number of links
+than the user configured links gets associated due to various reasons
+like AP undergoes CAC or ACS or with the latest implementation, a link
+can be newly added in associated AP MLD post the association. During
+these times, STA MLD will try to re-associate with max number of links
+configured by the user. But, this shouldn't be a default behaviour when
+a new link is dynamically added (ML reconfiguration) in AP MLD.
+
+There is currently no means to differentiate between a link getting
+added post CAC/ACS and dynamic link addition. Hence, allow user to
+control the re-association through a new wpa_supplicant config param.
+
+This patch-set adds new wpa_supplicant configuration named
+'disable_reconfig' which will be set to 0 by default. Setting to 1
+means, the reassociation from station side will not happen.
+
+Change-Id: I022c9acd3f1e5d3d268f5c757382a101a5116ed1
+Signed-off-by: Manish Dharanenthiran <quic_mdharane@quicinc.com>
+---
+ .../network/config/wifi-scripts/files/lib/netifd/hostapd.sh   | 4 ++++
+ .../config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh | 1 +
+ 2 files changed, 5 insertions(+)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+index 40b97d9a355b..3ba2e593b2c3 100644
+--- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+@@ -1718,6 +1718,7 @@ wpa_supplicant_add_network() {
+ 	json_get_values bssid_whitelist bssid_whitelist
+ 	json_get_var sae_pwe sae_pwe
+ 	json_get_var rsn_overriding rsn_overriding
++	json_get_var disable_reconfig disable_reconfig
+ 
+ 	[ -n "$bssid_blacklist" ] && append network_data "bssid_blacklist=$bssid_blacklist" "$N$T"
+ 	[ -n "$bssid_whitelist" ] && append network_data "bssid_whitelist=$bssid_whitelist" "$N$T"
+@@ -1725,6 +1726,8 @@ wpa_supplicant_add_network() {
+ 	[ -n "$sae_pwe" ] && append saepwe "sae_pwe=$sae_pwe" "$N$T"
+ 	[ -n "$rsn_overriding" ] && append rsn_override "rsn_overriding=$rsn_overriding" "$N$T"
+ 
++	[ -n "$disable_reconfig" ] && append reconfig "disable_reconfig=$disable_reconfig" "$N$T"
++
+ 	[ -n "$basic_rate" ] && {
+ 		local br rate_list=
+ 		for br in $basic_rate; do
+@@ -1792,6 +1795,7 @@ network={
+ 	disable_40mhz_scan=$disable_40mhz_scan
+ 	$ru_punct_str
+ 	ccfs=$ccfs
++	$reconfig
+ 	$freq_list
+ }
+ EOF
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index 8abd1abc6aca..e1c5dfd5660b 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -172,6 +172,7 @@ drv_mac80211_init_iface_config() {
+ 	config_add_int unsol_bcast_presp
+ 	config_add_int fils_discovery
+ 	config_add_string ppe_vp
++	config_add_boolean disable_reconfig
+ 
+ 	# mesh
+ 	config_add_string mesh_id
+-- 
+2.34.1
+
