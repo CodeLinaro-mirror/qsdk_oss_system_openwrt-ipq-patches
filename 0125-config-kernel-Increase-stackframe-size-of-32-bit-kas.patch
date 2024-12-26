@@ -1,0 +1,32 @@
+From caa88dbc9b0e6b7a877b2e0df7046a4478ff5892 Mon Sep 17 00:00:00 2001
+From: Poovendhan Selvaraj <quic_poovendh@quicinc.com>
+Date: Thu, 26 Dec 2024 11:37:28 +0530
+Subject: [PATCH] config: kernel: Increase stackframe size of 32 bit kasan
+
+This change increases the stackframe size for the 32-bit kasan.
+The previous stackframe size was insufficient for certain workloads,
+leading to potential stack overflows.
+This change addresses these issues by allocating a larger stackframe.
+
+Change-Id: I710167ea2083b72eed57e2753c8d2e70eedc0aa5
+Signed-off-by: Poovendhan Selvaraj <quic_poovendh@quicinc.com>
+---
+ config/Config-kernel.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/config/Config-kernel.in b/config/Config-kernel.in
+index 46a6e4a73ffd..c24c38864c2b 100644
+--- a/config/Config-kernel.in
++++ b/config/Config-kernel.in
+@@ -467,7 +467,7 @@ config KERNEL_DEBUG_INFO_REDUCED
+ config KERNEL_FRAME_WARN
+ 	int
+ 	range 0 8192
+-	default 1280 if KERNEL_KASAN && !ARCH_64BIT
++	default 1780 if KERNEL_KASAN && !ARCH_64BIT
+ 	default 1024 if !ARCH_64BIT
+ 	default 2048 if ARCH_64BIT
+ 	help
+-- 
+2.34.1
+
