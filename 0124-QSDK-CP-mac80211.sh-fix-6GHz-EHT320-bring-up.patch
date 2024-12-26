@@ -1,0 +1,42 @@
+From 2faa2a3e50fca8a9c2d6638ca183b74a0defb5a8 Mon Sep 17 00:00:00 2001
+From: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+Date: Tue, 24 Dec 2024 17:23:44 +0530
+Subject: [PATCH] QSDK:CP:mac80211.sh: fix 6GHz EHT320 bring-up
+
+eht_oper_centr_freq_seg0_idx values for 6GHz EHT320 mode were wrongly
+derived and due to which bring-up was failing in kernel validation.
+
+Thu Dec 19 10:38:11 2024 daemon.err hostapd: nl80211: kernel reports: Invalid frequency for power mode
+Thu Dec 19 10:38:11 2024 daemon.err hostapd: Could not set channel for kernel driver
+Thu Dec 19 10:38:11 2024 daemon.err hostapd: Interface initialization failed
+
+Fix this by using already present function mac80211_get_seg0 to update
+proper values.
+
+Change-Id: I2296819b94767206df47aabeec90e03114090701
+Signed-off-by: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+---
+ .../wifi-scripts/files/lib/netifd/wireless/mac80211.sh     | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index e1c5dfd5660b..fb17097f8a32 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -459,12 +459,7 @@ mac80211_hostapd_setup_base() {
+ 				if [ -n "$ccfs" ] && [ "$ccfs" -gt 0 ]; then
+ 					idx="$ccfs"
+ 				elif [ -z "$ccfs" ] || [ "$ccfs" -eq "0" ]; then
+-					case "$channel" in
+-						1|5|9|13|17|21|25|29|33|37|41|45|49|53|57|61) idx=31;;
+-						65|69|73|77|81|85|89|93|97|101|105|109|113|117|121|125) idx=95;;
+-						129|133|137|141|145|149|153|157|161|165|169|173|177|181|185|189) idx=159;;
+-						193|197|201|205|209|213|217|221) idx=191;;
+-					esac
++					idx="$(mac80211_get_seg0 "320")"
+ 				fi
+ 
+ 				op_class=137
+-- 
+2.34.1
+
