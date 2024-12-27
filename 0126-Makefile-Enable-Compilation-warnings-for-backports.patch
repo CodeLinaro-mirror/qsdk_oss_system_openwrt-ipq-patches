@@ -1,0 +1,31 @@
+From b1d40e438fb39a26968d8b24ff0f672d2a4477a8 Mon Sep 17 00:00:00 2001
+From: Kaviarasu Sanjeevi <quic_kaviaras@quicinc.com>
+Date: Mon, 23 Sep 2024 20:58:46 +0530
+Subject: [PATCH] Makefile: Enable Compilation warnings for backports
+
+This makefile change will remove "-Werror -Wno-incompatible-pointer-types -Wno-discarded-qualifiers -Wno-int-conversion" which overrides the CC warnings in backports
+
+Hence all the CC warnings will be treated as error in backports.
+
+Change-Id: I367bae9536f1d58e516aaebb0ade4385cd32ee2c
+Signed-off-by: Kaviarasu Sanjeevi <quic_kaviaras@quicinc.com>
+---
+ package/kernel/mac80211/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
+index 04bb29b46db0..ff26f6112258 100644
+--- a/package/kernel/mac80211/Makefile
++++ b/package/kernel/mac80211/Makefile
+@@ -322,7 +322,7 @@ endif
+ 
+ MAKE_OPTS:= \
+ 	$(subst -C $(LINUX_DIR),-C "$(PKG_BUILD_DIR)",$(KERNEL_MAKEOPTS)) \
+-	EXTRA_CFLAGS="-I$(PKG_BUILD_DIR)/include $(IREMAP_CFLAGS) $(C_DEFINES) -I$(STAGING_DIR)/usr/include/qca-nss-drv -I$(STAGING_DIR)/usr/include/qca-nss-ppe -I$(STAGING_DIR)/usr/include/qca-nss-clients -I$(TOPDIR)/qca/src/qca-wifi/telemetry_agent/inc/ -Wall -Werror -Wno-incompatible-pointer-types -Wno-discarded-qualifiers -Wno-int-conversion" \
++	EXTRA_CFLAGS="-I$(PKG_BUILD_DIR)/include $(IREMAP_CFLAGS) $(C_DEFINES) -I$(STAGING_DIR)/usr/include/qca-nss-drv -I$(STAGING_DIR)/usr/include/qca-nss-ppe -I$(STAGING_DIR)/usr/include/qca-nss-clients -I$(TOPDIR)/qca/src/qca-wifi/telemetry_agent/inc/ -Wall" \
+ 	KLIB_BUILD="$(LINUX_DIR)" \
+ 	MODPROBE=true \
+ 	KLIB=$(TARGET_MODULES_DIR) \
+-- 
+2.34.1
+
