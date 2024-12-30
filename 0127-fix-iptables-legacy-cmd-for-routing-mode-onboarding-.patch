@@ -1,0 +1,51 @@
+From fd5701ed091b210cb72a1a52c8da7d5305df06ad Mon Sep 17 00:00:00 2001
+From: Deepak Kumar <quic_deepaku@quicinc.com>
+Date: Mon, 30 Dec 2024 10:30:28 +0530
+Subject: [PATCH] fix iptables legacy cmd for routing mode onboarding in
+ opensync
+
+Change-Id: Ibbf9b20bc3918fc54c4569d5f4e5cb7d29c773a7
+Signed-off-by: Deepak Kumar <quic_deepaku@quicinc.com>
+---
+ include/netfilter.mk                    | 6 ++++++
+ package/network/utils/iptables/Makefile | 6 +++++-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/include/netfilter.mk b/include/netfilter.mk
+index fcd8c3e6d243..1d97831327dd 100644
+--- a/include/netfilter.mk
++++ b/include/netfilter.mk
+@@ -278,6 +278,12 @@ $(eval $(call nf_add,NFNETLINK_QUEUE,CONFIG_NETFILTER_NETLINK_QUEUE, $(P_XT)nfne
+ 
+ $(eval $(if $(NF_KMOD),$(call nf_add,NF_CONNCOUNT,CONFIG_NETFILTER_CONNCOUNT, $(P_XT)nf_conncount),))
+ 
++ifeq ($(CONFIG_OPENSYNC_SUPPORTED),y)
++# skipaccel
++
++$(eval $(call nf_add,IPT_SKIPACCEL,CONFIG_NETFILTER_XT_TARGET_SKIPACCEL, $(P_XT)ipt_skipaccel))
++endif
++
+ #
+ # ebtables
+ #
+diff --git a/package/network/utils/iptables/Makefile b/package/network/utils/iptables/Makefile
+index e2c51c897c2f..239b3c44f372 100644
+--- a/package/network/utils/iptables/Makefile
++++ b/package/network/utils/iptables/Makefile
+@@ -580,8 +580,12 @@ TARGET_CPPFLAGS := \
+ 
+ TARGET_CFLAGS += \
+ 	-I$(PKG_BUILD_DIR)/include \
+-	-I$(LINUX_DIR)/user_headers/include \
++	-I$(LINUX_DIR)/user_headers/include
++
++ifeq ($(CONFIG_OPENSYNC_SUPPORTED),)
++TARGET_CFLAGS += \
+ 	-DNO_LEGACY
++endif
+ 
+ CONFIGURE_ARGS += \
+ 	--enable-shared \
+-- 
+2.34.1
+
