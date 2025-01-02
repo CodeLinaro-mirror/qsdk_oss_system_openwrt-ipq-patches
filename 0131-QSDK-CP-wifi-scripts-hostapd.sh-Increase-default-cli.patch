@@ -1,0 +1,31 @@
+From a81e5b9bacd72409e13f84a5a1a47f496d1bcdb2 Mon Sep 17 00:00:00 2001
+From: Ramya Gnanasekar <quic_rgnanase@quicinc.com>
+Date: Mon, 9 Dec 2024 19:53:44 +0530
+Subject: [PATCH] QSDK:CP:wifi-scripts:hostapd.sh: Increase default client
+ support to 512
+
+Driver supports till 512 clients. Change default number of clients
+supported to 512 by default.
+
+Change-Id: Ic5b2ace757f0747db617fb9dc5e589e1e07c77a2
+Signed-off-by: Ramya Gnanasekar <quic_rgnanase@quicinc.com>
+---
+ package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+index 7d225dfa0427..379523104ae9 100644
+--- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+@@ -603,7 +603,7 @@ hostapd_set_bss_options() {
+ 
+ 	set_default fils 0
+ 	set_default isolate 0
+-	set_default maxassoc 128
++	set_default maxassoc 512
+ 	set_default max_inactivity 0
+ 	set_default short_preamble 1
+ 	set_default disassoc_low_ack 1
+-- 
+2.34.1
+
