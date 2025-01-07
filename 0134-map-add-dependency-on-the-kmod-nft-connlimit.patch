@@ -1,0 +1,29 @@
+From 45ad2cc1423bd4a5fc72adc7941d78d71e696c02 Mon Sep 17 00:00:00 2001
+From: Ken Zhu <quic_guigenz@quicinc.com>
+Date: Fri, 3 Jan 2025 16:55:13 -0800
+Subject: [PATCH] map: add dependency on the kmod-nft-connlimit
+
+kmod-nft-connlimit is required to support port limit
+
+Change-Id: Iea376335a76100496d3d41a6d3d7d04833ef9249
+Signed-off-by: Ken Zhu <quic_guigenz@quicinc.com>
+---
+ package/network/ipv6/map/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/network/ipv6/map/Makefile b/package/network/ipv6/map/Makefile
+index f73b5eefb847..48d507e04fc0 100644
+--- a/package/network/ipv6/map/Makefile
++++ b/package/network/ipv6/map/Makefile
+@@ -17,7 +17,7 @@ include $(INCLUDE_DIR)/cmake.mk
+ define Package/map
+   SECTION:=net
+   CATEGORY:=Network
+-  DEPENDS:=@IPV6 +kmod-ip6-tunnel +libubox +libubus +iptables-mod-conntrack-extra +kmod-nat46
++  DEPENDS:=@IPV6 +kmod-ip6-tunnel +libubox +libubus +iptables-mod-conntrack-extra +kmod-nat46 +kmod-nft-connlimit
+   TITLE:=MAP-E/MAP-T and Lightweight 4over6 configuration support
+   MAINTAINER:=Hans Dedecker <dedeckeh@gmail.com>
+   PROVIDES:=map-t
+-- 
+2.34.1
+
