@@ -1,0 +1,31 @@
+From d78c8dd4087f778a48c9cc613a19c979665a9787 Mon Sep 17 00:00:00 2001
+From: Harshitha Prem <quic_hprem@quicinc.com>
+Date: Tue, 7 Jan 2025 10:30:57 +0530
+Subject: [PATCH] QSDK:CP: wifi-scripts: enable VHT for 2 GHz band
+
+In openwrt scripts, VHT caps are added only for hw_mode 11A
+but incase of QSDK, 2 GHz (hw_mode 11B) can also support VHT caps.
+
+Hence, allow enable_ac for 2 GHz band.
+
+Change-Id: Ib74793d98113d16cc129a456ad75a147d5f774fb
+Signed-off-by: Harshitha Prem <quic_hprem@quicinc.com>
+---
+ .../config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh    | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index fb17097f8a32..680b16c65f6a 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -471,7 +471,6 @@ mac80211_hostapd_setup_base() {
+ 		[ -n "$op_class" ] && append base_cfg "op_class=$op_class" "$N"
+ 	}
+ 
+-	[ "$hwmode" = "a" ] || enable_ac=0
+ 	[ "$band" = "6g" ] && enable_ac=0
+ 
+ 	if [ "$enable_ac" != "0" ]; then
+-- 
+2.34.1
+
