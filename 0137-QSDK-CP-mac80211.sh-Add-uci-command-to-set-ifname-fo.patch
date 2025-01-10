@@ -1,0 +1,36 @@
+From 54a08f89d7a3099c0730bdc7f49a1089625a64a7 Mon Sep 17 00:00:00 2001
+From: Rajat Soni <quic_rajson@quicinc.com>
+Date: Tue, 7 Jan 2025 15:55:53 +0530
+Subject: [PATCH] QSDK:CP: mac80211.sh: Add uci command to set ifname for mld
+
+Currently if option ifname is not given for mld then wifi mlo_add_link
+and wifi mlo_remove link command fails to find interface name due to which
+functionality is not working.
+
+Fix this issue using uci set command to set ifname for mld.
+
+Change-Id: I7c7a08bf90253d7ae73b031df60874850b8ee8cd
+Signed-off-by: Rajat Soni <quic_rajson@quicinc.com>
+---
+ .../wifi-scripts/files/lib/netifd/wireless/mac80211.sh       | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index 34bc97403b20..ff85d2808bb3 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -1092,6 +1092,11 @@ mac80211_prepare_vif() {
+ 
+ 	}
+ 
++	[ -z "$mld" ] || {
++		uci set wireless.${mld}.ifname=$ifname
++		uci commit wireless
++	}
++
+ 	[ -z $ppe_vp ] && ppe_vp="ds"
+ 
+         if [ $mode == "mesh" ] && [ $ppe_vp == "ds" ]; then
+-- 
+2.34.1
+

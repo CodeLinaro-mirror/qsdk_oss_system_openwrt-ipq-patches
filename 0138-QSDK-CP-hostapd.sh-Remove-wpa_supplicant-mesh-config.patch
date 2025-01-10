@@ -1,0 +1,39 @@
+From cf9e7164998093a8400e6d749be02c354268d0f3 Mon Sep 17 00:00:00 2001
+From: Maharaja Kennadyrajan <quic_mkenna@quicinc.com>
+Date: Thu, 9 Jan 2025 22:26:50 +0530
+Subject: [PATCH] QSDK:CP: hostapd.sh: Remove wpa_supplicant mesh config
+ enable_160mhz_bw & enable_320mhz_bw
+
+Remove wpa_supplicant mesh config enable_160mhz_bw & enable_320mhz_bw
+which are already taken care by the max_oper_chwidth config.
+
+Change-Id: I4b9346b4cc8832b3f3a8c540fcfa3caab8a03130
+Signed-off-by: Maharaja Kennadyrajan <quic_mkenna@quicinc.com>
+---
+ .../config/wifi-scripts/files/lib/netifd/hostapd.sh        | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+index 252ed322ac8d..343409e7fcda 100644
+--- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+@@ -1400,16 +1400,9 @@ wpa_supplicant_set_fixed_freq() {
+ 		HE80|VHT80|EHT80) append network_data "max_oper_chwidth=1" "$N$T";;
+ 		HE160|VHT160|EHT160)
+ 			append network_data "max_oper_chwidth=2" "$N$T"
+-			if [ "$_w_mode" = "mesh" ]; then
+-				append network_data "enable_160mhz_bw=1" "$N$T"
+-			fi
+ 		;;
+ 		HE20|HE40|VHT20|VHT40) append network_data "max_oper_chwidth=0" "$N$T";;
+ 		EHT320)
+-			if [ "$_w_mode" = "mesh" ]; then
+-				append network_data "enable_160mhz_bw=1" "$N$T"
+-				append network_data "enable_320mhz_bw=1" "$N$T"
+-			fi
+ 			append network_data "max_oper_chwidth=9" "$N$T"
+ 		;;
+ 		*) append network_data "disable_vht=1" "$N$T";;
+-- 
+2.34.1
+
