@@ -1,0 +1,323 @@
+From e2e792ff0352a6a0cf39d4a676aa3d3bb2dd6f9d Mon Sep 17 00:00:00 2001
+From: Feng Pei <quic_fpei@quicinc.com>
+Date: Sat, 18 Jan 2025 18:18:23 +0800
+Subject: [PATCH] hostapd: Enable MACsec for 13.0 open profile
+
+Change-Id: I53afff809f9fecd70254e3e2acc04b478856a160
+Signed-off-by: Feng Pei <quic_fpei@quicinc.com>
+---
+ package/network/services/hostapd/Makefile     |  28 ++++-
+ .../hostapd/files/hostapd-macsec.config       | 104 ++++++++++++++++++
+ .../files/wpa_supplicant-macsec.config        | 102 +++++++++++++++++
+ 3 files changed, 228 insertions(+), 6 deletions(-)
+ create mode 100644 package/network/services/hostapd/files/hostapd-macsec.config
+ create mode 100644 package/network/services/hostapd/files/wpa_supplicant-macsec.config
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index bc9ed7417cdb..a4f5ef117bd8 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -180,7 +180,10 @@ Package/hostapd-openssl/description = $(Package/hostapd/description)
+ define Package/hostapd-macsec
+ $(call Package/hostapd/Default,$(1))
+   TITLE+= (macsec)
++  PROVIDES:=hostapd-macsec
++  CONFLICTS:=
+   VARIANT:=macsec
++  DEPENDS+=$(OPENSSL_DEPENDS) +kmod-qca-nss-macsec +libnl
+ endef
+ 
+ define Package/hostapd-macsec/description
+@@ -451,7 +454,10 @@ endef
+ define Package/wpa-supplicant-macsec
+ $(call Package/wpa-supplicant/Default,$(1))
+   TITLE:=WPA Supplicant (MACSEC)
++  PROVIDES:=wpa-supplicant-macsec
++  CONFLICTS:=
+   VARIANT:=supplicant-macsec
++  DEPENDS+=$(OPENSSL_DEPENDS) +kmod-qca-nss-macsec +libnl
+ endef
+ 
+ define Package/wpa-supplicant-macsec/Description
+@@ -588,6 +594,11 @@ endif
+ 
+ define Build/Configure
+ 	$(Build/Configure/rebuild)
++	# Revert specific patch for wpa-supplicant-macsec
++	$(if $(filter supplicant-macsec,$(BUILD_VARIANT)), \
++		$(PATCH) -d $(PKG_BUILD_DIR) -p1 -R < $(EXTERNAL_PATCH_DIR)/r31-hostapd-display-the-link_type-of-a-station-through-hostapd_cli.patch && \
++		$(PATCH) -d $(PKG_BUILD_DIR) -p1 -R < $(EXTERNAL_PATCH_DIR)/b00-034-hostapd-Add-max-rate-information-into-STATUS-and-STA.patch \
++	)
+ 	$(if $(wildcard ./files/hostapd-$(CONFIG_VARIANT).config), \
+ 		$(CP) ./files/hostapd-$(CONFIG_VARIANT).config $(PKG_BUILD_DIR)/hostapd/.config \
+ 	)
+@@ -635,9 +646,13 @@ ifdef CONFIG_WPA_ENABLE_WEP
+ endif
+ 
+ ifeq ($(LOCAL_VARIANT),macsec)
+-	TARGET_LDFLAGS += -lcrypto -lssl -lfal -L$(STAGING_DIR)/usr/lib
+-	TARGET_CPPFLAGS += \
+-	-I$(STAGING_DIR)/usr/include/qca-nss-macsec
++	EXTERNAL_PATCH_DIR:=$(TOPDIR)/openwrt-patches/package/network/services/hostapd/patches
++	TARGET_LDFLAGS += -lcrypto -lssl -lfal -L$(STAGING_DIR)/usr/lib -lnl-3 -lnl-genl-3 -lnl-route-3 -ldl -pie
++	TARGET_LDFLAGS := $(filter-out -lnl-tiny, $(TARGET_LDFLAGS))
++	TARGET_CFLAGS += -Wno-implicit-function-declaration -Wno-int-conversion
++	TARGET_CPPFLAGS := \
++		-I$(STAGING_DIR)/usr/include \
++		-I$(STAGING_DIR)/usr/include/qca-nss-macsec
+ endif
+ 
+ define Build/RunMake
+@@ -745,7 +760,6 @@ Package/hostapd/conffiles = $(Package/hostapd-full/conffiles)
+ Package/hostapd-openssl/conffiles = $(Package/hostapd-full/conffiles)
+ Package/hostapd-wolfssl/conffiles = $(Package/hostapd-full/conffiles)
+ Package/hostapd-mbedtls/conffiles = $(Package/hostapd-full/conffiles)
+-Package/hostapd-macsec/conffiles = $(Package/hostapd-full/conffiles)
+ endif
+ 
+ define Install/hostapd
+@@ -782,7 +796,7 @@ Package/hostapd-wolfssl/install = $(Package/hostapd/install)
+ Package/hostapd-mbedtls/install = $(Package/hostapd/install)
+ 
+ define Package/hostapd-macsec/install
+-	$(call Install/hostapd,$(1))
++	$(INSTALL_DIR) $(1)/usr/sbin
+ 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/hostapd/hostapd $(1)/usr/sbin/hostapd-macsec
+ endef
+ 
+@@ -829,7 +843,7 @@ Package/wpa-supplicant-mesh-wolfssl/install = $(Package/wpa-supplicant/install)
+ Package/wpa-supplicant-mesh-mbedtls/install = $(Package/wpa-supplicant/install)
+ 
+ define Package/wpa-supplicant-macsec/install
+-	$(call Install/supplicant,$(1))
++	$(INSTALL_DIR) $(1)/usr/sbin
+ 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wpa_supplicant/wpa_supplicant $(1)/usr/sbin/wpa_supplicant-macsec
+ endef
+ 
+@@ -910,3 +924,5 @@ $(eval $(call BuildPackage,eapol-test))
+ $(eval $(call BuildPackage,eapol-test-openssl))
+ $(eval $(call BuildPackage,eapol-test-wolfssl))
+ $(eval $(call BuildPackage,eapol-test-mbedtls))
++$(eval $(call BuildPackage,hostapd-macsec))
++$(eval $(call BuildPackage,wpa-supplicant-macsec))
+diff --git a/package/network/services/hostapd/files/hostapd-macsec.config b/package/network/services/hostapd/files/hostapd-macsec.config
+new file mode 100644
+index 000000000000..6434d1121e15
+--- /dev/null
++++ b/package/network/services/hostapd/files/hostapd-macsec.config
+@@ -0,0 +1,104 @@
++CONFIG_TLS=openssl
++CONFIG_INTERNAL_LIBTOMMATH=y
++CONFIG_INTERNAL_LIBTOMMATH_FAST=y
++
++# WPA2/IEEE 802.11i RSN pre-authentication
++CONFIG_RSN_PREAUTH=y
++
++# IEEE 802.11w (management frame protection)
++# This version is an experimental implementation based on IEEE 802.11w/D1.0
++# draft and is subject to change since the standard has not yet been finalized.
++# Driver support is also needed for IEEE 802.11w.
++CONFIG_IEEE80211W=y
++
++# Integrated EAP server
++CONFIG_EAP=y
++
++# EAP-MD5 for the integrated EAP server
++CONFIG_EAP_MD5=y
++
++# EAP-TLS for the integrated EAP server
++CONFIG_EAP_TLS=y
++
++# EAP-MSCHAPv2 for the integrated EAP server
++CONFIG_EAP_MSCHAPV2=y
++
++# EAP-PEAP for the integrated EAP server
++CONFIG_EAP_PEAP=y
++
++# EAP-GTC for the integrated EAP server
++CONFIG_EAP_GTC=y
++
++# EAP-TTLS for the integrated EAP server
++CONFIG_EAP_TTLS=y
++
++# Wi-Fi Protected Setup (WPS)
++CONFIG_WPS=y
++# Enable UPnP support for external WPS Registrars
++CONFIG_WPS_UPNP=y
++
++# Build IPv6 support for RADIUS operations
++CONFIG_IPV6=y
++
++# IEEE Std 802.11r-2008 (Fast BSS Transition)
++CONFIG_IEEE80211R=y
++
++# Use the hostapd's IEEE 802.11 authentication (ACL), but without
++# the IEEE 802.11 Management capability (e.g., madwifi or FreeBSD/net80211)
++# extend to use the external radius server acl for wired mac authentication bypass
++CONFIG_DRIVER_RADIUS_ACL=y
++
++# IEEE 802.11ax (HE Throughput) support
++CONFIG_IEEE80211AX=y
++
++# IEEE 802.11be (EHT Throughput) support
++CONFIG_IEEE80211BE=y
++
++CONFIG_NO_VLAN=y
++CONFIG_NO_DUMP_STATE=y
++
++CONFIG_WPS2=y
++CONFIG_HS20=y
++NEED_AP_MLME=y
++CONFIG_P2P_MANAGER=y
++CONFIG_INTERWORKING=y
++ATH_GCM_SUPPORT=y
++CONFIG_WNM=y
++
++# Driver interface for MACsec (Only for wired network)
++CONFIG_DRIVER_MACSEC_QCA=y
++
++# Driver interface for Linux MACsec drivers
++CONFIG_DRIVER_MACSEC_LINUX=y
++
++# Enable MACsec support for hostapd
++CONFIG_MACSEC=y
++
++CONFIG_DRIVER_NL80211=y
++CONFIG_DRIVER_NL80211_QCA=y
++CONFIG_IAPP=y
++CONFIG_IEEE80211N=y
++CONFIG_LIBNL32=y
++CONFIG_PEERKEY=y
++CONFIG_PKCS12=y
++CONFIG_ACS=y
++CONFIG_FST=y
++CONFIG_MBO=y
++ifdef CONFIG_MBO
++	CONFIG_IEEE80211W=y
++endif
++CONFIG_IEEE80211AC=y
++
++CONFIG_FILS=y
++CONFIG_IEEE80211R_AP=y
++CONFIG_OWE=y
++# OpenWrt patch 380-disable-ctrl-iface-mib.patch
++# leads to the MIB only being compiled in if
++# CONFIG_CTRL_IFACE_MIB is enabled.
++CONFIG_CTRL_IFACE_MIB=y
++CONFIG_SAE=y
++CONFIG_DPP=y
++CONFIG_SUITEB=y
++CONFIG_SUITEB192=y
++CONFIG_ERP=y
++CONFIG_TESTING_OPTIONS=y
+diff --git a/package/network/services/hostapd/files/wpa_supplicant-macsec.config b/package/network/services/hostapd/files/wpa_supplicant-macsec.config
+new file mode 100644
+index 000000000000..85b355af1107
+--- /dev/null
++++ b/package/network/services/hostapd/files/wpa_supplicant-macsec.config
+@@ -0,0 +1,102 @@
++# Enable IEEE 802.1X Supplicant (automatically included if any EAP method or
++# MACsec is included)
++CONFIG_IEEE8021X_EAPOL=y
++
++# EAP-MD5
++CONFIG_EAP_MD5=y
++
++# EAP-MSCHAPv2
++CONFIG_EAP_MSCHAPV2=y
++
++# EAP-TLS
++CONFIG_EAP_TLS=y
++
++# EAL-PEAP
++CONFIG_EAP_PEAP=y
++
++# EAP-TTLS
++CONFIG_EAP_TTLS=y
++
++# EAP-FAST
++# Note: Default OpenSSL package does not include support for all the
++# functionality needed for EAP-FAST. If EAP-FAST is enabled with OpenSSL,
++# the OpenSSL library must be patched (openssl-0.9.8d-tls-extensions.patch)
++# to add the needed functions.
++#CONFIG_EAP_FAST=y
++
++# EAP-GTC
++CONFIG_EAP_GTC=y
++
++# EAP-OTP
++CONFIG_EAP_OTP=y
++
++# Select control interface backend for external programs, e.g, wpa_cli:
++# unix = UNIX domain sockets (default for Linux/*BSD)
++# udp = UDP sockets using localhost (127.0.0.1)
++# named_pipe = Windows Named Pipe (default for Windows)
++# y = use default (backwards compatibility)
++# If this option is commented out, control interface is not included in the
++# build.
++CONFIG_CTRL_IFACE=y
++
++# Select configuration backend:
++# file = text file (e.g., wpa_supplicant.conf; note: the configuration file
++#       path is given on command line, not here; this option is just used to
++#       select the backend that allows configuration files to be used)
++# winreg = Windows registry (see win_example.reg for an example)
++CONFIG_BACKEND=file
++
++# Select TLS implementation
++# openssl = OpenSSL (default)
++# gnutls = GnuTLS (needed for TLS/IA, see also CONFIG_GNUTLS_EXTRA)
++# internal = Internal TLSv1 implementation (experimental)
++# none = Empty template
++CONFIG_TLS=openssl
++
++# If CONFIG_TLS=internal is used, additional library and include paths are
++# needed for LibTomMath. Alternatively, an integrated, minimal version of
++# LibTomMath can be used. See beginning of libtommath.c for details on benefits
++# and drawbacks of this option.
++CONFIG_INTERNAL_LIBTOMMATH=y
++CONFIG_INTERNAL_LIBTOMMATH_FAST=y
++
++# P2P
++CONFIG_AP=y
++ATH_GCM_SUPPORT=y
++CONFIG_IEEE80211W=y
++
++# Driver interface for Posedge MACsec (Only for wired network)
++CONFIG_DRIVER_MACSEC_QCA=y
++
++# Driver interface for Linux MACsec drivers
++CONFIG_DRIVER_MACSEC_LINUX=y
++
++# Enable MACsec support for wpa_supplicant
++CONFIG_MACSEC=y
++
++CONFIG_DRIVER_NL80211=y
++CONFIG_PEERKEY=y
++CONFIG_PKCS12=y
++CONFIG_LIBNL32=y
++CONFIG_LIBNL3_ROUTE=y
++CONFIG_EAP_LEAP=y
++
++# Enabled CONFIG_NO_LINUX_PACKET_SOCKET_WAR flag to improve throghput
++CONFIG_NO_LINUX_PACKET_SOCKET_WAR=y
++
++# IEEE 802.11ax (HE Throughput) support
++CONFIG_IEEE80211AX=y
++
++# IEEE 802.11be (EHT Throughput) support
++CONFIG_IEEE80211BE=y
++
++CONFIG_IEEE80211AC=y
++CONFIG_CTRL_IFACE_MIB=y
++CONFIG_UBUS=y
++CONFIG_IEEE80211R=y
++CONFIG_FILS=y
++CONFIG_OWE=y
++CONFIG_SAE=y
++CONFIG_DPP=y
++CONFIG_SUITEB=y
++CONFIG_SUITEB192=y
+-- 
+2.34.1
+

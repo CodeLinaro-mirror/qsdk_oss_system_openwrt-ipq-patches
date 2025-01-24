@@ -1,0 +1,54 @@
+From ce43afb41638fcad74bb7a8faf9a64f91eb51638 Mon Sep 17 00:00:00 2001
+From: Arunpandi Kannan <quic_arunpand@quicinc.com>
+Date: Tue, 21 Jan 2025 23:00:47 +0530
+Subject: [PATCH] QSDK:PROTOCOL: hostapd.sh: Start DPP action scripts properly
+
+Start DPP action scripts properly if dpp configs are enabled.
+This change starts DPP actions scripts for individual interfaces
+for both MLO and non-MLO cases
+
+Change-Id: Ia0b49a2168a0c636ccbcaacf89da0859299fdb98
+Signed-off-by: Arunpandi Kannan <quic_arunpand@quicinc.com>
+---
+ .../wifi-scripts/files/lib/netifd/hostapd.sh  | 24 +++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+index 343409e7fcda..d6284c2f4ae4 100644
+--- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+@@ -1310,11 +1310,27 @@ hostapd_set_log_options() {
+ }
+ 
+ hostapd_dpp_action() {
+-	local ifname="$1"
++	local ifnames="$1"
++	local iface_name=
++	local current_ifaces=
++	local ifname_iter=
++	local script_started=0
++
++	for iface_name in $ifnames
++	do
++		current_ifaces=$(/usr/sbin/hostapd_cli -i $iface_name interface)
++		for ifname_iter in $current_ifaces
++		do
++			if [[ "$ifname_iter" == *"$iface_name"_link* ]]; then
++				/usr/sbin/hostapd_cli -i "$ifname_iter" -p /var/run/hostapd -a /lib/netifd/dpp-hostapd-event-update -B
++				script_started=1
++			fi
++		done
+ 
+-	if [ "${dpp}" -eq 1 ]; then
+-		/usr/sbin/hostapd_cli -i "$ifname" -p /var/run/hostapd -a /lib/netifd/dpp-hostapd-event-update -B
+-	fi
++		if [ $script_started -ne 1 ]; then
++			/usr/sbin/hostapd_cli -i "$iface_name" -p /var/run/hostapd -a /lib/netifd/dpp-hostapd-event-update -B
++		fi
++	done
+ }
+ 
+ _wpa_supplicant_common() {
+-- 
+2.34.1
+

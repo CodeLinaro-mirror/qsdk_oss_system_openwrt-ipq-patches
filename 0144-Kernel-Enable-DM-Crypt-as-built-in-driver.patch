@@ -1,0 +1,31 @@
+From 5865e601697e6a06d76323925c463d9dcd9cd55d Mon Sep 17 00:00:00 2001
+From: Poovendhan Selvaraj <quic_poovendh@quicinc.com>
+Date: Tue, 21 Jan 2025 18:07:54 +0530
+Subject: [PATCH] Kernel: Enable DM Crypt as built-in driver
+
+Change-Id: I5bcf9b9aad8aecb227feaf26d80ea6b7be5c80c0
+Signed-off-by: Poovendhan Selvaraj <quic_poovendh@quicinc.com>
+---
+ package/kernel/linux/modules/block.mk | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/package/kernel/linux/modules/block.mk b/package/kernel/linux/modules/block.mk
+index 3dbeca9f9f28..a38942dea006 100644
+--- a/package/kernel/linux/modules/block.mk
++++ b/package/kernel/linux/modules/block.mk
+@@ -232,11 +232,10 @@ define KernelPackage/dm
+ 	CONFIG_DM_LOG_USERSPACE=n \
+ 	CONFIG_MD=y \
+ 	CONFIG_BLK_DEV_DM \
+-	CONFIG_DM_CRYPT \
++	CONFIG_DM_CRYPT=y \
+ 	CONFIG_DM_MIRROR
+   FILES:= \
+     $(LINUX_DIR)/drivers/md/dm-mod.ko \
+-    $(LINUX_DIR)/drivers/md/dm-crypt.ko \
+     $(LINUX_DIR)/drivers/md/dm-log.ko \
+     $(LINUX_DIR)/drivers/md/dm-mirror.ko \
+     $(LINUX_DIR)/drivers/md/dm-region-hash.ko
+-- 
+2.34.1
+
