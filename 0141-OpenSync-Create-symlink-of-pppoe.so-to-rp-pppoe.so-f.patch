@@ -1,0 +1,30 @@
+From ceba09c0a80d693e7cd81abd2cfc5011f0ae7871 Mon Sep 17 00:00:00 2001
+From: Deepak Kumar <quic_deepaku@quicinc.com>
+Date: Thu, 23 Jan 2025 12:45:17 +0530
+Subject: [PATCH] [OpenSync] Create symlink of pppoe.so to rp-pppoe.so for
+ opensync use case
+
+Change-Id: I0b0843f5bb6e2f0474adfdb58582f70113a14bd2
+Signed-off-by: Deepak Kumar <quic_deepaku@quicinc.com>
+(cherry picked from commit 21bcbe9bc4c58dc1ffbce2b44b12ae585ecaf394)
+---
+ package/network/services/ppp/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/package/network/services/ppp/Makefile b/package/network/services/ppp/Makefile
+index 4e3e5e856a91..1492b241e86c 100644
+--- a/package/network/services/ppp/Makefile
++++ b/package/network/services/ppp/Makefile
+@@ -244,6 +244,9 @@ define Package/ppp-mod-pppoe/install
+ 	$(INSTALL_DIR) $(1)/usr/lib/pppd/$(PKG_RELEASE_VERSION)
+ 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/lib/pppd/$(PKG_RELEASE_VERSION)/pppoe.so \
+ 		$(1)/usr/lib/pppd/$(PKG_RELEASE_VERSION)/
++ifeq ($(CONFIG_OPENSYNC_SUPPORTED),y)
++	$(LN) pppoe.so $(1)/usr/lib/pppd/$(PKG_RELEASE_VERSION)/rp-pppoe.so
++endif
+ endef
+ 
+ define Package/ppp-mod-radius/install
+-- 
+2.34.1
+
