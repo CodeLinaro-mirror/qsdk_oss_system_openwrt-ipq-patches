@@ -1,0 +1,38 @@
+From 97c39a5e05db5d512609ca6e5f27968dd6e5627c Mon Sep 17 00:00:00 2001
+From: Vignesh C <quic_vignc@quicinc.com>
+Date: Tue, 28 Jan 2025 15:43:00 +0530
+Subject: [PATCH] QSDK:CP: hostapd.uc: ucode: set sec_chan offset based on
+ chanwidth
+
+In WDS case, RE AP will be brought up with the same channel configuration as of RE STA. If RE DUT is configured with EHT80
+and when RE STA connects with Root AP on chan width 20, even
+though wpa_s passes the sec_channel as 0 for 20MHz bandwidth, in function iface_freq_info(), its assigned as NULL to auto calculate.
+
+This makes the sec_channel_offset as 1 on uc_wpa_freq_info() and makes iface start call with wrong freq info. As an result of this, RE AP
+wont come up.
+
+To fix this, overwrite sec_channel based on chan_width if the channel params are passed from wpa_s.
+
+Change-Id: Ia50822909d6d973a0d48944fd9915d63e178bc47
+Signed-off-by: Vignesh C <quic_vignc@quicinc.com>
+---
+ package/network/services/hostapd/files/hostapd.uc | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
+index 3b3be2a213a1..a0869db248b3 100644
+--- a/package/network/services/hostapd/files/hostapd.uc
++++ b/package/network/services/hostapd/files/hostapd.uc
+@@ -157,6 +157,9 @@ function iface_freq_info(iface, config, params)
+ 	if (freq < 4000)
+ 		width = 0;
+ 
++	if (params.chan_width != null && params.chan_width <=1)
++		sec_offset = 0;
++
+ 	return hostapd.freq_info(freq, sec_offset, width, params.chan_width,
+ 				 params.center_freq1, params.center_freq2);
+ }
+-- 
+2.34.1
+
