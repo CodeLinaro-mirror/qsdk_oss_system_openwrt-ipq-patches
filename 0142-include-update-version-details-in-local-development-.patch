@@ -1,0 +1,28 @@
+From fbda91e22f54d405fab47f70ded5597da0c2d88d Mon Sep 17 00:00:00 2001
+From: Atchaya R <quic_ratchaya@quicinc.com>
+Date: Tue, 28 Jan 2025 10:43:50 +0530
+Subject: [PATCH] include: update version details in local-development to 1 for
+ prebuilt ipk's during external builds compilation
+
+Change-Id: I012ef1731a2c100f165159e2b2d4c780b7e5aff1
+Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
+---
+ include/local-development.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/local-development.mk b/include/local-development.mk
+index fa898b6f0731..6efdd6b6b4c6 100644
+--- a/include/local-development.mk
++++ b/include/local-development.mk
+@@ -4,7 +4,7 @@ LOCAL_SRC ?= $(TOPDIR)/qca/src/$(PKG_NAME)
+ 
+ ifeq (exists, $(shell [ -d $(LOCAL_SRC) ] && echo exists))
+ PKG_REV=$(shell cd $(LOCAL_SRC)/; git describe --dirty --long --always --abbrev=7| sed 's/.*-g//g')
+-PKG_VERSION:=g$(PKG_REV)
++PKG_VERSION:=1
+ PKG_SOURCE_URL:=
+ PKG_UNPACK=mkdir -p $(PKG_BUILD_DIR); $(CP) $(LOCAL_SRC)/* $(PKG_BUILD_DIR)/
+ endif
+-- 
+2.34.1
+
