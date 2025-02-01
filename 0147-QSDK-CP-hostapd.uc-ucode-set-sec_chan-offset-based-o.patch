@@ -31,8 +31,8 @@ index 3b3be2a213a1..a0869db248b3 100644
 +		sec_offset = 0;
 +
  	return hostapd.freq_info(freq, sec_offset, width, params.chan_width,
- 				 params.center_freq1, params.center_freq2);
- }
+ 				 params.center_freq1, params.center_freq2,
+ 				 params.punct_bitmap);
 -- 
 2.34.1
 
