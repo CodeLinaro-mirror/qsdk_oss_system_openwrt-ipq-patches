@@ -1,0 +1,28 @@
+From 80a288134d947f31784c55848d89e8460a2869e1 Mon Sep 17 00:00:00 2001
+From: Narendhar Reddy <quic_nare@quicinc.com>
+Date: Thu, 23 Jan 2025 15:30:32 +0530
+Subject: [PATCH] Makefile: Enable Compilation warnings for iw.
+
+Add -Wall -Werror compilation flags to enable warnings.
+
+Change-Id: I22f068b1b40658659088893739be81a0252faf2d
+Signed-off-by: Narendhar Reddy <quic_nare@quicinc.com>
+---
+ package/network/utils/iw/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/package/network/utils/iw/Makefile b/package/network/utils/iw/Makefile
+index 1237c106a92c..97d27af1c1ac 100644
+--- a/package/network/utils/iw/Makefile
++++ b/package/network/utils/iw/Makefile
+@@ -53,6 +53,7 @@ TARGET_CPPFLAGS:= \
+ 
+ ifeq ($(BUILD_VARIANT),full)
+   TARGET_CPPFLAGS += -DIW_FULL
++  TARGET_CFLAGS += -Wall -Werror
+   MAKE_FLAGS += IW_FULL=1
+ endif
+ 
+-- 
+2.34.1
+
