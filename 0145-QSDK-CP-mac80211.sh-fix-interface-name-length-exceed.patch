@@ -1,0 +1,82 @@
+From ac7182d4e9b576ad501c65ff57c5bf96a657fe31 Mon Sep 17 00:00:00 2001
+From: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+Date: Fri, 10 Jan 2025 16:56:30 +0530
+Subject: [PATCH] QSDK:CP:mac80211.sh: fix interface name length exceeding max
+ limit
+
+Currently when ifname config is not provided, we derive ifname
+having both band (6g) and mode (ap) prefix like below for non-MLD
+case,
+
+phy#0
+	Interface phy00-6g-ap0
+		ifindex 16
+		wdev 0x3
+		addr 00:03:7f:41:18:91
+		ssid QSoftAP_6G
+		type AP
+		Power mode: 0
+		link 0:
+		  addr 00:03:7f:41:18:91
+		  channel 49 (6195 MHz), width: 80 MHz, center1: 6225 MHz
+		  txpower 16.00 dBm
+
+When WDS STA associates to this VAP, hostapd appends .sta<index> to the
+interface name by default.
+
+So here, hostapd tries to create AP/VLAN interface with the name
+phy00-6g-ap0.sta1 which exceeds the kernel interface name limit of
+15 characters and fails in interface creation.
+
+Due to this missing AP/VLAN interface, ping fails with WDS STA.
+
+Fix this issue by reverting the mode and band prefix for a short
+interface name like phy00.2-0, whether phy00 is phy name, .2 is
+radio index (here 6GHz radio index) and -0 refers to first VAP in
+6GHz radio.
+
+For non-single wiphy case, it is only phy01-1, where phy01 refers to
+phy name, -1 refers to second VAP in this phy radio.
+
+Change-Id: I10dc2df1346a7fa4febb9166841e2b8803308f03
+Signed-off-by: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+(cherry picked from commit 1c21c288cee3e5fa0ef05be1c2ebf116909921db)
+---
+ .../files/lib/netifd/wireless/mac80211.sh            | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index 02dba75a1a3b..42503012eb85 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -1069,14 +1069,6 @@ mac80211_prepare_vif() {
+ 	json_get_vars ifname mode ssid wds powersave macaddr enable wpa_psk_file vlan_file ppe_vp mld
+ 
+ 	[ -n "$ifname" ] || {
+-		local prefix;
+-
+-		case "$mode" in
+-		ap|sta|mesh) prefix=$mode;;
+-		adhoc) prefix=ibss;;
+-		monitor) prefix=mon;;
+-		esac
+-
+                 if [ "$is_wiphy_multi_radio" -eq 1 ]; then
+                         if [[ "$htmode" == EHT* ]] && [ -n "$mld" ]; then
+ 				config_get mld_ifname "$mld" ifname
+@@ -1086,10 +1078,10 @@ mac80211_prepare_vif() {
+ 					ifname="$mld_ifname"
+ 				fi
+                         else
+-                                mac80211_set_ifname "$phy-$band_name" "$prefix"
++				mac80211_set_ifname "$phy$vif_phy_suffix"
+                         fi
+                 else
+-                        mac80211_set_ifname "$phy$vif_phy_suffix" "$prefix"
++                        mac80211_set_ifname "$phy$vif_phy_suffix"
+                 fi
+ 
+ 	}
+-- 
+2.34.1
+
