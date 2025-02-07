@@ -1,0 +1,40 @@
+From 827519785bcbc84eef0bc250c4e707869fc182dd Mon Sep 17 00:00:00 2001
+From: Hariharan Basuthkar <quic_hbasuthk@quicinc.com>
+Date: Thu, 6 Feb 2025 10:40:33 +0530
+Subject: [PATCH] QSDK:CP : Add support for country 00 in mac80211.sh
+
+When the country is set to 00 in the UCI, the output of iw reg get still shows the regulatory information of the previously configured country (US).
+
+As part of the OpenWrt upgrade for ucode, the OpenWrt mac80211.sh replaced the QSDK mac80211.sh. Due to this, the changes for setting the country code for worldwide mode (00) were missed in the OpenWrt mac80211.sh.
+
+To fix this issue, add support for country 00 in the OpenWrt mac80211.sh.
+
+Fixes: I2299484caf0 ("QSDK:CP:mac80211.sh: Add support to bringin features with openwrt upgrade")
+Patch-dependency: None
+Feature: REGULATORY
+
+Change-Id: I0b591db220e2a440f35ec8f19ab1bb103a9d4932
+Signed-off-by: Hariharan Basuthkar <quic_hbasuthk@quicinc.com>
+---
+ .../wifi-scripts/files/lib/netifd/wireless/mac80211.sh       | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index 42503012eb85..88deae315d7c 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -1756,6 +1756,11 @@ drv_mac80211_setup() {
+ 				iw reg set "$country"
+ 				sleep 1
+ 			}
++			if [ "$country" = "00" ]; then
++				iw reg set "$country"
++				sleep 1
++			fi
++
+ 		}
+ 	fi
+ 
+-- 
+2.34.1
+
