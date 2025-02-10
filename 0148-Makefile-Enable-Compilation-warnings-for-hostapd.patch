@@ -1,0 +1,29 @@
+From fb503e010bd599cbfece663d78dc9475ff6d0020 Mon Sep 17 00:00:00 2001
+From: Narendhar Reddy <quic_nare@quicinc.com>
+Date: Fri, 24 Jan 2025 09:58:21 +0530
+Subject: [PATCH] Makefile: Enable Compilation warnings for hostapd.
+
+Add -Wall -Werror compilation flags to enable warnings.
+
+Change-Id: I852658b0bdbf6f32e4f28764c1483c97666a8290
+Signed-off-by: Narendhar Reddy <quic_nare@quicinc.com>
+---
+ package/network/services/hostapd/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index a4f5ef117bd8..e7a474ab57ba 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -634,7 +634,7 @@ TARGET_CPPFLAGS := \
+ 	$(if $(CONFIG_WPA_MSG_MIN_PRIORITY),-DCONFIG_MSG_MIN_PRIORITY=$(CONFIG_WPA_MSG_MIN_PRIORITY))
+ 
+ TARGET_LDFLAGS += -lubox -lubus -lblobmsg_json -lucode -lm -lnl-tiny -ludebug
+-TARGET_CFLAGS += -fPIC
++TARGET_CFLAGS += -fPIC -Wall -Werror
+ 
+ ifdef CONFIG_DEBUG
+ 	TARGET_CFLAGS += -g3
+-- 
+2.34.1
+
