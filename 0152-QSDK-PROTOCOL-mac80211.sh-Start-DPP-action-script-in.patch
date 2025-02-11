@@ -1,0 +1,100 @@
+From 9ed8d85c1345d652c53f802acd876ddfaf1e753f Mon Sep 17 00:00:00 2001
+From: Arunpandi Kannan <quic_arunpand@quicinc.com>
+Date: Sun, 9 Feb 2025 20:09:01 +0530
+Subject: [PATCH] QSDK: PROTOCOL: mac80211.sh: Start DPP action script in STA
+ mode
+
+Start DPP action script if DPP is enabled in STA mode
+
+hostapd.sh: Enable auth cache for DPP encryption
+
+Enable auth cache for DPP encryption and enable dpp related
+configs for DPP.
+
+Change-Id: I616cc7c7e1acddffbcf539d74310b199ef22c9e2
+Signed-off-by: Arunpandi Kannan <quic_arunpand@quicinc.com>
+---
+ .../wifi-scripts/files/lib/netifd/hostapd.sh   | 18 +++++++++++-------
+ .../files/lib/netifd/wireless/mac80211.sh      |  3 +++
+ 2 files changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+index d6284c2f4ae4..2ab6d46d4d39 100644
+--- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+@@ -408,6 +408,7 @@ hostapd_common_add_bss_config() {
+ 
+ 	config_add_int dpp
+ 	config_add_string dpp_csign dpp_connector dpp_netaccesskey dpp_ppkey dpp_connector_sign
++	config_add_int dpp_configurator_connectivity
+ 	config_add_int ssid_protection
+ 
+ 	config_add_int rsn_overriding
+@@ -1048,7 +1049,7 @@ hostapd_set_bss_options() {
+ 			append bss_conf "rsn_preauth_interfaces=$network_bridge" "$N"
+ 		else
+ 			case "$auth_type" in
+-			*sae*|owe)
++			*sae*|owe|dpp)
+ 				set_default auth_cache 1
+ 			;;
+ 			*)
+@@ -1262,13 +1263,14 @@ hostapd_set_bss_options() {
+ 	if [ "$dpp" -eq "1" ]; then
+ 		json_get_vars \
+ 			dpp_csign dpp_connector dpp_netaccesskey dpp_ppkey\
+-			dpp_connector_sign
++			dpp_connector_sign dpp_configurator_connectivity
+ 
+ 		[ -n "$dpp_csign" ] && append bss_conf "dpp_csign=$dpp_csign" "$N"
+ 		[ -n "$dpp_connector" ] && append bss_conf "dpp_connector=$dpp_connector" "$N"
+ 		[ -n "$dpp_netaccesskey" ] && append bss_conf "dpp_netaccesskey=$dpp_netaccesskey" "$N"
+ 		[ -n "$dpp_ppkey" ] && append bss_conf " dpp_ppkey=$dpp_ppkey" "$N"
+ 		[ -n "$dpp_connector_sign" ] && append bss_conf "dpp_connector_sign=$dpp_connector_sign" "$N"
++		[ -n "$dpp_configurator_connectivity" ] && append bss_conf "dpp_configurator_connectivity=$dpp_configurator_connectivity" "$N"
+ 	fi
+ 	[ -n "$ssid_protection" ] && append bss_conf "ssid_protection=$ssid_protection" "$N"
+ 
+@@ -1756,11 +1758,12 @@ wpa_supplicant_add_network() {
+ 			dpp_csign dpp_connector dpp_netaccesskey dpp_ppkey\
+ 			dpp_connector_sign
+ 
+-		[ -n "$dpp_csign" ] && append network_data "dpp_csign=$dpp_csign" "$N"
+-		[ -n "$dpp_connector" ] && append network_data "dpp_connector=$dpp_connector" "$N"
+-		[ -n "$dpp_netaccesskey" ] && append network_data "dpp_netaccesskey=$dpp_netaccesskey" "$N"
+-		[ -n "$dpp_ppkey" ] && append network_data "dpp_ppkey=$dpp_ppkey" "$N"
+-		[ -n "$dpp_connector_sign" ] && append network_data "dpp_connector_sign=$dpp_connector_sign" "$N"
++		[ -n "$dpp_csign" ] && append network_data "dpp_csign=$dpp_csign" "$N$T"
++		[ -n "$dpp_connector" ] && append network_data "dpp_connector=\"$dpp_connector\"" "$N$T"
++		[ -n "$dpp_netaccesskey" ] && append network_data "dpp_netaccesskey=$dpp_netaccesskey" "$N$T"
++		[ -n "$dpp_ppkey" ] && append network_data "dpp_ppkey=$dpp_ppkey" "$N$T"
++		[ -n "$dpp_connector_sign" ] && append network_data "dpp_connector_sign=$dpp_connector_sign" "$N$T"
++		update_config="update_config=1"
+ 
+ 	fi
+ 	[ -n "$ssid_protection" ] && append network_data "ssid_protection=$ssid_protection" "$N$T"
+@@ -1796,6 +1799,7 @@ $saepwe
+ $rsn_override
+ ppe_vp=$ppe_vp_type
+ $freq_list
++$update_config
+ network={
+ 	$scan_ssid
+ 	ssid="$ssid"
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index 960bec8a9a36..ae4972ad4d6d 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -1544,6 +1544,9 @@ wpa_supplicant_start() {
+ 	[ -n "$mld" ] && is_mld="true"
+ 
+ 	ubus_call wpa_supplicant config_set '{ "phy": "'"$phy"'", "radio": '"$radio"', "num_global_macaddr": '"$num_global_macaddr"', "is_ml": '"$is_mld"' }' > /dev/null
++	if [ "${dpp}" -eq 1 ]; then
++		/usr/sbin/wpa_cli -i $ifname -p /var/run/wpa_supplicant -a /lib/netifd/dpp-supplicant-event-update -B
++	fi
+ }
+ 
+ mac80211_setup_supplicant() {
+-- 
+2.34.1
+
