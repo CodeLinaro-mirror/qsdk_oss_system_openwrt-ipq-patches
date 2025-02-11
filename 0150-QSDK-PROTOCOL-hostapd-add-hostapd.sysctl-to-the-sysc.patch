@@ -1,0 +1,39 @@
+From c8194f7ef125d1f82bd4b9b5d95218aced940661 Mon Sep 17 00:00:00 2001
+From: Karthikeyan Kathirvel <quic_kathirve@quicinc.com>
+Date: Thu, 30 Jan 2025 11:12:46 +0530
+Subject: [PATCH] QSDK:PROTOCOL: hostapd: add hostapd.sysctl to the sysctl.d
+ dir
+
+Install the hostapd.sysctl to the sysctl.d directory to set its
+parameter during sysctl initialization.
+
+Change-Id: Ia1b5c3fbf802a5c06e536fd264900f40f0565305
+Signed-off-by: Karthikeyan Kathirvel <quic_kathirve@quicinc.com>
+---
+ package/network/services/hostapd/Makefile | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index a4f5ef117bd8..9e267e728ef1 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -809,12 +809,16 @@ ifneq ($(LOCAL_VARIANT),macsec)
+ endif
+ endif
+ 
++EXTERNAL_DIR:=$(TOPDIR)/openwrt-patches/package/network/services/hostapd/
++
+ define Package/wpad/install
+ 	$(call Install/hostapd,$(1))
+ 	$(call Install/supplicant,$(1))
++	$(INSTALL_DIR) $(1)/etc/sysctl.d
+ 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wpad $(1)/usr/sbin/
+ 	$(LN) wpad $(1)/usr/sbin/hostapd
+ 	$(LN) wpad $(1)/usr/sbin/wpa_supplicant
++	$(INSTALL_BIN) $(EXTERNAL_DIR)/files/hostapd.sysctl $(1)/etc/sysctl.d/hostapd.conf
+ endef
+ Package/wpad-basic/install = $(Package/wpad/install)
+ Package/wpad-basic-openssl/install = $(Package/wpad/install)
+-- 
+2.34.1
+
