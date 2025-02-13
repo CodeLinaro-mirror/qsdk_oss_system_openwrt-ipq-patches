@@ -1,0 +1,65 @@
+From e69a3f55cf37c5de7d4883ab57c6d7a37de637cc Mon Sep 17 00:00:00 2001
+From: Aloka Dixit <aloka.dixit@oss.qualcomm.com>
+Date: Tue, 14 Jan 2025 09:51:38 -0800
+Subject: [PATCH] UPSTREAM:CP:wifi-scripts:ucode: add punct_bitmap support
+
+Add support to pass puncturing bitmap from wpa_supplicant to
+hostapd via ucode when repeater STA completes connection
+and during channel switch operation.
+
+Patch-dependency: none
+
+Change-Id: Ic14cb78b7ca36e4a9f0cf519f9d08c3ed516e3d5
+Signed-off-by: Aloka Dixit <aloka.dixit@oss.qualcomm.com>
+(cherry picked from commit 8d0013a228f1c2b5fd752d11cee66b73fc9cb129)
+---
+ package/network/services/hostapd/files/hostapd.uc        | 4 +++-
+ package/network/services/hostapd/files/wpa_supplicant.uc | 3 +++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
+index a0869db248b3..c0ed7deb0750 100644
+--- a/package/network/services/hostapd/files/hostapd.uc
++++ b/package/network/services/hostapd/files/hostapd.uc
+@@ -161,7 +161,8 @@ function iface_freq_info(iface, config, params)
+ 		sec_offset = 0;
+ 
+ 	return hostapd.freq_info(freq, sec_offset, width, params.chan_width,
+-				 params.center_freq1, params.center_freq2);
++				 params.center_freq1, params.center_freq2,
++				 params.punct_bitmap);
+ }
+ 
+ function iface_add(phy, config, phy_status)
+@@ -917,6 +918,7 @@ let main_obj = {
+ 			center_freq2: 0,
+ 			csa: true,
+ 			csa_count: 0,
++			punct_bitmap: 0,
+ 		},
+ 		call: ex_wrap(function(req) {
+ 			let phy = phy_name(req.args.phy, req.args.radio);
+diff --git a/package/network/services/hostapd/files/wpa_supplicant.uc b/package/network/services/hostapd/files/wpa_supplicant.uc
+index 8d0a9340650c..e6179c165115 100644
+--- a/package/network/services/hostapd/files/wpa_supplicant.uc
++++ b/package/network/services/hostapd/files/wpa_supplicant.uc
+@@ -383,6 +383,8 @@ function iface_hostapd_notify(phy, radio, ifname, iface, state)
+ 			msg.center_freq1 = status.center_freq1;
+ 		if (status.center_freq2 != null)
+ 			msg.center_freq2 = status.center_freq2;
++		if (status.punct_bitmap != null)
++			msg.punct_bitmap = status.punct_bitmap;
+ 		break;
+ 	default:
+ 		return;
+@@ -404,6 +406,7 @@ function iface_channel_switch(phy, radio, ifname, iface, info)
+ 		center_freq2: info.center_freq2,
+ 		csa: true,
+ 		csa_count: info.csa_count ? info.csa_count - 1 : 0,
++		punct_bitmap: info.punct_bitmap,
+ 	};
+ 	ubus.call("hostapd", "apsta_state", msg);
+ }
+-- 
+2.34.1
+
