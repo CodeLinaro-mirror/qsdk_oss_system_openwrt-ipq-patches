@@ -1,0 +1,39 @@
+From 48950db592996477191f422a9f8b699662d4a313 Mon Sep 17 00:00:00 2001
+From: Gautham Kumar Senthilkumaran <quic_gauthamk@quicinc.com>
+Date: Tue, 25 Feb 2025 15:39:52 +0530
+Subject: [PATCH] mac80211: Remove old config from Makefile
+
+Remove ath9k, ath5k and rt2x00 platform compare in Makefile since it is not
+required for latest rebased patches.
+
+Change-Id: I7239b49f7bb59df1389ead544a44669e0fdd4523
+Signed-off-by: Gautham Kumar Senthilkumaran <quic_gauthamk@quicinc.com>
+---
+ package/kernel/mac80211/Makefile | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
+index 5059163deed0..6e4194deb91c 100644
+--- a/package/kernel/mac80211/Makefile
++++ b/package/kernel/mac80211/Makefile
+@@ -377,17 +377,6 @@ ifneq ($(CONFIG_PACKAGE_kmod-cfg80211),)
+  endef
+ endif
+ 
+-#do not Build/Configure for EXTERNAL KERNEL
+-ifeq ($(strip $(CONFIG_EXTERNAL_KERNEL_TREE)),"")
+-  ifeq ($(strip $(CONFIG_KERNEL_GIT_CLONE_URI)),"")
+-    define Build/Configure
+-	  cmp $(PKG_BUILD_DIR)/include/linux/ath9k_platform.h $(LINUX_DIR)/include/linux/ath9k_platform.h
+-	  cmp $(PKG_BUILD_DIR)/include/linux/ath5k_platform.h $(LINUX_DIR)/include/linux/ath5k_platform.h
+-	  cmp $(PKG_BUILD_DIR)/include/linux/rt2x00_platform.h $(LINUX_DIR)/include/linux/rt2x00_platform.h
+-    endef
+-  endif
+-endif
+-
+ EXTERNAL_PATCH_DIR:=$(TOPDIR)/openwrt-patches/package/kernel/mac80211/patches
+ 
+ define Build/Patch
+-- 
+2.34.1
+

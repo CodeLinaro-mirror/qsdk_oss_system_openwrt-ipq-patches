@@ -1,0 +1,42 @@
+From 51fca3cae7d647f17916dcc9051e71526f0525e8 Mon Sep 17 00:00:00 2001
+From: Arunpandi Kannan <quic_arunpand@quicinc.com>
+Date: Sat, 22 Feb 2025 14:00:27 +0530
+Subject: [PATCH] QSDK:CP: mac80211.sh: Append scan freqency list propery for
+ STA.
+
+In repeater case, both AP and STA has same radio device name but different
+mld id. due to that if AP config added in wireless file on top
+followed by STA config, then current existing logic is no appending
+supported frequency list to supplicant confile file. This is due to
+the device name is same but the mld is different.
+
+This will cause issue of scanning in all the radio channels even if config
+is intent to enable only one raidos.
+
+Added change to append freq list by checking for all mld ids if multiple
+mlds have same radio device name.
+
+Change-Id: Ida950c37c5478c0a7c066c8a6aa911778519a25a
+Signed-off-by: Arunpandi Kannan <quic_arunpand@quicinc.com>
+---
+ .../config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh   | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index d4b876b54564..994b595b0558 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -1928,9 +1928,9 @@ mac80211_derive_ml_info() {
+ 	                fi
+ 
+ 	                if ! [[ "$sta_mldevices" =~ "$mldevice" ]]; then
+-	                        append sta_mldevices "$mldevice"
+ 
+ 	                        if [ -n "$mld_name" ] &&  [ "$_mld" = "$mld_name" ]; then
++	                        	append sta_mldevices "$mldevice"
+ 	                                config_get disabled "$mldevice" disabled
+ 	                                if [ "$disabled" -eq 1 ]; then
+ 	                                        continue;
+-- 
+2.34.1
+
