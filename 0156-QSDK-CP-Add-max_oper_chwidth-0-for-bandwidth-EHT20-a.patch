@@ -1,0 +1,36 @@
+From 3dd75b162d9d40bcee7c497f6cc33f2985fe1432 Mon Sep 17 00:00:00 2001
+From: Harish Rachakonda <quic_rachakon@quicinc.com>
+Date: Tue, 25 Feb 2025 14:14:50 +0530
+Subject: [PATCH] QSDK:CP Add max_oper_chwidth 0 for bandwidth EHT20 and EHT40
+
+disabled_vht is set to 1 for the 2G mesh in both EHT20 and EHT40
+bandwidths. This configuration is not populating the VHT capabilities
+in the association, which is negatively impacting the KPI in the 2G mesh
+instead need to add max_oper_chwidth 0 for EHT20 and EHT40 bandwidths.
+
+Patch-dependency: None
+Patch-work: None
+
+Change-Id: Ibf21d79f9c0658d8a0f1298a8ded8da3076f1157
+Signed-off-by: Harish Rachakonda <quic_rachakon@quicinc.com>
+(cherry picked from commit 250f4f55dd47aaf91909e372c85d0375f4ff262b)
+---
+ package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+index 2ab6d46d4d39..5d36dcf87d5a 100644
+--- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+@@ -1419,7 +1419,7 @@ wpa_supplicant_set_fixed_freq() {
+ 		HE160|VHT160|EHT160)
+ 			append network_data "max_oper_chwidth=2" "$N$T"
+ 		;;
+-		HE20|HE40|VHT20|VHT40) append network_data "max_oper_chwidth=0" "$N$T";;
++		HE20|HE40|VHT20|VHT40|EHT20|EHT40) append network_data "max_oper_chwidth=0" "$N$T";;
+ 		EHT320)
+ 			append network_data "max_oper_chwidth=9" "$N$T"
+ 		;;
+-- 
+2.34.1
+
