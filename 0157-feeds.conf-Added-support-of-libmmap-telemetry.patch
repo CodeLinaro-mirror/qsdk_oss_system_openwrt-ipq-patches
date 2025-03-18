@@ -1,0 +1,23 @@
+From 03d2ff46d1e4f117a467cf90410f2bf9e83bbc4c Mon Sep 17 00:00:00 2001
+From: Pragyan Jain <quic_pragjain@quicinc.com>
+Date: Tue, 11 Mar 2025 14:49:23 -0700
+Subject: [PATCH] feeds.conf : Added support of libmmap-telemetry
+
+Change-Id: I74000adbb83f8ffb315527a373db5d8dee5cd99c
+Signed-off-by: Pragyan Jain <quic_pragjain@quicinc.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 57adac6daacc..fbcbe3eb2774 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -72,3 +72,4 @@ src-link container_interfaces ../qca/feeds/container_interfaces
+ src-link fault_detection ../qca/feeds/faultdetection
+ src-link btdaemon ../qca/feeds/btdaemon
+ src-link powerboost ../qca/feeds/powerboost
++src-link libmmap_telemetry ../qca/feeds/libmmap-telemetry
+-- 
+2.34.1
+
