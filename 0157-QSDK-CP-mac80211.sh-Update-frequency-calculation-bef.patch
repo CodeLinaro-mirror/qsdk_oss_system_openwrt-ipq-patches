@@ -1,0 +1,48 @@
+From 1b2ca1b818ceed7f29d8ee474003332319f0bca7 Mon Sep 17 00:00:00 2001
+From: Manish Dharanenthiran <quic_mdharane@quicinc.com>
+Date: Thu, 20 Mar 2025 15:54:17 +0530
+Subject: [PATCH] QSDK:CP:mac80211.sh Update frequency calculation before
+ calculating center freq
+
+Currently, when a new link is dynamically added through 'mlo_add_link'
+option when there is no BSS on that radio created before, script will
+call the network reload and proceed for creating the hostapd config
+through 'drv_mac80211_setup' callback. In this flow, frequency value is
+not updated properly, hence the seg0 index calculation is failing which
+results in wrong center freq getting selected.
+
+This is due to current implementation, where the channel to frequency
+conversion is happening only when the setup is requested for normal
+network restart and not for dynamic link addition.
+
+Fix this by updating the frequency irrespective the setup flow
+requested.
+
+Fixes: Ifaa8e76bc903 ("Add support to handle mlo links addition")
+
+Change-Id: I7450d1a7c9ba92807208deb053483139d0c08155
+Signed-off-by: Manish Dharanenthiran <quic_mdharane@quicinc.com>
+(cherry picked from commit 9540cf70dd1ae56b621bdf7f201028bff8ce8066)
+---
+ .../config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index c59d018c7154..ee7762ffefe1 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -1751,9 +1751,9 @@ drv_mac80211_setup() {
+ 	local found
+ 
+ 	# convert channel to frequency
+-	if [ $mlo_add_flag -eq 0 ]; then
+-		[ "$auto_channel" -gt 0 ] || freq="$(get_freq "$phy" "$channel" "$band")"
++	[ "$auto_channel" -gt 0 ] || freq="$(get_freq "$phy" "$channel" "$band")"
+ 
++	if [ $mlo_add_flag -eq 0 ]; then
+ 		[ -n "$country" ] && {
+ 			iw reg get | grep -q "^country $country:" || {
+ 				iw reg set "$country"
+-- 
+2.34.1
+
