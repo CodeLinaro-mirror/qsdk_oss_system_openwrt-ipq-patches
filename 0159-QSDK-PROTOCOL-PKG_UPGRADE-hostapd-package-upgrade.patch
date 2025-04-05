@@ -1,0 +1,1717 @@
+From 0a073df5a7a89fa920369b342304bc6c63b1c018 Mon Sep 17 00:00:00 2001
+From: Harshitha Prem <quic_hprem@quicinc.com>
+Date: Fri, 21 Feb 2025 12:23:34 +0530
+Subject: [PATCH] QSDK:PROTOCOL: PKG_UPGRADE hostapd: package upgrade
+
+Updated hostapd base to 9th march 2025 commit.
+
+Als,pick changes from I3b75ebebfcb6a5d257e340ae7d6ca0ca2f443112
+
+Change-Id: I3a16a629f1ed8bcdd16f0847f7308264362ce853
+Signed-off-by: Aloka Dixit <aloka.dixit@oss.qualcomm.com>
+Signed-off-by: Harshitha Prem <quic_hprem@quicinc.com>
+---
+ .../files/lib/netifd/wireless/mac80211.sh     |  12 +-
+ package/network/services/hostapd/Makefile     |   6 +-
+ ...hannels-to-be-selected-if-dfs-is-ena.patch |  37 ++--
+ ...edtls-TLS-crypto-option-initial-port.patch |  96 +++++----
+ ...efile-make-run-tests-with-CONFIG_TLS.patch | 123 ++++++-----
+ .../hostapd/patches/301-mesh-noscan.patch     |  52 +++--
+ .../patches/330-nl80211_fix_set_freq.patch    |  16 --
+ .../hostapd/patches/601-ucode_support.patch   | 198 ++++++++++--------
+ .../hostapd/patches/770-radius_server.patch   |  32 +--
+ 9 files changed, 300 insertions(+), 272 deletions(-)
+ delete mode 100644 package/network/services/hostapd/patches/330-nl80211_fix_set_freq.patch
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+index 5454dbeda23f..81eb35dcb935 100755
+--- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+@@ -60,7 +60,6 @@ eht_ulmumimo_80mhz=
+ eht_ulmumimo_160mhz=
+ eht_ulmumimo_320mhz=
+ ru_punct_bitmap=
+-ru_punct_ofdma=
+ ru_punct_acs_threshold=
+ use_ru_puncture_dfs=
+ he_su_beamformer=
+@@ -124,7 +123,6 @@ drv_mac80211_init_device_config() {
+ 		he_spr_psr_enabled \
+ 		he_bss_color_enabled \
+ 		he_twt_required \
+-		ru_punct_ofdma \
+ 		use_ru_puncture_dfs
+ 	config_add_int \
+ 		beamformer_antennas \
+@@ -719,7 +717,7 @@ mac80211_hostapd_setup_base() {
+ 				append base_cfg "eht_oper_chwidth=$eht_oper_chwidth" "$N"
+ 				append base_cfg "eht_oper_centr_freq_seg0_idx=$eht_center_seg0" "$N"
+ 			}
+-			json_get_vars ru_punct_bitmap:0 ru_punct_ofdma:0 ru_punct_acs_threshold:0 ccfs:0
++			json_get_vars ru_punct_bitmap:0 ru_punct_acs_threshold:0 ccfs:0
+ 			append base_cfg "eht_su_beamformer=1" "$N"
+ 			append base_cfg "eht_mu_beamformer=1" "$N"
+ 			append base_cfg "eht_su_beamformee=1" "$N"
+@@ -755,15 +753,11 @@ mac80211_hostapd_setup_base() {
+ 			fi
+ 
+ 			if [ -n "$ru_punct_bitmap" ] && [ "$ru_punct_bitmap" -gt 0 ]; then
+-				append base_cfg "ru_punct_bitmap=$ru_punct_bitmap" "$N"
+-			fi
+-
+-			if [ -n "$ru_punct_ofdma" ] && [ "$ru_punct_ofdma" -gt 0 ]; then
+-				append base_cfg "ru_punct_ofdma=$ru_punct_ofdma" "$N"
++				append base_cfg "punct_bitmap=$ru_punct_bitmap" "$N"
+ 			fi
+ 
+ 			if [ -n "$ru_punct_acs_threshold" ] && [ "$ru_punct_acs_threshold" -gt 0 ]; then
+-				append base_cfg "ru_punct_acs_threshold=$ru_punct_acs_threshold" "$N"
++				append base_cfg "punct_acs_threshold=$ru_punct_acs_threshold" "$N"
+ 			fi
+ 
+ 			[ -n "$use_ru_puncture_dfs" ] && append base_cfg "use_ru_puncture_dfs=$use_ru_puncture_dfs" "$N"
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index a7642ae95423..6a400cd34143 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -9,9 +9,9 @@ PKG_RELEASE:=2
+ 
+ PKG_SOURCE_URL:=https://w1.fi/hostap.git
+ PKG_SOURCE_PROTO:=git
+-PKG_SOURCE_DATE:=2024-09-13
+-PKG_SOURCE_VERSION:=ccba6921de6372a2220350bb5ed5776ea8c76bbb
+-PKG_MIRROR_HASH:=e6ccdc31646e96c663d4948c897eddd0b1e73dd6af50686a6108e064073679e2
++PKG_SOURCE_DATE:=2025-03-10
++PKG_SOURCE_VERSION:=95ad71157e3095c52d5212855ca232832b1b5085
++PKG_MIRROR_HASH:=5d1b2299f52e30bc33cdcbbce5f55be41bb761ccb785e8dc0f47f7be9ede5053
+ PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
+ PKG_LICENSE:=BSD-3-Clause
+ PKG_CPE_ID:=cpe:/a:w1.fi:hostapd
+diff --git a/package/network/services/hostapd/patches/010-mesh-Allow-DFS-channels-to-be-selected-if-dfs-is-ena.patch b/package/network/services/hostapd/patches/010-mesh-Allow-DFS-channels-to-be-selected-if-dfs-is-ena.patch
+index 4291f015180c..9eef846f824a 100644
+--- a/package/network/services/hostapd/patches/010-mesh-Allow-DFS-channels-to-be-selected-if-dfs-is-ena.patch
++++ b/package/network/services/hostapd/patches/010-mesh-Allow-DFS-channels-to-be-selected-if-dfs-is-ena.patch
+@@ -14,7 +14,7 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+ 
+ --- a/wpa_supplicant/wpa_supplicant.c
+ +++ b/wpa_supplicant/wpa_supplicant.c
+-@@ -2698,7 +2698,7 @@ static int drv_supports_vht(struct wpa_s
++@@ -2972,7 +2972,7 @@ static int drv_supports_vht(struct wpa_s
+  }
+  
+  
+@@ -23,7 +23,7 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+  {
+  	int i;
+  
+-@@ -2707,7 +2707,10 @@ static bool ibss_mesh_is_80mhz_avail(int
++@@ -2981,7 +2981,10 @@ static bool ibss_mesh_is_80mhz_avail(int
+  
+  		chan = hw_get_channel_chan(mode, i, NULL);
+  		if (!chan ||
+@@ -35,7 +35,7 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+  			return false;
+  	}
+  
+-@@ -2834,7 +2837,7 @@ static void ibss_mesh_select_40mhz(struc
++@@ -3108,7 +3111,7 @@ static void ibss_mesh_select_40mhz(struc
+  				   const struct wpa_ssid *ssid,
+  				   struct hostapd_hw_modes *mode,
+  				   struct hostapd_freq_params *freq,
+@@ -44,7 +44,7 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+  	int chan_idx;
+  	struct hostapd_channel_data *pri_chan = NULL, *sec_chan = NULL;
+  	int i, res;
+-@@ -2858,8 +2861,11 @@ static void ibss_mesh_select_40mhz(struc
++@@ -3132,8 +3135,11 @@ static void ibss_mesh_select_40mhz(struc
+  		return;
+  
+  	/* Check primary channel flags */
+@@ -57,7 +57,7 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+  
+  #ifdef CONFIG_HT_OVERRIDES
+  	if (ssid->disable_ht40)
+-@@ -2885,8 +2891,11 @@ static void ibss_mesh_select_40mhz(struc
++@@ -3159,8 +3165,11 @@ static void ibss_mesh_select_40mhz(struc
+  		return;
+  
+  	/* Check secondary channel flags */
+@@ -70,7 +70,7 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+  
+  	if (ht40 == -1) {
+  		if (!(pri_chan->flag & HOSTAPD_CHAN_HT40MINUS))
+-@@ -2940,7 +2949,7 @@ static bool ibss_mesh_select_80_160mhz(s
++@@ -3236,7 +3245,7 @@ static bool ibss_mesh_select_80_160mhz(s
+  				       const struct wpa_ssid *ssid,
+  				       struct hostapd_hw_modes *mode,
+  				       struct hostapd_freq_params *freq,
+@@ -79,7 +79,7 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+  	static const int bw80[] = {
+  		5180, 5260, 5500, 5580, 5660, 5745, 5825,
+  		5955, 6035, 6115, 6195, 6275, 6355, 6435,
+-@@ -2985,7 +2994,7 @@ static bool ibss_mesh_select_80_160mhz(s
++@@ -3286,7 +3295,7 @@ static bool ibss_mesh_select_80_160mhz(s
+  		goto skip_80mhz;
+  
+  	/* Use 40 MHz if channel not usable */
+@@ -88,7 +88,7 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+  		goto skip_80mhz;
+  
+  	chwidth = CONF_OPER_CHWIDTH_80MHZ;
+-@@ -2999,7 +3008,7 @@ static bool ibss_mesh_select_80_160mhz(s
++@@ -3300,7 +3309,7 @@ static bool ibss_mesh_select_80_160mhz(s
+  	if ((mode->he_capab[ieee80211_mode].phy_cap[
+  		     HE_PHYCAP_CHANNEL_WIDTH_SET_IDX] &
+  	     HE_PHYCAP_CHANNEL_WIDTH_SET_160MHZ_IN_5G) && is_6ghz &&
+@@ -97,7 +97,20 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+  		for (j = 0; j < ARRAY_SIZE(bw160); j++) {
+  			if (freq->freq == bw160[j]) {
+  				chwidth = CONF_OPER_CHWIDTH_160MHZ;
+-@@ -3027,10 +3036,12 @@ static bool ibss_mesh_select_80_160mhz(s
++@@ -3317,9 +3326,9 @@ static bool ibss_mesh_select_80_160mhz(s
++ 	if ((mode->eht_capab[ieee80211_mode].phy_cap[
++ 		     EHT_PHYCAP_320MHZ_IN_6GHZ_SUPPORT_IDX] &
++ 	     EHT_PHYCAP_320MHZ_IN_6GHZ_SUPPORT_MASK) && is_6ghz &&
++-	    ibss_mesh_is_80mhz_avail(channel + 16, mode) &&
++-	    ibss_mesh_is_80mhz_avail(channel + 32, mode) &&
++-	    ibss_mesh_is_80mhz_avail(channel + 48, mode)) {
+++	    ibss_mesh_is_80mhz_avail(channel + 16, mode, dfs_enabled) &&
+++	    ibss_mesh_is_80mhz_avail(channel + 32, mode, dfs_enabled) &&
+++	    ibss_mesh_is_80mhz_avail(channel + 48, mode, dfs_enabled)) {
++ 		for (j = 0; j < ARRAY_SIZE(bw320); j += 2) {
++ 			if (freq->freq >= bw320[j] &&
++ 			    freq->freq <= bw320[j + 1]) {
++@@ -3348,10 +3357,12 @@ static bool ibss_mesh_select_80_160mhz(s
+  				if (!chan)
+  					continue;
+  
+@@ -113,15 +126,15 @@ Signed-off-by: Peter Oh <peter.oh@bowerswilkins.com>
+  
+  				/* Found a suitable second segment for 80+80 */
+  				chwidth = CONF_OPER_CHWIDTH_80P80MHZ;
+-@@ -3085,6 +3096,7 @@ void ibss_mesh_setup_freq(struct wpa_sup
+- 	int i, obss_scan = 1;
++@@ -3406,6 +3417,7 @@ void ibss_mesh_setup_freq(struct wpa_sup
++ 	int obss_scan = 1;
+  	u8 channel;
+  	bool is_6ghz, is_24ghz;
+ +	bool dfs_enabled = wpa_s->conf->country[0] && (wpa_s->drv_flags & WPA_DRIVER_FLAGS_RADAR);
+  
+  	freq->freq = ssid->frequency;
+  
+-@@ -3133,9 +3145,9 @@ void ibss_mesh_setup_freq(struct wpa_sup
++@@ -3448,9 +3460,9 @@ void ibss_mesh_setup_freq(struct wpa_sup
+  	freq->channel = channel;
+  	/* Setup higher BW only for 5 GHz */
+  	if (mode->mode == HOSTAPD_MODE_IEEE80211A) {
+diff --git a/package/network/services/hostapd/patches/110-mbedtls-TLS-crypto-option-initial-port.patch b/package/network/services/hostapd/patches/110-mbedtls-TLS-crypto-option-initial-port.patch
+index ca56b38f6869..fe992566f572 100644
+--- a/package/network/services/hostapd/patches/110-mbedtls-TLS-crypto-option-initial-port.patch
++++ b/package/network/services/hostapd/patches/110-mbedtls-TLS-crypto-option-initial-port.patch
+@@ -19,9 +19,11 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  create mode 100644 src/crypto/tls_mbedtls.c
+  create mode 100644 tests/build/build-wpa_supplicant-mbedtls.config
+ 
+---- a/hostapd/Makefile
+-+++ b/hostapd/Makefile
+-@@ -757,6 +757,40 @@ endif
++Index: hostapd-2025.02.12~ad8d30e0/hostapd/Makefile
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/hostapd/Makefile
+++++ hostapd-2025.02.12~ad8d30e0/hostapd/Makefile
++@@ -759,6 +759,40 @@ endif
+  CFLAGS += -DTLS_DEFAULT_CIPHERS=\"$(CONFIG_TLS_DEFAULT_CIPHERS)\"
+  endif
+  
+@@ -62,7 +64,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifeq ($(CONFIG_TLS), gnutls)
+  ifndef CONFIG_CRYPTO
+  # default to libgcrypt
+-@@ -936,9 +970,11 @@ endif
++@@ -938,9 +972,11 @@ endif
+  
+  ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -74,7 +76,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef NEED_AES_EAX
+  AESOBJS += ../src/crypto/aes-eax.o
+  NEED_AES_CTR=y
+-@@ -948,38 +984,48 @@ AESOBJS += ../src/crypto/aes-siv.o
++@@ -950,38 +986,48 @@ AESOBJS += ../src/crypto/aes-siv.o
+  NEED_AES_CTR=y
+  endif
+  ifdef NEED_AES_CTR
+@@ -123,7 +125,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef NEED_AES_DEC
+  ifdef CONFIG_INTERNAL_AES
+  AESOBJS += ../src/crypto/aes-internal-dec.o
+-@@ -994,12 +1040,16 @@ ifneq ($(CONFIG_TLS), openssl)
++@@ -996,12 +1042,16 @@ ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), linux)
+  ifneq ($(CONFIG_TLS), gnutls)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -140,7 +142,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef CONFIG_INTERNAL_SHA1
+  SHA1OBJS += ../src/crypto/sha1-internal.o
+  ifdef NEED_FIPS186_2_PRF
+-@@ -1008,16 +1058,22 @@ endif
++@@ -1010,16 +1060,22 @@ endif
+  endif
+  ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -163,7 +165,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  ifdef NEED_SHA1
+  OBJS += $(SHA1OBJS)
+-@@ -1027,11 +1083,13 @@ ifneq ($(CONFIG_TLS), openssl)
++@@ -1029,11 +1085,13 @@ ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), linux)
+  ifneq ($(CONFIG_TLS), gnutls)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -177,7 +179,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  ifdef NEED_MD5
+  ifdef CONFIG_INTERNAL_MD5
+-@@ -1070,56 +1128,81 @@ ifneq ($(CONFIG_TLS), openssl)
++@@ -1083,56 +1141,81 @@ ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), linux)
+  ifneq ($(CONFIG_TLS), gnutls)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -259,7 +261,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  ifdef CONFIG_INTERNAL_SHA384
+  CFLAGS += -DCONFIG_INTERNAL_SHA384
+-@@ -1164,11 +1247,13 @@ HOBJS += $(SHA1OBJS)
++@@ -1177,11 +1260,13 @@ HOBJS += $(SHA1OBJS)
+  ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), linux)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -273,7 +275,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  ifdef CONFIG_RADIUS_SERVER
+  CFLAGS += -DRADIUS_SERVER
+-@@ -1342,7 +1427,9 @@ NOBJS += ../src/utils/trace.o
++@@ -1355,7 +1440,9 @@ NOBJS += ../src/utils/trace.o
+  endif
+  
+  HOBJS += hlr_auc_gw.o ../src/utils/common.o ../src/utils/wpa_debug.o ../src/utils/os_$(CONFIG_OS).o ../src/utils/wpabuf.o ../src/crypto/milenage.o
+@@ -283,10 +285,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef CONFIG_INTERNAL_AES
+  HOBJS += ../src/crypto/aes-internal.o
+  HOBJS += ../src/crypto/aes-internal-enc.o
+-@@ -1365,13 +1452,17 @@ SOBJS += ../src/common/sae.o
+- SOBJS += ../src/common/sae_pk.o
+- SOBJS += ../src/common/dragonfly.o
++@@ -1380,13 +1467,17 @@ SOBJS += ../src/common/dragonfly.o
+  SOBJS += $(AESOBJS)
++ SOBJS += ../src/crypto/sha384.o
++ SOBJS += ../src/crypto/sha512.o
+ +ifneq ($(CONFIG_TLS), mbedtls)
+  SOBJS += ../src/crypto/sha256-prf.o
+  SOBJS += ../src/crypto/sha384-prf.o
+@@ -298,11 +300,13 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  SOBJS += ../src/crypto/sha384-kdf.o
+  SOBJS += ../src/crypto/sha512-kdf.o
+ +endif
+- 
+- _OBJS_VAR := NOBJS
+- include ../src/objs.mk
+---- a/hostapd/defconfig
+-+++ b/hostapd/defconfig
++ SOBJS += ../src/common/wpa_common.o
++ SOBJS += ../src/crypto/random.o
++ SOBJS += ../src/crypto/sha1-prf.o
++Index: hostapd-2025.02.12~ad8d30e0/hostapd/defconfig
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/hostapd/defconfig
+++++ hostapd-2025.02.12~ad8d30e0/hostapd/defconfig
+ @@ -6,9 +6,21 @@
+  # just setting VARIABLE=n is not disabling that variable.
+  #
+@@ -334,8 +338,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  # linux = Linux kernel AF_ALG and internal TLSv1 implementation (experimental)
+  # none = Empty template
+  #CONFIG_TLS=openssl
++Index: hostapd-2025.02.12~ad8d30e0/src/crypto/crypto_mbedtls.c
++===================================================================
+ --- /dev/null
+-+++ b/src/crypto/crypto_mbedtls.c
+++++ hostapd-2025.02.12~ad8d30e0/src/crypto/crypto_mbedtls.c
+ @@ -0,0 +1,4043 @@
+ +/*
+ + * crypto wrapper functions for mbed TLS
+@@ -4380,8 +4386,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+ +}
+ +
+ +#endif
++Index: hostapd-2025.02.12~ad8d30e0/src/crypto/tls_mbedtls.c
++===================================================================
+ --- /dev/null
+-+++ b/src/crypto/tls_mbedtls.c
+++++ hostapd-2025.02.12~ad8d30e0/src/crypto/tls_mbedtls.c
+ @@ -0,0 +1,3313 @@
+ +/*
+ + * SSL/TLS interface functions for mbed TLS
+@@ -7696,8 +7704,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+ +
+ +	return 0;
+ +}
++Index: hostapd-2025.02.12~ad8d30e0/tests/build/build-wpa_supplicant-mbedtls.config
++===================================================================
+ --- /dev/null
+-+++ b/tests/build/build-wpa_supplicant-mbedtls.config
+++++ hostapd-2025.02.12~ad8d30e0/tests/build/build-wpa_supplicant-mbedtls.config
+ @@ -0,0 +1,24 @@
+ +CONFIG_TLS=mbedtls
+ +
+@@ -7723,8 +7733,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+ +CONFIG_SUITEB192=y
+ +
+ +CFLAGS += -Werror
+---- a/tests/hwsim/example-hostapd.config
+-+++ b/tests/hwsim/example-hostapd.config
++Index: hostapd-2025.02.12~ad8d30e0/tests/hwsim/example-hostapd.config
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/tests/hwsim/example-hostapd.config
+++++ hostapd-2025.02.12~ad8d30e0/tests/hwsim/example-hostapd.config
+ @@ -4,6 +4,7 @@ CONFIG_DRIVER_NONE=y
+  CONFIG_DRIVER_NL80211=y
+  CONFIG_RSN_PREAUTH=y
+@@ -7743,8 +7755,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  CONFIG_EAP_EKE=y
+  CONFIG_PKCS12=y
+  CONFIG_RADIUS_SERVER=y
+---- a/tests/hwsim/example-wpa_supplicant.config
+-+++ b/tests/hwsim/example-wpa_supplicant.config
++Index: hostapd-2025.02.12~ad8d30e0/tests/hwsim/example-wpa_supplicant.config
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/tests/hwsim/example-wpa_supplicant.config
+++++ hostapd-2025.02.12~ad8d30e0/tests/hwsim/example-wpa_supplicant.config
+ @@ -2,6 +2,7 @@
+  
+  CONFIG_TLS=openssl
+@@ -7763,9 +7777,11 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  CONFIG_USIM_SIMULATOR=y
+  CONFIG_SIM_SIMULATOR=y
+---- a/wpa_supplicant/Makefile
+-+++ b/wpa_supplicant/Makefile
+-@@ -1230,6 +1230,29 @@ endif
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/Makefile
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/Makefile
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/Makefile
++@@ -1232,6 +1232,29 @@ endif
+  CFLAGS += -DTLS_DEFAULT_CIPHERS=\"$(CONFIG_TLS_DEFAULT_CIPHERS)\"
+  endif
+  
+@@ -7795,7 +7811,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifeq ($(CONFIG_TLS), gnutls)
+  ifndef CONFIG_CRYPTO
+  # default to libgcrypt
+-@@ -1422,9 +1445,11 @@ endif
++@@ -1424,9 +1447,11 @@ endif
+  
+  ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -7807,7 +7823,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef CONFIG_OPENSSL_INTERNAL_AES_WRAP
+  # Seems to be needed at least with BoringSSL
+  NEED_INTERNAL_AES_WRAP=y
+-@@ -1438,9 +1463,11 @@ endif
++@@ -1440,9 +1465,11 @@ endif
+  
+  ifdef NEED_INTERNAL_AES_WRAP
+  ifneq ($(CONFIG_TLS), linux)
+@@ -7819,7 +7835,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef NEED_AES_EAX
+  AESOBJS += ../src/crypto/aes-eax.o
+  NEED_AES_CTR=y
+-@@ -1450,35 +1477,45 @@ AESOBJS += ../src/crypto/aes-siv.o
++@@ -1452,35 +1479,45 @@ AESOBJS += ../src/crypto/aes-siv.o
+  NEED_AES_CTR=y
+  endif
+  ifdef NEED_AES_CTR
+@@ -7865,7 +7881,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef NEED_AES_ENC
+  ifdef CONFIG_INTERNAL_AES
+  AESOBJS += ../src/crypto/aes-internal-enc.o
+-@@ -1493,12 +1530,16 @@ ifneq ($(CONFIG_TLS), openssl)
++@@ -1495,12 +1532,16 @@ ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), linux)
+  ifneq ($(CONFIG_TLS), gnutls)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -7882,7 +7898,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef CONFIG_INTERNAL_SHA1
+  SHA1OBJS += ../src/crypto/sha1-internal.o
+  ifdef NEED_FIPS186_2_PRF
+-@@ -1510,29 +1551,37 @@ CFLAGS += -DCONFIG_NO_PBKDF2
++@@ -1512,29 +1553,37 @@ CFLAGS += -DCONFIG_NO_PBKDF2
+  else
+  ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -7920,7 +7936,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef NEED_MD5
+  ifdef CONFIG_INTERNAL_MD5
+  MD5OBJS += ../src/crypto/md5-internal.o
+-@@ -1587,12 +1636,17 @@ ifneq ($(CONFIG_TLS), openssl)
++@@ -1589,12 +1638,17 @@ ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), linux)
+  ifneq ($(CONFIG_TLS), gnutls)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -7938,7 +7954,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifdef CONFIG_INTERNAL_SHA256
+  SHA256OBJS += ../src/crypto/sha256-internal.o
+  endif
+-@@ -1605,50 +1659,68 @@ CFLAGS += -DCONFIG_INTERNAL_SHA512
++@@ -1607,50 +1661,68 @@ CFLAGS += -DCONFIG_INTERNAL_SHA512
+  SHA256OBJS += ../src/crypto/sha512-internal.o
+  endif
+  ifdef NEED_TLS_PRF_SHA256
+@@ -8007,7 +8023,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  ifdef NEED_ASN1
+  OBJS += ../src/tls/asn1.o
+-@@ -1823,10 +1895,12 @@ ifdef CONFIG_FIPS
++@@ -1825,10 +1897,12 @@ ifdef CONFIG_FIPS
+  CFLAGS += -DCONFIG_FIPS
+  ifneq ($(CONFIG_TLS), openssl)
+  ifneq ($(CONFIG_TLS), wolfssl)
+@@ -8020,8 +8036,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  OBJS += $(SHA1OBJS) $(DESOBJS)
+  
+---- a/wpa_supplicant/defconfig
+-+++ b/wpa_supplicant/defconfig
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/defconfig
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/defconfig
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/defconfig
+ @@ -10,8 +10,8 @@
+  # to override previous values of the variables.
+  
+diff --git a/package/network/services/hostapd/patches/140-tests-Makefile-make-run-tests-with-CONFIG_TLS.patch b/package/network/services/hostapd/patches/140-tests-Makefile-make-run-tests-with-CONFIG_TLS.patch
+index 32e8ec3a89a0..babc2a568db5 100644
+--- a/package/network/services/hostapd/patches/140-tests-Makefile-make-run-tests-with-CONFIG_TLS.patch
++++ b/package/network/services/hostapd/patches/140-tests-Makefile-make-run-tests-with-CONFIG_TLS.patch
+@@ -61,15 +61,15 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+ 
+ --- a/hostapd/Makefile
+ +++ b/hostapd/Makefile
+-@@ -708,6 +708,7 @@ CFLAGS += -DCONFIG_TLSV12
++@@ -709,6 +709,7 @@ CFLAGS += -DCONFIG_TLSV12
+  endif
+  
+  ifeq ($(CONFIG_TLS), wolfssl)
+ +CFLAGS += -DCONFIG_TLS_WOLFSSL
++ CFLAGS += -DCRYPTO_RSA_OAEP_SHA256
+  CONFIG_CRYPTO=wolfssl
+  ifdef TLS_FUNCS
+- OBJS += ../src/crypto/tls_wolfssl.o
+-@@ -728,6 +729,7 @@ endif
++@@ -730,6 +731,7 @@ endif
+  endif
+  
+  ifeq ($(CONFIG_TLS), openssl)
+@@ -77,7 +77,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  CFLAGS += -DCRYPTO_RSA_OAEP_SHA256
+  CONFIG_CRYPTO=openssl
+  ifdef TLS_FUNCS
+-@@ -758,6 +760,7 @@ CFLAGS += -DTLS_DEFAULT_CIPHERS=\"$(CONF
++@@ -760,6 +762,7 @@ CFLAGS += -DTLS_DEFAULT_CIPHERS=\"$(CONF
+  endif
+  
+  ifeq ($(CONFIG_TLS), mbedtls)
+@@ -85,7 +85,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifndef CONFIG_CRYPTO
+  CONFIG_CRYPTO=mbedtls
+  endif
+-@@ -788,6 +791,7 @@ endif
++@@ -790,6 +793,7 @@ endif
+  endif
+  
+  ifeq ($(CONFIG_TLS), gnutls)
+@@ -93,7 +93,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifndef CONFIG_CRYPTO
+  # default to libgcrypt
+  CONFIG_CRYPTO=gnutls
+-@@ -818,6 +822,7 @@ endif
++@@ -820,6 +824,7 @@ endif
+  endif
+  
+  ifeq ($(CONFIG_TLS), internal)
+@@ -101,7 +101,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifndef CONFIG_CRYPTO
+  CONFIG_CRYPTO=internal
+  endif
+-@@ -896,6 +901,7 @@ endif
++@@ -898,6 +903,7 @@ endif
+  endif
+  
+  ifeq ($(CONFIG_TLS), linux)
+@@ -695,10 +695,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      tls = dev.request("GET tls_library")
+ +    if tls.startswith("mbed TLS"):
+ +        raise HwsimSkip("TLS v1.3 not supported")
+-     ok = ['run=OpenSSL 1.1.1', 'run=OpenSSL 3.0', 'run=OpenSSL 3.1',
+-           'run=OpenSSL 3.2', 'wolfSSL']
++     ok = ['run=OpenSSL 1.1.1', 'run=OpenSSL 3.', 'wolfSSL']
+      for s in ok:
+-@@ -122,11 +161,15 @@ def check_pkcs12_support(dev):
++         if s in tls:
++@@ -121,11 +160,15 @@ def check_pkcs12_support(dev):
+      #    raise HwsimSkip("PKCS#12 not supported with this TLS library: " + tls)
+      if tls.startswith("wolfSSL"):
+          raise HwsimSkip("PKCS#12 not supported with this TLS library: " + tls)
+@@ -714,7 +714,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  def check_ec_support(dev):
+      tls = dev.request("GET tls_library")
+-@@ -1741,7 +1784,7 @@ def test_ap_wpa2_eap_ttls_pap_subject_ma
++@@ -1740,7 +1783,7 @@ def test_ap_wpa2_eap_ttls_pap_subject_ma
+      eap_connect(dev[0], hapd, "TTLS", "pap user",
+                  anonymous_identity="ttls", password="password",
+                  ca_cert="auth_serv/ca.pem", phase2="auth=PAP",
+@@ -723,7 +723,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+                  altsubject_match="EMAIL:noone@example.com;DNS:server.w1.fi;URI:http://example.com/")
+      eap_reauth(dev[0], "TTLS")
+  
+-@@ -2976,6 +3019,7 @@ def test_ap_wpa2_eap_tls_neg_domain_matc
++@@ -2975,6 +3018,7 @@ def test_ap_wpa2_eap_tls_neg_domain_matc
+  
+  def test_ap_wpa2_eap_tls_neg_subject_match(dev, apdev):
+      """WPA2-Enterprise negative test - subject mismatch"""
+@@ -731,7 +731,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+      hostapd.add_ap(apdev[0], params)
+      dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="TTLS",
+-@@ -3036,6 +3080,7 @@ def test_ap_wpa2_eap_tls_neg_subject_mat
++@@ -3035,6 +3079,7 @@ def test_ap_wpa2_eap_tls_neg_subject_mat
+  
+  def test_ap_wpa2_eap_tls_neg_altsubject_match(dev, apdev):
+      """WPA2-Enterprise negative test - altsubject mismatch"""
+@@ -739,7 +739,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+      hostapd.add_ap(apdev[0], params)
+  
+-@@ -3582,7 +3627,7 @@ def test_ap_wpa2_eap_ikev2_oom(dev, apde
++@@ -3581,7 +3626,7 @@ def test_ap_wpa2_eap_ikev2_oom(dev, apde
+              dev[0].request("REMOVE_NETWORK all")
+  
+      tls = dev[0].request("GET tls_library")
+@@ -748,7 +748,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+          tests = [(1, "os_get_random;dh_init")]
+      else:
+          tests = [(1, "crypto_dh_init;dh_init")]
+-@@ -4896,7 +4941,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca
++@@ -4901,7 +4946,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca
+      params["private_key"] = "auth_serv/iCA-server/server.key"
+      hostapd.add_ap(apdev[0], params)
+      tls = dev[0].request("GET tls_library")
+@@ -757,7 +757,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+          ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
+          client_cert = "auth_serv/iCA-user/user_and_ica.pem"
+      else:
+-@@ -4962,6 +5007,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca
++@@ -4967,6 +5012,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca
+      run_ap_wpa2_eap_tls_intermediate_ca_ocsp(dev, apdev, params, "-sha1")
+  
+  def run_ap_wpa2_eap_tls_intermediate_ca_ocsp(dev, apdev, params, md):
+@@ -765,7 +765,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      params = int_eap_server_params()
+      params["ca_cert"] = "auth_serv/iCA-server/ca-and-root.pem"
+      params["server_cert"] = "auth_serv/iCA-server/server.pem"
+-@@ -4971,7 +5017,7 @@ def run_ap_wpa2_eap_tls_intermediate_ca_
++@@ -4976,7 +5022,7 @@ def run_ap_wpa2_eap_tls_intermediate_ca_
+      try:
+          hostapd.add_ap(apdev[0], params)
+          tls = dev[0].request("GET tls_library")
+@@ -774,7 +774,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+              ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
+              client_cert = "auth_serv/iCA-user/user_and_ica.pem"
+          else:
+-@@ -5007,7 +5053,7 @@ def run_ap_wpa2_eap_tls_intermediate_ca_
++@@ -5012,7 +5058,7 @@ def run_ap_wpa2_eap_tls_intermediate_ca_
+      try:
+          hostapd.add_ap(apdev[0], params)
+          tls = dev[0].request("GET tls_library")
+@@ -783,7 +783,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+              ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
+              client_cert = "auth_serv/iCA-user/user_and_ica.pem"
+          else:
+-@@ -5057,7 +5103,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca
++@@ -5062,7 +5108,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca
+      try:
+          hostapd.add_ap(apdev[0], params)
+          tls = dev[0].request("GET tls_library")
+@@ -792,7 +792,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+              ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
+              client_cert = "auth_serv/iCA-user/user_and_ica.pem"
+          else:
+-@@ -5124,7 +5170,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca
++@@ -5129,7 +5175,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca
+  
+          hostapd.add_ap(apdev[0], params)
+          tls = dev[0].request("GET tls_library")
+@@ -801,7 +801,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+              ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
+              client_cert = "auth_serv/iCA-user/user_and_ica.pem"
+          else:
+-@@ -5382,6 +5428,7 @@ def test_ap_wpa2_eap_ttls_server_cert_ek
++@@ -5387,6 +5433,7 @@ def test_ap_wpa2_eap_ttls_server_cert_ek
+  
+  def test_ap_wpa2_eap_ttls_server_pkcs12(dev, apdev):
+      """WPA2-Enterprise using EAP-TTLS and server PKCS#12 file"""
+@@ -809,7 +809,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      skip_with_fips(dev[0])
+      params = int_eap_server_params()
+      del params["server_cert"]
+-@@ -5394,6 +5441,7 @@ def test_ap_wpa2_eap_ttls_server_pkcs12(
++@@ -5399,6 +5446,7 @@ def test_ap_wpa2_eap_ttls_server_pkcs12(
+  
+  def test_ap_wpa2_eap_ttls_server_pkcs12_extra(dev, apdev):
+      """EAP-TTLS and server PKCS#12 file with extra certs"""
+@@ -817,7 +817,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      skip_with_fips(dev[0])
+      params = int_eap_server_params()
+      del params["server_cert"]
+-@@ -5416,6 +5464,7 @@ def test_ap_wpa2_eap_ttls_dh_params_serv
++@@ -5421,6 +5469,7 @@ def test_ap_wpa2_eap_ttls_dh_params_serv
+  
+  def test_ap_wpa2_eap_ttls_dh_params_dsa_server(dev, apdev):
+      """WPA2-Enterprise using EAP-TTLS and alternative server dhparams (DSA)"""
+@@ -825,7 +825,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      params = int_eap_server_params()
+      params["dh_file"] = "auth_serv/dsaparam.pem"
+      hapd = hostapd.add_ap(apdev[0], params)
+-@@ -5727,8 +5776,8 @@ def test_ap_wpa2_eap_non_ascii_identity2
++@@ -5732,8 +5781,8 @@ def test_ap_wpa2_eap_non_ascii_identity2
+  def test_openssl_cipher_suite_config_wpas(dev, apdev):
+      """OpenSSL cipher suite configuration on wpa_supplicant"""
+      tls = dev[0].request("GET tls_library")
+@@ -836,7 +836,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+      hapd = hostapd.add_ap(apdev[0], params)
+      eap_connect(dev[0], hapd, "TTLS", "pap user",
+-@@ -5754,14 +5803,14 @@ def test_openssl_cipher_suite_config_wpa
++@@ -5759,14 +5808,14 @@ def test_openssl_cipher_suite_config_wpa
+  def test_openssl_cipher_suite_config_hapd(dev, apdev):
+      """OpenSSL cipher suite configuration on hostapd"""
+      tls = dev[0].request("GET tls_library")
+@@ -855,10 +855,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      eap_connect(dev[0], hapd, "TTLS", "pap user",
+                  anonymous_identity="ttls", password="password",
+                  ca_cert="auth_serv/ca.pem", phase2="auth=PAP")
+-@@ -6207,13 +6256,17 @@ def test_ap_wpa2_eap_tls_versions(dev, a
+-             check_tls_ver(dev[0], hapd,
+-                           "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1",
+-                           "TLSv1.2")
++@@ -6209,13 +6258,17 @@ def test_ap_wpa2_eap_tls_versions(dev, a
++     if tls.startswith("wolfSSL"):
++         check_tls_ver(dev[0], hapd,
++                       "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1", "TLSv1.2")
+ -    elif tls.startswith("internal"):
+ +    elif tls.startswith("internal") or tls.startswith("mbed TLS"):
+          check_tls_ver(dev[0], hapd,
+@@ -875,10 +875,10 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+ +                      "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=0 tls_disable_tlsv1_2=1", "TLSv1.1")
+ +        check_tls_ver(dev[2], hapd,
+ +                      "tls_disable_tlsv1_0=0 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1", "TLSv1")
+-     if "run=OpenSSL 1.1.1" in tls or "run=OpenSSL 3." in tls:
++     if "run=OpenSSL 1.1.1" in tls or "run=OpenSSL 3." in tls or \
++        tls.startswith("wolfSSL"):
+          check_tls_ver(dev[0], hapd,
+-                       "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1 tls_disable_tlsv1_3=0", "TLSv1.3")
+-@@ -6235,6 +6288,11 @@ def test_ap_wpa2_eap_tls_versions_server
++@@ -6238,6 +6291,11 @@ def test_ap_wpa2_eap_tls_versions_server
+      tests = [("TLSv1", "[ENABLE-TLSv1.0][DISABLE-TLSv1.1][DISABLE-TLSv1.2][DISABLE-TLSv1.3]"),
+               ("TLSv1.1", "[ENABLE-TLSv1.0][ENABLE-TLSv1.1][DISABLE-TLSv1.2][DISABLE-TLSv1.3]"),
+               ("TLSv1.2", "[ENABLE-TLSv1.0][ENABLE-TLSv1.1][ENABLE-TLSv1.2][DISABLE-TLSv1.3]")]
+@@ -890,7 +890,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      for exp, flags in tests:
+          hapd.disable()
+          hapd.set("tls_flags", flags)
+-@@ -7305,6 +7363,7 @@ def test_ap_wpa2_eap_assoc_rsn(dev, apde
++@@ -7318,6 +7376,7 @@ def test_ap_wpa2_eap_assoc_rsn(dev, apde
+  def test_eap_tls_ext_cert_check(dev, apdev):
+      """EAP-TLS and external server certification validation"""
+      # With internal server certificate chain validation
+@@ -898,7 +898,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      id = dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="TLS",
+                          identity="tls user",
+                          ca_cert="auth_serv/ca.pem",
+-@@ -7317,6 +7376,7 @@ def test_eap_tls_ext_cert_check(dev, apd
++@@ -7330,6 +7389,7 @@ def test_eap_tls_ext_cert_check(dev, apd
+  def test_eap_ttls_ext_cert_check(dev, apdev):
+      """EAP-TTLS and external server certification validation"""
+      # Without internal server certificate chain validation
+@@ -906,7 +906,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      id = dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="TTLS",
+                          identity="pap user", anonymous_identity="ttls",
+                          password="password", phase2="auth=PAP",
+-@@ -7327,6 +7387,7 @@ def test_eap_ttls_ext_cert_check(dev, ap
++@@ -7340,6 +7400,7 @@ def test_eap_ttls_ext_cert_check(dev, ap
+  def test_eap_peap_ext_cert_check(dev, apdev):
+      """EAP-PEAP and external server certification validation"""
+      # With internal server certificate chain validation
+@@ -914,7 +914,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      id = dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="PEAP",
+                          identity="user", anonymous_identity="peap",
+                          ca_cert="auth_serv/ca.pem",
+-@@ -7337,6 +7398,7 @@ def test_eap_peap_ext_cert_check(dev, ap
++@@ -7350,6 +7411,7 @@ def test_eap_peap_ext_cert_check(dev, ap
+  
+  def test_eap_fast_ext_cert_check(dev, apdev):
+      """EAP-FAST and external server certification validation"""
+@@ -922,7 +922,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      check_eap_capa(dev[0], "FAST")
+      # With internal server certificate chain validation
+      dev[0].request("SET blob fast_pac_auth_ext ")
+-@@ -7351,10 +7413,6 @@ def test_eap_fast_ext_cert_check(dev, ap
++@@ -7364,10 +7426,6 @@ def test_eap_fast_ext_cert_check(dev, ap
+      run_ext_cert_check(dev, apdev, id)
+  
+  def run_ext_cert_check(dev, apdev, net_id):
+@@ -935,7 +935,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+ --- a/tests/hwsim/test_ap_ft.py
+ +++ b/tests/hwsim/test_ap_ft.py
+-@@ -2486,11 +2486,11 @@ def test_ap_ft_ap_oom5(dev, apdev):
++@@ -2543,11 +2543,11 @@ def test_ap_ft_ap_oom5(dev, apdev):
+          # This will fail to roam
+          dev[0].roam(bssid1, check_bssid=False)
+  
+@@ -979,7 +979,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+              raise HwsimSkip("Crypto library does not support Brainpool curves: " + tls)
+      capa = dev.request("GET_CAPABILITY dpp")
+      ver = 1
+-@@ -3902,6 +3903,9 @@ def test_dpp_proto_auth_req_no_i_proto_k
++@@ -3925,6 +3926,9 @@ def test_dpp_proto_auth_req_no_i_proto_k
+  
+  def test_dpp_proto_auth_req_invalid_i_proto_key(dev, apdev):
+      """DPP protocol testing - invalid I-proto key in Auth Req"""
+@@ -989,7 +989,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      run_dpp_proto_auth_req_missing(dev, 66, "Invalid Initiator Protocol Key")
+  
+  def test_dpp_proto_auth_req_no_i_nonce(dev, apdev):
+-@@ -3997,7 +4001,12 @@ def test_dpp_proto_auth_resp_no_r_proto_
++@@ -4020,7 +4024,12 @@ def test_dpp_proto_auth_resp_no_r_proto_
+  
+  def test_dpp_proto_auth_resp_invalid_r_proto_key(dev, apdev):
+      """DPP protocol testing - invalid R-Proto Key in Auth Resp"""
+@@ -1003,7 +1003,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  
+  def test_dpp_proto_auth_resp_no_r_nonce(dev, apdev):
+      """DPP protocol testing - no R-nonce in Auth Resp"""
+-@@ -4359,11 +4368,17 @@ def test_dpp_proto_pkex_exchange_resp_in
++@@ -4382,11 +4391,17 @@ def test_dpp_proto_pkex_exchange_resp_in
+  
+  def test_dpp_proto_pkex_cr_req_invalid_bootstrap_key(dev, apdev):
+      """DPP protocol testing - invalid Bootstrap Key in PKEX Commit-Reveal Request"""
+@@ -1060,11 +1060,11 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+                   phase2="auth=MSCHAPV2")
+ -        erp_test(dev[0], hapd, eap="TEAP", identity="erp-teap@example.com",
+ -                 password="password", ca_cert="auth_serv/ca.pem",
+--                 phase2="auth=MSCHAPV2", pac_file="blob://teap_pac")
++-                 phase2="auth=MSCHAPV2")
+ +        if check_eap_capa(dev[0], "TEAP"):
+ +            erp_test(dev[0], hapd, eap="TEAP", identity="erp-teap@example.com",
+ +                     password="password", ca_cert="auth_serv/ca.pem",
+-+                     phase2="auth=MSCHAPV2", pac_file="blob://teap_pac")
+++                     phase2="auth=MSCHAPV2")
+      erp_test(dev[0], hapd, eap="PSK", identity="erp-psk@example.com",
+               password_hex="0123456789abcdef0123456789abcdef")
+      if "PWD" in eap_methods:
+@@ -1079,7 +1079,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+              dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="TTLS",
+ --- a/tests/hwsim/test_fils.py
+ +++ b/tests/hwsim/test_fils.py
+-@@ -1472,6 +1472,10 @@ def check_ec_group(dev, group):
++@@ -1493,6 +1493,10 @@ def check_ec_group(dev, group):
+      tls = dev.request("GET tls_library")
+      if tls.startswith("wolfSSL"):
+          return
+@@ -1124,7 +1124,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+      heavy_groups = [14, 15, 16]
+      suitable_groups = [15, 16, 17, 18, 19, 20, 21]
+      groups = [str(g) for g in sae_groups]
+-@@ -2194,6 +2199,8 @@ def run_sae_pwe_group(dev, apdev, group)
++@@ -2248,6 +2253,8 @@ def run_sae_pwe_group(dev, apdev, group)
+              logger.info("Add Brainpool EC groups since OpenSSL is new enough")
+          elif tls.startswith("wolfSSL"):
+              logger.info("Make sure Brainpool EC groups were enabled when compiling wolfSSL")
+@@ -1154,7 +1154,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+                     ca_cert="auth_serv/rsa3072-ca.pem",
+ --- a/tests/hwsim/test_wpas_ctrl.py
+ +++ b/tests/hwsim/test_wpas_ctrl.py
+-@@ -1842,7 +1842,7 @@ def _test_wpas_ctrl_oom(dev):
++@@ -1856,7 +1856,7 @@ def _test_wpas_ctrl_oom(dev):
+      tls = dev[0].request("GET tls_library")
+      if not tls.startswith("internal"):
+          tests.append(('NFC_GET_HANDOVER_SEL NDEF P2P-CR-TAG', 'FAIL',
+@@ -1165,18 +1165,13 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+              res = dev[0].request(cmd)
+ --- a/tests/hwsim/utils.py
+ +++ b/tests/hwsim/utils.py
+-@@ -145,7 +145,13 @@ def check_imsi_privacy_support(dev):
+- 
+- def check_tls_tod(dev):
++@@ -151,7 +151,8 @@ def check_tls_tod(dev):
+      tls = dev.request("GET tls_library")
+--    if not tls.startswith("OpenSSL") and not tls.startswith("internal"):
+-+    if tls.startswith("OpenSSL"):
+-+        return
+-+    elif tls.startswith("internal"):
+-+        return
+-+    elif tls.startswith("mbed TLS"):
+-+        return
+-+    else:
++     if not tls.startswith("OpenSSL") and \
++        not tls.startswith("wolfSSL") and \
++-       not tls.startswith("internal"):
+++       not tls.startswith("internal") and \
+++       not tls.startswith("mbed TLS"):
+          raise HwsimSkip("TLS TOD-TOFU/STRICT not supported with this TLS library: " + tls)
+  
+  def vht_supported():
+@@ -1294,15 +1289,15 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  		if (need_more_data) {
+ --- a/wpa_supplicant/Makefile
+ +++ b/wpa_supplicant/Makefile
+-@@ -1188,6 +1188,7 @@ TLS_FUNCS=y
++@@ -1190,6 +1190,7 @@ TLS_FUNCS=y
+  endif
+  
+  ifeq ($(CONFIG_TLS), wolfssl)
+ +CFLAGS += -DCONFIG_TLS_WOLFSSL
++ CFLAGS += -DCRYPTO_RSA_OAEP_SHA256
+  ifdef TLS_FUNCS
+  CFLAGS += -DWOLFSSL_DER_LOAD
+- OBJS += ../src/crypto/tls_wolfssl.o
+-@@ -1203,6 +1204,7 @@ LIBS_p += -lwolfssl -lm
++@@ -1206,6 +1207,7 @@ LIBS_p += -lwolfssl -lm
+  endif
+  
+  ifeq ($(CONFIG_TLS), openssl)
+@@ -1310,7 +1305,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  CFLAGS += -DCRYPTO_RSA_OAEP_SHA256
+  ifdef TLS_FUNCS
+  CFLAGS += -DEAP_TLS_OPENSSL
+-@@ -1230,6 +1232,7 @@ CFLAGS += -DTLS_DEFAULT_CIPHERS=\"$(CONF
++@@ -1233,6 +1235,7 @@ CFLAGS += -DTLS_DEFAULT_CIPHERS=\"$(CONF
+  endif
+  
+  ifeq ($(CONFIG_TLS), mbedtls)
+@@ -1318,7 +1313,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifndef CONFIG_CRYPTO
+  CONFIG_CRYPTO=mbedtls
+  endif
+-@@ -1249,6 +1252,7 @@ endif
++@@ -1252,6 +1255,7 @@ endif
+  endif
+  
+  ifeq ($(CONFIG_TLS), gnutls)
+@@ -1326,7 +1321,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifndef CONFIG_CRYPTO
+  # default to libgcrypt
+  CONFIG_CRYPTO=gnutls
+-@@ -1279,6 +1283,7 @@ endif
++@@ -1282,6 +1286,7 @@ endif
+  endif
+  
+  ifeq ($(CONFIG_TLS), internal)
+@@ -1334,7 +1329,7 @@ Signed-off-by: Glenn Strauss <gstrauss@gluelogic.com>
+  ifndef CONFIG_CRYPTO
+  CONFIG_CRYPTO=internal
+  endif
+-@@ -1359,6 +1364,7 @@ endif
++@@ -1362,6 +1367,7 @@ endif
+  endif
+  
+  ifeq ($(CONFIG_TLS), linux)
+diff --git a/package/network/services/hostapd/patches/301-mesh-noscan.patch b/package/network/services/hostapd/patches/301-mesh-noscan.patch
+index e5fd05323270..befba68522d3 100644
+--- a/package/network/services/hostapd/patches/301-mesh-noscan.patch
++++ b/package/network/services/hostapd/patches/301-mesh-noscan.patch
+@@ -3,9 +3,11 @@ Date: Fri, 20 Apr 2018 07:41:03 +0200
+ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  skips secondary channel scan just like noscan works in AP mode.
+ 
+---- a/wpa_supplicant/config.c
+-+++ b/wpa_supplicant/config.c
+-@@ -2639,6 +2639,7 @@ static const struct parse_data ssid_fiel
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/config.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/config.c
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/config.c
++@@ -2668,6 +2668,7 @@ static const struct parse_data ssid_fiel
+  #else /* CONFIG_MESH */
+  	{ INT_RANGE(mode, 0, 4) },
+  #endif /* CONFIG_MESH */
+@@ -13,19 +15,23 @@ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  	{ INT_RANGE(proactive_key_caching, 0, 1) },
+  	{ INT_RANGE(disabled, 0, 2) },
+  	{ STR(id_str) },
+---- a/wpa_supplicant/config_file.c
+-+++ b/wpa_supplicant/config_file.c
+-@@ -775,6 +775,7 @@ static void wpa_config_write_network(FIL
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/config_file.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/config_file.c
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/config_file.c
++@@ -866,6 +866,7 @@ static void wpa_config_write_network(FIL
++ 	INT_DEFe(sim_num, sim_num, DEFAULT_USER_SELECTED_SIM);
+  #endif /* IEEE8021X_EAPOL */
+  	INT(mode);
+- 	INT(no_auto_peer);
+ +	INT(noscan);
+- 	INT(mesh_fwding);
++ 	INT(no_auto_peer);
++ 	INT_DEF(mesh_fwding, DEFAULT_MESH_FWDING);
+  	INT(frequency);
+- 	INT(enable_edmg);
+---- a/wpa_supplicant/config_ssid.h
+-+++ b/wpa_supplicant/config_ssid.h
+-@@ -1035,6 +1035,8 @@ struct wpa_ssid {
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/config_ssid.h
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/config_ssid.h
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/config_ssid.h
++@@ -1063,6 +1063,8 @@ struct wpa_ssid {
+  	 */
+  	int no_auto_peer;
+  
+@@ -34,9 +40,11 @@ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  	/**
+  	 * mesh_rssi_threshold - Set mesh parameter mesh_rssi_threshold (dBm)
+  	 *
+---- a/wpa_supplicant/mesh.c
+-+++ b/wpa_supplicant/mesh.c
+-@@ -506,6 +506,8 @@ static int wpa_supplicant_mesh_init(stru
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/mesh.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/mesh.c
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/mesh.c
++@@ -509,6 +509,8 @@ static int wpa_supplicant_mesh_init(stru
+  			   frequency);
+  		goto out_free;
+  	}
+@@ -45,9 +53,11 @@ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  
+  	if (ssid->mesh_basic_rates == NULL) {
+  		/*
+---- a/wpa_supplicant/wpa_supplicant.c
+-+++ b/wpa_supplicant/wpa_supplicant.c
+-@@ -2903,7 +2903,7 @@ static bool ibss_mesh_can_use_vht(struct
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/wpa_supplicant.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/wpa_supplicant.c
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/wpa_supplicant.c
++@@ -3044,7 +3044,7 @@ static bool ibss_mesh_can_use_vht(struct
+  				  const struct wpa_ssid *ssid,
+  				  struct hostapd_hw_modes *mode)
+  {
+@@ -56,7 +66,7 @@ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  		return false;
+  
+  	if (!drv_supports_vht(wpa_s, ssid))
+-@@ -2976,7 +2976,7 @@ static void ibss_mesh_select_40mhz(struc
++@@ -3117,7 +3117,7 @@ static void ibss_mesh_select_40mhz(struc
+  	int i, res;
+  	unsigned int j;
+  	static const int ht40plus[] = {
+@@ -65,7 +75,7 @@ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  		149, 157, 165, 173, 184, 192
+  	};
+  	int ht40 = -1;
+-@@ -3227,7 +3227,7 @@ void ibss_mesh_setup_freq(struct wpa_sup
++@@ -3414,7 +3414,7 @@ void ibss_mesh_setup_freq(struct wpa_sup
+  	int ieee80211_mode = wpas_mode_to_ieee80211_mode(ssid->mode);
+  	enum hostapd_hw_mode hw_mode;
+  	struct hostapd_hw_modes *mode = NULL;
+@@ -74,7 +84,7 @@ Subject: [PATCH] Allow HT40 also on 2.4GHz if noscan option is set, which also
+  	u8 channel;
+  	bool is_6ghz, is_24ghz;
+  	bool dfs_enabled = wpa_s->conf->country[0] && (wpa_s->drv_flags & WPA_DRIVER_FLAGS_RADAR);
+-@@ -3271,6 +3271,8 @@ void ibss_mesh_setup_freq(struct wpa_sup
++@@ -3458,6 +3458,8 @@ void ibss_mesh_setup_freq(struct wpa_sup
+  		freq->he_enabled = ibss_mesh_can_use_he(wpa_s, ssid, mode,
+  							ieee80211_mode);
+  	freq->channel = channel;
+diff --git a/package/network/services/hostapd/patches/330-nl80211_fix_set_freq.patch b/package/network/services/hostapd/patches/330-nl80211_fix_set_freq.patch
+deleted file mode 100644
+index 70ec6dc63b0d..000000000000
+--- a/package/network/services/hostapd/patches/330-nl80211_fix_set_freq.patch
++++ /dev/null
+@@ -1,16 +0,0 @@
+-From ee68734929edb30f90a95bc3150038333b345476 Mon Sep 17 00:00:00 2001
+-From: Felix Fietkau <nbd@openwrt.org>
+-Date: Sun, 30 Jun 2013 21:01:13 +0000
+-Subject: [PATCH] nl80211_fix_set_freq.patch
+-
+---- a/src/drivers/driver_nl80211.c
+-+++ b/src/drivers/driver_nl80211.c
+-@@ -5483,7 +5483,7 @@ static int nl80211_set_channel(struct i8
+- 		   freq->he_enabled, freq->eht_enabled, freq->bandwidth,
+- 		   freq->center_freq1, freq->center_freq2);
+- 
+--	msg = nl80211_drv_msg(drv, 0, set_chan ? NL80211_CMD_SET_CHANNEL :
+-+	msg = nl80211_bss_msg(bss, 0, set_chan ? NL80211_CMD_SET_CHANNEL :
+- 			      NL80211_CMD_SET_WIPHY);
+- 	if (!msg || nl80211_put_freq_params(msg, freq) < 0) {
+- 		nlmsg_free(msg);
+diff --git a/package/network/services/hostapd/patches/601-ucode_support.patch b/package/network/services/hostapd/patches/601-ucode_support.patch
+index b826363248a6..86ac1af4b84b 100644
+--- a/package/network/services/hostapd/patches/601-ucode_support.patch
++++ b/package/network/services/hostapd/patches/601-ucode_support.patch
+@@ -6,9 +6,11 @@ This implements vastly improved dynamic configuration reload support.
+ It can handle configuration changes on individual wifi interfaces, as well
+ as adding/removing interfaces.
+ 
+---- a/hostapd/Makefile
+-+++ b/hostapd/Makefile
+-@@ -168,9 +168,21 @@ OBJS += ../src/eapol_auth/eapol_auth_sm.
++Index: hostapd-2025.02.12~ad8d30e0/hostapd/Makefile
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/hostapd/Makefile
+++++ hostapd-2025.02.12~ad8d30e0/hostapd/Makefile
++@@ -169,9 +169,21 @@ OBJS += ../src/eapol_auth/eapol_auth_sm.
+  
+  ifdef CONFIG_UBUS
+  CFLAGS += -DUBUS_SUPPORT
+@@ -32,9 +34,11 @@ as adding/removing interfaces.
+  endif
+  
+  ifdef CONFIG_CODE_COVERAGE
+---- a/hostapd/ctrl_iface.c
+-+++ b/hostapd/ctrl_iface.c
+-@@ -5487,6 +5487,7 @@ try_again:
++Index: hostapd-2025.02.12~ad8d30e0/hostapd/ctrl_iface.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/hostapd/ctrl_iface.c
+++++ hostapd-2025.02.12~ad8d30e0/hostapd/ctrl_iface.c
++@@ -6031,6 +6031,7 @@ try_again:
+  		return -1;
+  	}
+  
+@@ -42,7 +46,7 @@ as adding/removing interfaces.
+  	wpa_msg_register_cb(hostapd_ctrl_iface_msg_cb);
+  
+  	return 0;
+-@@ -5588,6 +5589,7 @@ fail:
++@@ -6132,6 +6133,7 @@ fail:
+  	os_free(fname);
+  
+  	interface->global_ctrl_sock = s;
+@@ -50,9 +54,11 @@ as adding/removing interfaces.
+  	eloop_register_read_sock(s, hostapd_global_ctrl_iface_receive,
+  				 interface, NULL);
+  
+---- a/hostapd/main.c
+-+++ b/hostapd/main.c
+-@@ -1014,6 +1014,7 @@ int main(int argc, char *argv[])
++Index: hostapd-2025.02.12~ad8d30e0/hostapd/main.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/hostapd/main.c
+++++ hostapd-2025.02.12~ad8d30e0/hostapd/main.c
++@@ -1074,6 +1074,7 @@ int main(int argc, char *argv[])
+  	}
+  
+  	hostapd_global_ctrl_iface_init(&interfaces);
+@@ -60,7 +66,7 @@ as adding/removing interfaces.
+  
+  	if (hostapd_global_run(&interfaces, daemonize, pid_file)) {
+  		wpa_printf(MSG_ERROR, "Failed to start eloop");
+-@@ -1023,6 +1024,7 @@ int main(int argc, char *argv[])
++@@ -1083,6 +1084,7 @@ int main(int argc, char *argv[])
+  	ret = 0;
+  
+   out:
+@@ -68,9 +74,11 @@ as adding/removing interfaces.
+  	hostapd_global_ctrl_iface_deinit(&interfaces);
+  	/* Deinitialize all interfaces */
+  	for (i = 0; i < interfaces.count; i++) {
+---- a/src/ap/ap_drv_ops.h
+-+++ b/src/ap/ap_drv_ops.h
+-@@ -399,6 +399,23 @@ static inline int hostapd_drv_stop_ap(st
++Index: hostapd-2025.02.12~ad8d30e0/src/ap/ap_drv_ops.h
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/src/ap/ap_drv_ops.h
+++++ hostapd-2025.02.12~ad8d30e0/src/ap/ap_drv_ops.h
++@@ -410,6 +410,23 @@ static inline int hostapd_drv_stop_ap(st
+  	return hapd->driver->stop_ap(hapd->drv_priv, link_id);
+  }
+  
+@@ -94,9 +102,11 @@ as adding/removing interfaces.
+  static inline int hostapd_drv_channel_info(struct hostapd_data *hapd,
+  					   struct wpa_channel_info *ci)
+  {
+---- a/src/ap/hostapd.c
+-+++ b/src/ap/hostapd.c
+-@@ -255,6 +255,8 @@ int hostapd_reload_config(struct hostapd
++Index: hostapd-2025.02.12~ad8d30e0/src/ap/hostapd.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/src/ap/hostapd.c
+++++ hostapd-2025.02.12~ad8d30e0/src/ap/hostapd.c
++@@ -259,6 +259,8 @@ int hostapd_reload_config(struct hostapd
+  	struct hostapd_config *newconf, *oldconf;
+  	size_t j;
+  
+@@ -105,7 +115,7 @@ as adding/removing interfaces.
+  	if (iface->config_fname == NULL) {
+  		/* Only in-memory config in use - assume it has been updated */
+  		hostapd_clear_old(iface);
+-@@ -493,6 +495,7 @@ void hostapd_free_hapd_data(struct hosta
++@@ -479,6 +481,7 @@ void hostapd_free_hapd_data(struct hosta
+  	hapd->beacon_set_done = 0;
+  
+  	wpa_printf(MSG_DEBUG, "%s(%s)", __func__, hapd->conf->iface);
+@@ -113,7 +123,7 @@ as adding/removing interfaces.
+  	hostapd_ubus_free_bss(hapd);
+  	accounting_deinit(hapd);
+  	hostapd_deinit_wpa(hapd);
+-@@ -687,6 +690,7 @@ void hostapd_cleanup_iface_partial(struc
++@@ -737,6 +740,7 @@ void hostapd_cleanup_iface_partial(struc
+  static void hostapd_cleanup_iface(struct hostapd_iface *iface)
+  {
+  	wpa_printf(MSG_DEBUG, "%s(%p)", __func__, iface);
+@@ -121,7 +131,7 @@ as adding/removing interfaces.
+  	eloop_cancel_timeout(hostapd_interface_setup_failure_handler, iface,
+  			     NULL);
+  
+-@@ -1276,6 +1280,7 @@ static int hostapd_start_beacon(struct h
++@@ -1326,6 +1330,7 @@ static int hostapd_start_beacon(struct h
+  		hapd->driver->set_operstate(hapd->drv_priv, 1);
+  
+  	hostapd_ubus_add_bss(hapd);
+@@ -129,7 +139,7 @@ as adding/removing interfaces.
+  
+  	return 0;
+  }
+-@@ -1298,8 +1303,7 @@ static int hostapd_start_beacon(struct h
++@@ -1401,8 +1406,7 @@ static int hostapd_bss_radius_init(struc
+   * initialized. Most of the modules that are initialized here will be
+   * deinitialized in hostapd_cleanup().
+   */
+@@ -139,7 +149,7 @@ as adding/removing interfaces.
+  {
+  	struct hostapd_bss_config *conf = hapd->conf;
+  	u8 ssid[SSID_MAX_LEN + 1];
+-@@ -2790,7 +2794,7 @@ hostapd_alloc_bss_data(struct hostapd_if
++@@ -2975,7 +2979,7 @@ hostapd_alloc_bss_data(struct hostapd_if
+  }
+  
+  
+@@ -148,7 +158,7 @@ as adding/removing interfaces.
+  {
+  	if (!hapd)
+  		return;
+-@@ -3608,7 +3612,8 @@ int hostapd_remove_iface(struct hapd_int
++@@ -4047,7 +4051,8 @@ int hostapd_remove_iface(struct hapd_int
+  		hapd_iface = interfaces->iface[i];
+  		if (hapd_iface == NULL)
+  			return -1;
+@@ -158,8 +168,10 @@ as adding/removing interfaces.
+  			wpa_printf(MSG_INFO, "Remove interface '%s'", buf);
+  			hapd_iface->driver_ap_teardown =
+  				!!(hapd_iface->drv_flags &
+---- a/src/ap/hostapd.h
+-+++ b/src/ap/hostapd.h
++Index: hostapd-2025.02.12~ad8d30e0/src/ap/hostapd.h
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/src/ap/hostapd.h
+++++ hostapd-2025.02.12~ad8d30e0/src/ap/hostapd.h
+ @@ -19,6 +19,7 @@
+  #include "ap_config.h"
+  #include "drivers/driver.h"
+@@ -168,7 +180,7 @@ as adding/removing interfaces.
+  
+  #define OCE_STA_CFON_ENABLED(hapd) \
+  	((hapd->conf->oce & OCE_STA_CFON) && \
+-@@ -51,6 +52,10 @@ struct hapd_interfaces {
++@@ -52,6 +53,10 @@ struct hapd_interfaces {
+  	struct hostapd_config * (*config_read_cb)(const char *config_fname);
+  	int (*ctrl_iface_init)(struct hostapd_data *hapd);
+  	void (*ctrl_iface_deinit)(struct hostapd_data *hapd);
+@@ -179,7 +191,7 @@ as adding/removing interfaces.
+  	int (*for_each_interface)(struct hapd_interfaces *interfaces,
+  				  int (*cb)(struct hostapd_iface *iface,
+  					    void *ctx), void *ctx);
+-@@ -186,6 +191,7 @@ struct hostapd_data {
++@@ -208,6 +213,7 @@ struct hostapd_data {
+  	struct hostapd_config *iconf;
+  	struct hostapd_bss_config *conf;
+  	struct hostapd_ubus_bss ubus;
+@@ -187,7 +199,7 @@ as adding/removing interfaces.
+  	int interface_added; /* virtual interface added for this BSS */
+  	unsigned int started:1;
+  	unsigned int disabled:1;
+-@@ -518,6 +524,7 @@ struct hostapd_sta_info {
++@@ -577,6 +583,7 @@ struct hostapd_mld {
+   */
+  struct hostapd_iface {
+  	struct hapd_interfaces *interfaces;
+@@ -195,18 +207,20 @@ as adding/removing interfaces.
+  	void *owner;
+  	char *config_fname;
+  	struct hostapd_config *conf;
+-@@ -718,6 +725,8 @@ struct hostapd_iface * hostapd_init(stru
++@@ -787,6 +794,8 @@ struct hostapd_iface * hostapd_init(stru
+  struct hostapd_iface *
+  hostapd_interface_init_bss(struct hapd_interfaces *interfaces, const char *phy,
+  			   const char *config_fname, int debug);
+ +int hostapd_setup_bss(struct hostapd_data *hapd, int first, bool start_beacon);
+ +void hostapd_bss_deinit(struct hostapd_data *hapd);
++ void hostapd_bss_setup_multi_link(struct hostapd_data *hapd,
++ 				  struct hapd_interfaces *interfaces);
+  void hostapd_new_assoc_sta(struct hostapd_data *hapd, struct sta_info *sta,
+- 			   int reassoc);
+- void hostapd_interface_deinit_free(struct hostapd_iface *iface);
+---- a/src/drivers/driver.h
+-+++ b/src/drivers/driver.h
+-@@ -3856,6 +3856,25 @@ struct wpa_driver_ops {
++Index: hostapd-2025.02.12~ad8d30e0/src/drivers/driver.h
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/src/drivers/driver.h
+++++ hostapd-2025.02.12~ad8d30e0/src/drivers/driver.h
++@@ -4003,6 +4003,25 @@ struct wpa_driver_ops {
+  			 const char *ifname);
+  
+  	/**
+@@ -232,7 +246,7 @@ as adding/removing interfaces.
+  	 * set_sta_vlan - Bind a station into a specific interface (AP only)
+  	 * @priv: Private driver interface data
+  	 * @ifname: Interface (main or virtual BSS or VLAN)
+-@@ -6510,6 +6529,7 @@ union wpa_event_data {
++@@ -6818,6 +6837,7 @@ union wpa_event_data {
+  
+  	/**
+  	 * struct ch_switch
+@@ -240,7 +254,7 @@ as adding/removing interfaces.
+  	 * @freq: Frequency of new channel in MHz
+  	 * @ht_enabled: Whether this is an HT channel
+  	 * @ch_offset: Secondary channel offset
+-@@ -6520,6 +6540,7 @@ union wpa_event_data {
++@@ -6828,6 +6848,7 @@ union wpa_event_data {
+  	 * @punct_bitmap: Puncturing bitmap
+  	 */
+  	struct ch_switch {
+@@ -248,9 +262,11 @@ as adding/removing interfaces.
+  		int freq;
+  		int ht_enabled;
+  		int ch_offset;
+---- a/src/drivers/driver_nl80211.c
+-+++ b/src/drivers/driver_nl80211.c
+-@@ -75,6 +75,16 @@ enum nlmsgerr_attrs {
++Index: hostapd-2025.02.12~ad8d30e0/src/drivers/driver_nl80211.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/src/drivers/driver_nl80211.c
+++++ hostapd-2025.02.12~ad8d30e0/src/drivers/driver_nl80211.c
++@@ -77,6 +77,16 @@ enum nlmsgerr_attrs {
+  
+  #endif /* ANDROID */
+  
+@@ -267,7 +283,7 @@ as adding/removing interfaces.
+  
+  static struct nl_sock * nl_create_handle(struct nl_cb *cb, const char *dbg)
+  {
+-@@ -429,6 +439,11 @@ static int no_seq_check(struct nl_msg *m
++@@ -437,6 +447,11 @@ static int no_seq_check(struct nl_msg *m
+  	return NL_OK;
+  }
+  
+@@ -279,7 +295,7 @@ as adding/removing interfaces.
+  
+  static void nl80211_nlmsg_clear(struct nl_msg *msg)
+  {
+-@@ -502,6 +517,8 @@ int send_and_recv(struct nl80211_global
++@@ -511,6 +526,8 @@ int send_and_recv_glb(struct nl80211_glo
+  	if (!msg)
+  		return -ENOMEM;
+  
+@@ -288,15 +304,15 @@ as adding/removing interfaces.
+  	err.err = -ENOMEM;
+  
+  	s_nl_cb = nl_socket_get_cb(nl_handle);
+-@@ -536,6 +553,7 @@ int send_and_recv(struct nl80211_global
+- 	err.orig_msg = msg;
++@@ -546,6 +563,7 @@ int send_and_recv_glb(struct nl80211_glo
+  	err.err_info = err_info;
++ 	err.drv = drv;
+  
+ +	nl_cb_set(cb, NL_CB_MSG_IN, NL_CB_CUSTOM, debug_handler, NULL);
+  	nl_cb_err(cb, NL_CB_CUSTOM, error_handler, &err);
+  	nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, finish_handler, &err.err);
+  	if (ack_handler_custom) {
+-@@ -939,6 +957,7 @@ nl80211_get_wiphy_data_ap(struct i802_bs
++@@ -949,6 +967,7 @@ nl80211_get_wiphy_data_ap(struct i802_bs
+  			os_free(w);
+  			return NULL;
+  		}
+@@ -304,7 +320,7 @@ as adding/removing interfaces.
+  		nl_cb_set(w->nl_cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM,
+  			  no_seq_check, NULL);
+  		nl_cb_set(w->nl_cb, NL_CB_VALID, NL_CB_CUSTOM,
+-@@ -1353,7 +1372,7 @@ static void wpa_driver_nl80211_event_rtm
++@@ -1364,7 +1383,7 @@ static void wpa_driver_nl80211_event_rtm
+  		}
+  		wpa_printf(MSG_DEBUG, "nl80211: Interface down (%s/%s)",
+  			   namebuf, ifname);
+@@ -313,7 +329,7 @@ as adding/removing interfaces.
+  			wpa_printf(MSG_DEBUG,
+  				   "nl80211: Not the main interface (%s) - do not indicate interface down",
+  				   drv->first_bss->ifname);
+-@@ -1389,7 +1408,7 @@ static void wpa_driver_nl80211_event_rtm
++@@ -1400,7 +1419,7 @@ static void wpa_driver_nl80211_event_rtm
+  		}
+  		wpa_printf(MSG_DEBUG, "nl80211: Interface up (%s/%s)",
+  			   namebuf, ifname);
+@@ -322,7 +338,7 @@ as adding/removing interfaces.
+  			wpa_printf(MSG_DEBUG,
+  				   "nl80211: Not the main interface (%s) - do not indicate interface up",
+  				   drv->first_bss->ifname);
+-@@ -2035,6 +2054,7 @@ static int wpa_driver_nl80211_init_nl_gl
++@@ -2046,6 +2065,7 @@ static int wpa_driver_nl80211_init_nl_gl
+  	genl_family_put(family);
+  	nl_cache_free(cache);
+  
+@@ -330,7 +346,7 @@ as adding/removing interfaces.
+  	nl_cb_set(global->nl_cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM,
+  		  no_seq_check, NULL);
+  	nl_cb_set(global->nl_cb, NL_CB_VALID, NL_CB_CUSTOM,
+-@@ -2205,6 +2225,7 @@ static int nl80211_init_bss(struct i802_
++@@ -2216,6 +2236,7 @@ static int nl80211_init_bss(struct i802_
+  	if (!bss->nl_cb)
+  		return -1;
+  
+@@ -338,7 +354,7 @@ as adding/removing interfaces.
+  	nl_cb_set(bss->nl_cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM,
+  		  no_seq_check, NULL);
+  	nl_cb_set(bss->nl_cb, NL_CB_VALID, NL_CB_CUSTOM,
+-@@ -8554,6 +8575,7 @@ static void *i802_init(struct hostapd_da
++@@ -8732,6 +8753,7 @@ static void *i802_init(struct hostapd_da
+  	char master_ifname[IFNAMSIZ];
+  	int ifindex, br_ifindex = 0;
+  	int br_added = 0;
+@@ -346,7 +362,7 @@ as adding/removing interfaces.
+  
+  	bss = wpa_driver_nl80211_drv_init(hapd, params->ifname,
+  					  params->global_priv, 1,
+-@@ -8613,21 +8635,17 @@ static void *i802_init(struct hostapd_da
++@@ -8792,21 +8814,17 @@ static void *i802_init(struct hostapd_da
+  	    (params->num_bridge == 0 || !params->bridge[0]))
+  		add_ifidx(drv, br_ifindex, drv->ifindex);
+  
+@@ -378,7 +394,7 @@ as adding/removing interfaces.
+  	}
+  
+  	if (drv->capa.flags2 & WPA_DRIVER_FLAGS2_CONTROL_PORT_RX) {
+-@@ -8992,6 +9010,50 @@ static int wpa_driver_nl80211_if_remove(
++@@ -9173,6 +9191,50 @@ static int wpa_driver_nl80211_if_remove(
+  	return 0;
+  }
+  
+@@ -429,8 +445,8 @@ as adding/removing interfaces.
+  
+  static int cookie_handler(struct nl_msg *msg, void *arg)
+  {
+-@@ -10688,6 +10750,37 @@ static int driver_nl80211_if_remove(void
+- }
++@@ -11030,6 +11092,37 @@ static bool nl80211_is_drv_shared(void *
++ #endif /* CONFIG_IEEE80211BE */
+  
+  
+ +static int driver_nl80211_if_rename(void *priv, enum wpa_driver_if_type type,
+@@ -467,7 +483,7 @@ as adding/removing interfaces.
+  static int driver_nl80211_send_mlme(void *priv, const u8 *data,
+  				    size_t data_len, int noack,
+  				    unsigned int freq,
+-@@ -13881,6 +13974,8 @@ const struct wpa_driver_ops wpa_driver_n
++@@ -14747,6 +14840,8 @@ const struct wpa_driver_ops wpa_driver_n
+  	.set_acl = wpa_driver_nl80211_set_acl,
+  	.if_add = wpa_driver_nl80211_if_add,
+  	.if_remove = driver_nl80211_if_remove,
+@@ -476,9 +492,11 @@ as adding/removing interfaces.
+  	.send_mlme = driver_nl80211_send_mlme,
+  	.get_hw_feature_data = nl80211_get_hw_feature_data,
+  	.sta_add = wpa_driver_nl80211_sta_add,
+---- a/src/drivers/driver_nl80211_event.c
+-+++ b/src/drivers/driver_nl80211_event.c
+-@@ -1196,6 +1196,7 @@ static void mlme_event_ch_switch(struct
++Index: hostapd-2025.02.12~ad8d30e0/src/drivers/driver_nl80211_event.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/src/drivers/driver_nl80211_event.c
+++++ hostapd-2025.02.12~ad8d30e0/src/drivers/driver_nl80211_event.c
++@@ -1199,6 +1199,7 @@ static void mlme_event_ch_switch(struct
+  				 struct nlattr *bw, struct nlattr *cf1,
+  				 struct nlattr *cf2,
+  				 struct nlattr *punct_bitmap,
+@@ -486,16 +504,16 @@ as adding/removing interfaces.
+  				 int finished)
+  {
+  	struct i802_bss *bss;
+-@@ -1259,6 +1260,8 @@ static void mlme_event_ch_switch(struct
++@@ -1262,6 +1263,8 @@ static void mlme_event_ch_switch(struct
+  		data.ch_switch.cf1 = nla_get_u32(cf1);
+  	if (cf2)
+  		data.ch_switch.cf2 = nla_get_u32(cf2);
+ +	if (count)
+ +		data.ch_switch.count = nla_get_u32(count);
+  
+- 	if (finished)
+- 		bss->flink->freq = data.ch_switch.freq;
+-@@ -3961,6 +3964,7 @@ static void do_process_drv_event(struct
++ 	if (link) {
++ 		data.ch_switch.link_id = nla_get_u8(link);
++@@ -4114,6 +4117,7 @@ static void do_process_drv_event(struct
+  				     tb[NL80211_ATTR_CENTER_FREQ1],
+  				     tb[NL80211_ATTR_CENTER_FREQ2],
+  				     tb[NL80211_ATTR_PUNCT_BITMAP],
+@@ -503,7 +521,7 @@ as adding/removing interfaces.
+  				     0);
+  		break;
+  	case NL80211_CMD_CH_SWITCH_NOTIFY:
+-@@ -3973,6 +3977,7 @@ static void do_process_drv_event(struct
++@@ -4126,6 +4130,7 @@ static void do_process_drv_event(struct
+  				     tb[NL80211_ATTR_CENTER_FREQ1],
+  				     tb[NL80211_ATTR_CENTER_FREQ2],
+  				     tb[NL80211_ATTR_PUNCT_BITMAP],
+@@ -511,8 +529,10 @@ as adding/removing interfaces.
+  				     1);
+  		break;
+  	case NL80211_CMD_DISCONNECT:
+---- a/src/utils/wpa_debug.c
+-+++ b/src/utils/wpa_debug.c
++Index: hostapd-2025.02.12~ad8d30e0/src/utils/wpa_debug.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/src/utils/wpa_debug.c
+++++ hostapd-2025.02.12~ad8d30e0/src/utils/wpa_debug.c
+ @@ -26,6 +26,10 @@ static FILE *wpa_debug_tracing_file = NU
+  #define WPAS_TRACE_PFX "wpas <%d>: "
+  #endif /* CONFIG_DEBUG_LINUX_TRACING */
+@@ -547,8 +567,10 @@ as adding/removing interfaces.
+  #ifdef CONFIG_DEBUG_LINUX_TRACING
+  	if (wpa_debug_tracing_file != NULL) {
+  		fprintf(wpa_debug_tracing_file,
+---- a/src/utils/wpa_debug.h
+-+++ b/src/utils/wpa_debug.h
++Index: hostapd-2025.02.12~ad8d30e0/src/utils/wpa_debug.h
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/src/utils/wpa_debug.h
+++++ hostapd-2025.02.12~ad8d30e0/src/utils/wpa_debug.h
+ @@ -11,6 +11,10 @@
+  
+  #include "wpabuf.h"
+@@ -560,9 +582,11 @@ as adding/removing interfaces.
+  extern int wpa_debug_level;
+  extern int wpa_debug_show_keys;
+  extern int wpa_debug_timestamp;
+---- a/wpa_supplicant/Makefile
+-+++ b/wpa_supplicant/Makefile
+-@@ -192,8 +192,20 @@ endif
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/Makefile
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/Makefile
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/Makefile
++@@ -194,8 +194,20 @@ endif
+  ifdef CONFIG_UBUS
+  CFLAGS += -DUBUS_SUPPORT
+  OBJS += ubus.o
+@@ -584,7 +608,7 @@ as adding/removing interfaces.
+  endif
+  
+  ifdef CONFIG_CODE_COVERAGE
+-@@ -1052,6 +1064,9 @@ OBJS += ../src/ap/ctrl_iface_ap.o
++@@ -1054,6 +1066,9 @@ OBJS += ../src/ap/ctrl_iface_ap.o
+  ifdef CONFIG_UBUS
+  OBJS += ../src/ap/ubus.o
+  endif
+@@ -594,9 +618,11 @@ as adding/removing interfaces.
+  endif
+  
+  CFLAGS += -DEAP_SERVER -DEAP_SERVER_IDENTITY
+---- a/wpa_supplicant/events.c
+-+++ b/wpa_supplicant/events.c
+-@@ -5949,6 +5949,7 @@ void supplicant_event(void *ctx, enum wp
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/events.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/events.c
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/events.c
++@@ -6203,6 +6203,7 @@ void supplicant_event(void *ctx, enum wp
+  		event_to_string(event), event);
+  #endif /* CONFIG_NO_STDOUT_DEBUG */
+  
+@@ -604,9 +630,11 @@ as adding/removing interfaces.
+  	switch (event) {
+  	case EVENT_AUTH:
+  #ifdef CONFIG_FST
+---- a/wpa_supplicant/wpa_supplicant.c
+-+++ b/wpa_supplicant/wpa_supplicant.c
+-@@ -1060,6 +1060,7 @@ void wpa_supplicant_set_state(struct wpa
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/wpa_supplicant.c
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/wpa_supplicant.c
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/wpa_supplicant.c
++@@ -1256,6 +1256,7 @@ void wpa_supplicant_set_state(struct wpa
+  		sme_sched_obss_scan(wpa_s, 0);
+  	}
+  	wpa_s->wpa_state = state;
+@@ -614,7 +642,7 @@ as adding/removing interfaces.
+  
+  #ifdef CONFIG_BGSCAN
+  	if (state == WPA_COMPLETED && wpa_s->current_ssid != wpa_s->bgscan_ssid)
+-@@ -7717,6 +7718,7 @@ struct wpa_supplicant * wpa_supplicant_a
++@@ -8196,6 +8197,7 @@ struct wpa_supplicant * wpa_supplicant_a
+  #endif /* CONFIG_P2P */
+  
+  	wpas_ubus_add_bss(wpa_s);
+@@ -622,7 +650,7 @@ as adding/removing interfaces.
+  
+  	return wpa_s;
+  }
+-@@ -7744,6 +7746,7 @@ int wpa_supplicant_remove_iface(struct w
++@@ -8223,6 +8225,7 @@ int wpa_supplicant_remove_iface(struct w
+  	struct wpa_supplicant *parent = wpa_s->parent;
+  #endif /* CONFIG_MESH */
+  
+@@ -630,7 +658,7 @@ as adding/removing interfaces.
+  	wpas_ubus_free_bss(wpa_s);
+  
+  	/* Remove interface from the global list of interfaces */
+-@@ -8054,6 +8057,7 @@ struct wpa_global * wpa_supplicant_init(
++@@ -8533,6 +8536,7 @@ struct wpa_global * wpa_supplicant_init(
+  
+  	eloop_register_timeout(WPA_SUPPLICANT_CLEANUP_INTERVAL, 0,
+  			       wpas_periodic, global, NULL);
+@@ -638,7 +666,7 @@ as adding/removing interfaces.
+  
+  	return global;
+  }
+-@@ -8092,12 +8096,8 @@ int wpa_supplicant_run(struct wpa_global
++@@ -8571,12 +8575,8 @@ int wpa_supplicant_run(struct wpa_global
+  	eloop_register_signal_terminate(wpa_supplicant_terminate, global);
+  	eloop_register_signal_reconfig(wpa_supplicant_reconfig, global);
+  
+@@ -651,7 +679,7 @@ as adding/removing interfaces.
+  	return 0;
+  }
+  
+-@@ -8130,6 +8130,8 @@ void wpa_supplicant_deinit(struct wpa_gl
++@@ -8609,6 +8609,8 @@ void wpa_supplicant_deinit(struct wpa_gl
+  
+  	wpas_notify_supplicant_deinitialized(global);
+  
+@@ -660,8 +688,10 @@ as adding/removing interfaces.
+  	eap_peer_unregister_methods();
+  #ifdef CONFIG_AP
+  	eap_server_unregister_methods();
+---- a/wpa_supplicant/wpa_supplicant_i.h
+-+++ b/wpa_supplicant/wpa_supplicant_i.h
++Index: hostapd-2025.02.12~ad8d30e0/wpa_supplicant/wpa_supplicant_i.h
++===================================================================
++--- hostapd-2025.02.12~ad8d30e0.orig/wpa_supplicant/wpa_supplicant_i.h
+++++ hostapd-2025.02.12~ad8d30e0/wpa_supplicant/wpa_supplicant_i.h
+ @@ -22,6 +22,7 @@
+  #include "wmm_ac.h"
+  #include "pasn/pasn_common.h"
+@@ -670,7 +700,7 @@ as adding/removing interfaces.
+  
+  extern const char *const wpa_supplicant_version;
+  extern const char *const wpa_supplicant_license;
+-@@ -697,6 +698,7 @@ struct wpa_supplicant {
++@@ -709,6 +710,7 @@ struct wpa_supplicant {
+  	unsigned char perm_addr[ETH_ALEN];
+  	char ifname[100];
+  	struct wpas_ubus_bss ubus;
+diff --git a/package/network/services/hostapd/patches/770-radius_server.patch b/package/network/services/hostapd/patches/770-radius_server.patch
+index 73b2c8643ba2..75bd1f67547d 100644
+--- a/package/network/services/hostapd/patches/770-radius_server.patch
++++ b/package/network/services/hostapd/patches/770-radius_server.patch
+@@ -29,7 +29,7 @@ handle reload.
+  
+  #ifndef CONFIG_NO_HOSTAPD_LOGGER
+  static void hostapd_logger_cb(void *ctx, const u8 *addr, unsigned int module,
+-@@ -778,6 +779,11 @@ int main(int argc, char *argv[])
++@@ -834,6 +835,11 @@ int main(int argc, char *argv[])
+  	if (os_program_init())
+  		return -1;
+  
+@@ -56,7 +56,7 @@ handle reload.
+  /**
+   * struct radius_session - Internal RADIUS server data for a session
+   */
+-@@ -90,7 +96,7 @@ struct radius_session {
++@@ -89,7 +95,7 @@ struct radius_session {
+  	unsigned int macacl:1;
+  	unsigned int t_c_filtering:1;
+  
+@@ -65,7 +65,7 @@ handle reload.
+  
+  	u32 t_c_timestamp; /* Last read T&C timestamp from user DB */
+  };
+-@@ -394,6 +400,7 @@ static void radius_server_session_free(s
++@@ -373,6 +379,7 @@ static void radius_server_session_free(s
+  	radius_msg_free(sess->last_reply);
+  	os_free(sess->username);
+  	os_free(sess->nas_ip);
+@@ -73,7 +73,7 @@ handle reload.
+  	os_free(sess);
+  	data->num_sess--;
+  }
+-@@ -554,6 +561,36 @@ radius_server_erp_find_key(struct radius
++@@ -533,6 +540,36 @@ radius_server_erp_find_key(struct radius
+  }
+  #endif /* CONFIG_ERP */
+  
+@@ -110,7 +110,7 @@ handle reload.
+  
+  static struct radius_session *
+  radius_server_get_new_session(struct radius_server_data *data,
+-@@ -607,7 +644,7 @@ radius_server_get_new_session(struct rad
++@@ -586,7 +623,7 @@ radius_server_get_new_session(struct rad
+  		eap_user_free(tmp);
+  		return NULL;
+  	}
+@@ -119,7 +119,7 @@ handle reload.
+  	sess->macacl = tmp->macacl;
+  	eap_user_free(tmp);
+  
+-@@ -1118,11 +1155,10 @@ radius_server_encapsulate_eap(struct rad
++@@ -1023,11 +1060,10 @@ radius_server_macacl(struct radius_serve
+  	}
+  
+  	if (code == RADIUS_CODE_ACCESS_ACCEPT) {
+@@ -135,28 +135,12 @@ handle reload.
+  				wpa_printf(MSG_ERROR, "Could not add RADIUS attribute");
+  				radius_msg_free(msg);
+  				return NULL;
+-@@ -1211,11 +1247,10 @@ radius_server_macacl(struct radius_serve
+- 	}
+- 
+- 	if (code == RADIUS_CODE_ACCESS_ACCEPT) {
+--		struct hostapd_radius_attr *attr;
+--		for (attr = sess->accept_attr; attr; attr = attr->next) {
+--			if (!radius_msg_add_attr(msg, attr->type,
+--						 wpabuf_head(attr->val),
+--						 wpabuf_len(attr->val))) {
+-+		struct radius_accept_attr *attr;
+-+		for (attr = sess->accept_attr; attr->data; attr++) {
+-+			if (!radius_msg_add_attr(msg, attr->type, attr->data,
+-+						 attr->len)) {
+- 				wpa_printf(MSG_ERROR, "Could not add RADIUS attribute");
+- 				radius_msg_free(msg);
+- 				return NULL;
+-@@ -2512,7 +2547,7 @@ static int radius_server_get_eap_user(vo
++@@ -2335,7 +2371,7 @@ static int radius_server_get_eap_user(vo
+  	ret = data->get_eap_user(data->conf_ctx, identity, identity_len,
+  				 phase2, user);
+  	if (ret == 0 && user) {
+ -		sess->accept_attr = user->accept_attr;
+ +		sess->accept_attr = radius_server_copy_attr(user->accept_attr);
+- 		sess->remediation = user->remediation;
+  		sess->macacl = user->macacl;
+  		sess->t_c_timestamp = user->t_c_timestamp;
++ 	}
+-- 
+2.34.1
+
