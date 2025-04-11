@@ -1,0 +1,69 @@
+From 501c54f8d2d680669c5eebb811126fa4c91154ff Mon Sep 17 00:00:00 2001
+From: Vignesh C <quic_vignc@quicinc.com>
+Date: Mon, 7 Apr 2025 13:09:27 +0530
+Subject: [PATCH] QSDK:CP: hostapd.uc: ucode: Add debugability support for
+ apsta_state ubus call
+
+In WDS case, there is an ubus call apsta_state from wpa_supplicant to
+hostapd to start the fronthaul APs with the channel params passed
+from supplicant after it gets association.
+
+Add debugability support to show info about the paramaters passed.
+
+Change-Id: Ifd0ab131497a8a0c652bcc7f5ad08ee9793bc7ec
+Signed-off-by: Vignesh C <quic_vignc@quicinc.com>
+(cherry picked from commit 89702fca655978ae99440a23ca14eff6583faa63)
+---
+ package/network/services/hostapd/files/hostapd.uc      | 10 ++++++++--
+ .../network/services/hostapd/files/wpa_supplicant.uc   |  1 +
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
+index c0ed7deb0750..1f626fe5ba85 100644
+--- a/package/network/services/hostapd/files/hostapd.uc
++++ b/package/network/services/hostapd/files/hostapd.uc
+@@ -926,14 +926,19 @@ let main_obj = {
+ 				return libubus.STATUS_INVALID_ARGUMENT;
+ 
+ 			let config = hostapd.data.config[phy];
+-			if (!config || !config.bss || !config.bss[0] || !config.bss[0].ifname)
++			if (!config || !config.bss || !config.bss[0] || !config.bss[0].ifname) {
++				hostapd.printf(`apsta_state: config not found for radio ${req.args.radio}`);
+ 				return 0;
++			}
+ 
+ 			let iface = hostapd.interfaces[phy];
+-			if (!iface)
++			if (!iface) {
++				hostapd.printf(`apsta_state: iface not found for radio ${req.args.radio}`);
+ 				return 0;
++			}
+ 
+ 			if (!req.args.up) {
++				hostapd.printf(`apsta_state: Stopping interfaces for radio ${req.args.radio}`);
+ 				iface.stop();
+ 				return 0;
+ 			}
+@@ -945,6 +950,7 @@ let main_obj = {
+ 			if (!freq_info)
+ 				return libubus.STATUS_UNKNOWN_ERROR;
+ 
++			hostapd.printf(`apsta_state: freq_info for radio ${req.args.radio} is ${freq_info}`);
+ 			let ret;
+ 			if (req.args.csa) {
+ 				freq_info.csa_count = req.args.csa_count ?? 10;
+diff --git a/package/network/services/hostapd/files/wpa_supplicant.uc b/package/network/services/hostapd/files/wpa_supplicant.uc
+index e6179c165115..6602c8190207 100644
+--- a/package/network/services/hostapd/files/wpa_supplicant.uc
++++ b/package/network/services/hostapd/files/wpa_supplicant.uc
+@@ -390,6 +390,7 @@ function iface_hostapd_notify(phy, radio, ifname, iface, state)
+ 		return;
+ 	}
+ 
++	wpas.printf(`apsta_state message passed ${msg}`);
+ 	ubus.call("hostapd", "apsta_state", msg);
+ }
+ 
+-- 
+2.34.1
+
