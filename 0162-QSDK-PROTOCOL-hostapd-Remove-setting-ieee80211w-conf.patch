@@ -1,0 +1,52 @@
+From adaaf31e62a9284e5e242222485685c900bce0d3 Mon Sep 17 00:00:00 2001
+From: Arunpandi Kannan <quic_arunpand@quicinc.com>
+Date: Wed, 9 Apr 2025 09:43:04 +0530
+Subject: [PATCH] QSDK:PROTOCOL: hostapd: Remove setting ieee80211w config for
+ MRSNO in scripts
+
+rsn override configs sets ieee80211w to default value 1. Due to that
+addional AKM PSK-SHA256 gets added to key mgmt in configuraion file which is not
+acceptable for MRSNO.
+So Remove setting default value to ieee80211w config.
+
+Also do not enable PSK-SHA256 AKM in MRSNO even if ieee80211w explicitly enabled
+in wireless configurations.
+
+Change-Id: I05330a3d0d91fe30dcf799198873fbd49125cc95
+Signed-off-by: Arunpandi Kannan <quic_arunpand@quicinc.com>
+---
+ .../network/config/wifi-scripts/files/lib/netifd/hostapd.sh   | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+index 5d36dcf87d5a..be99ce84c9ef 100644
+--- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
++++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
+@@ -45,7 +45,7 @@ hostapd_append_wpa_key_mgmt() {
+ 		psk|eap)
+ 			append wpa_key_mgmt "WPA-$auth_type_l"
+ 			[ "${wpa:-2}" -ge 2 ] && [ "${ieee80211r:-0}" -gt 0 ] && append wpa_key_mgmt "FT-${auth_type_l}"
+-			[ "${ieee80211w:-0}" -gt 0 ] && append wpa_key_mgmt "WPA-${auth_type_l}-SHA256"
++			[ "${ieee80211w:-0}" -gt 0 ] && [ "${rsn_override_mfp:-0}" -eq 0 ] && append wpa_key_mgmt "WPA-${auth_type_l}-SHA256"
+ 		;;
+ 		eap192)
+ 			append wpa_key_mgmt "WPA-EAP-SUITE-B-192"
+@@ -703,7 +703,6 @@ hostapd_set_bss_options() {
+ 
+ 	#rsn override used for sae encryption only
+ 	[ -n "$rsn_override_key_mgmt" ] && {
+-		set_default ieee80211w 1
+ 		set_default sae_pwe 2
+ 		set_default rsn_override_mfp 1
+ 		set_default rsn_override_pairwise CCMP
+@@ -715,7 +714,6 @@ hostapd_set_bss_options() {
+ 
+ 	#rsn override 2 used for sae-ext-key and ft-sae-ext-key
+ 	[ -n "$rsn_override_key_mgmt_2" ] && {
+-		set_default ieee80211w 1
+ 		set_default sae_pwe 2
+ 		set_default rsn_override_mfp_2 2
+ 		set_default rsn_override_pairwise_2 GCMP
+-- 
+2.34.1
+
