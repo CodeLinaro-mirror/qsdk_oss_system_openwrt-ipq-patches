@@ -1,0 +1,170 @@
+From 82c2249a86fc2552756ac27393aff270ff1cdce5 Mon Sep 17 00:00:00 2001
+From: Ram Chandra Jangir <rjangir@codeaurora.org>
+Date: Fri, 5 May 2017 15:40:56 -0700
+Subject: [PATCH] qsdk: Add Signed kernel module support
+
+Kernel modules are  to be signed when Kernel module signing
+option CONFIG_MODULE_SIG is enabled along with the automatic
+sign option CONFIG_MODULE_SIG_ALL.
+When enabled, the Linux kernel will only load kernel modules
+that are digitally signed with the proper key. This allows
+further hardening of the system by disallowing unsigned kernel
+modules, or kernel modules signed with the wrong key, to be loaded.
+
+Change-Id: I7aa320eeafa1cd4d87fb399d46971907c3bc055c
+Signed-off-by: Ram Chandra Jangir <rjangir@codeaurora.org>
+(cherry picked from commit e2d68a13b788e16a4893cfb105aec4fbcb240346)
+---
+ config/Config-kernel.in    | 46 ++++++++++++++++++++++++++++++++++++++
+ include/kernel-defaults.mk |  1 +
+ include/package-pack.mk    |  2 +-
+ rules.mk                   |  3 ++-
+ scripts/ipkg-build         | 10 ++++++++-
+ scripts/rstrip.sh          |  1 +
+ 6 files changed, 60 insertions(+), 3 deletions(-)
+
+diff --git a/config/Config-kernel.in b/config/Config-kernel.in
+index c24c38864c2b..5d875a3ebf8c 100644
+--- a/config/Config-kernel.in
++++ b/config/Config-kernel.in
+@@ -778,6 +778,52 @@ config KERNEL_BIG_KEYS
+ 	bool "Enable large payload keys on kernel keyrings"
+ 	depends on KERNEL_KEYS
+ 
++config KERNEL_MODULE_SIG
++	bool "Enable kernel module signing"
++	default n
++
++if KERNEL_MODULE_SIG
++	config KERNEL_MODULE_SIG_ALL
++		bool "Automatically sign all modules"
++		default y
++
++	config KERNEL_MODULE_SIG_FORCE
++		bool "Require modules to be validly signed"
++
++	config KERNEL_MODULE_SIG_KEY
++		string "File name or PKCS#11 URI of module signing key"
++		default "certs/signing_key.pem"
++
++choice
++	prompt "Which hash algorithm should kernel modules be signed with?"
++	depends on KERNEL_MODULE_SIG
++
++	config KERNEL_MODULE_SIG_SHA1
++		bool "Sign modules with SHA-1"
++		default y if SIGN_KERNEL_MODULES
++
++	config KERNEL_MODULE_SIG_SHA224
++		bool "Sign modules with SHA-224"
++
++	config KERNEL_MODULE_SIG_SHA256
++		bool "Sign modules with SHA-256"
++
++	config KERNEL_MODULE_SIG_SHA384
++		bool "Sign modules with SHA-384"
++
++	config KERNEL_MODULE_SIG_SHA512
++		bool "Sign modules with SHA-512"
++endchoice
++
++	config KERNEL_MODULE_SIG_HASH
++		string
++		default "sha1"   if KERNEL_MODULE_SIG_SHA1
++		default "sha224" if KERNEL_MODULE_SIG_SHA224
++		default "sha256" if KERNEL_MODULE_SIG_SHA256
++		default "sha384" if KERNEL_MODULE_SIG_SHA384
++		default "sha512" if KERNEL_MODULE_SIG_SHA512
++endif
++
+ #
+ # CGROUP support symbols
+ #
+diff --git a/include/kernel-defaults.mk b/include/kernel-defaults.mk
+index 8ad6a9a4eb14..337205ef515e 100644
+--- a/include/kernel-defaults.mk
++++ b/include/kernel-defaults.mk
+@@ -141,6 +141,7 @@ define Kernel/CompileModules/Default
+ 	cmp -s $(LINUX_DIR)/.config $(LINUX_DIR)/.config.modules.save && \
+ 		mv $(LINUX_DIR)/.config.modules.save $(LINUX_DIR)/.config; \
+ 	$(CP) $(LINUX_DIR)/.config $(LINUX_DIR)/.config.modules.save
++	+$(KERNEL_MAKE) certs
+ endef
+ 
+ OBJCOPY_STRIP = -R .reginfo -R .notes -R .note -R .comment -R .mdebug -R .note.gnu.build-id
+diff --git a/include/package-pack.mk b/include/package-pack.mk
+index 26a32788343c..98e65e6a1cf6 100644
+--- a/include/package-pack.mk
++++ b/include/package-pack.mk
+@@ -275,7 +275,7 @@ ifeq ($(CONFIG_USE_APK),)
+ 		$($(1)_COMMANDS) \
+ 	)
+ 
+-	$(FAKEROOT) $(STAGING_DIR_HOST)/bin/bash $(SCRIPT_DIR)/ipkg-build -m "$(FILE_MODES)" $$(IDIR_$(1)) $$(PDIR_$(1))
++	$(FAKEROOT) $(STAGING_DIR_HOST)/bin/bash $(SCRIPT_DIR)/ipkg-build -m "$(FILE_MODES)" $(if $(CONFIG_KERNEL_MODULE_SIG),-p $(TOPDIR)/qca/src/linux-6.6/scripts/sign-file -s $(CONFIG_KERNEL_MODULE_SIG_HASH)) $$(IDIR_$(1)) $$(PDIR_$(1))
+ else
+ 	mkdir -p $$(ADIR_$(1))/
+ 	mkdir -p $$(IDIR_$(1))/lib/apk/packages/
+diff --git a/rules.mk b/rules.mk
+index f72a56931805..ffbc95ac09dd 100644
+--- a/rules.mk
++++ b/rules.mk
+@@ -342,7 +342,8 @@ else
+     export CROSS="$(TARGET_CROSS)" \
+ 		$(if $(PKG_BUILD_ID),KEEP_BUILD_ID=1) \
+ 		$(if $(CONFIG_KERNEL_KALLSYMS),NO_RENAME=1) \
+-		$(if $(CONFIG_KERNEL_PROFILING),KEEP_SYMBOLS=1); \
++		$(if $(CONFIG_KERNEL_PROFILING),KEEP_SYMBOLS=1) \
++		$(if $(CONFIG_KERNEL_MODULE_SIG),MOD_SIGN_CMD="$(LINUX_DIR)/scripts/sign-file $(call qstrip, $(CONFIG_KERNEL_MODULE_SIG_HASH)) $(LINUX_DIR)/$(call qstrip, $(CONFIG_KERNEL_MODULE_SIG_KEY)) $(LINUX_DIR)/certs/signing_key.x509"); \
+     NM="$(TARGET_CROSS)nm" \
+     STRIP="$(STRIP)" \
+     STRIP_KMOD="$(SCRIPT_DIR)/strip-kmod.sh" \
+diff --git a/scripts/ipkg-build b/scripts/ipkg-build
+index 6abcc588322d..afc270e7c656 100755
+--- a/scripts/ipkg-build
++++ b/scripts/ipkg-build
+@@ -93,13 +93,15 @@ resolve_file_mode_id() {
+ ###
+ file_modes=""
+ usage="Usage: $0 [-v] [-h] [-m] <pkg_directory> [<destination_directory>]"
+-while getopts "hvm:" opt; do
++while getopts "hvm:p:s:" opt; do
+     case $opt in
+ 	v ) echo "$version"
+ 	    exit 0
+ 	    ;;
+ 	h ) 	echo "$usage"  >&2 ;;
+ 	m )	file_modes=$OPTARG ;;
++	p )     sign_file=$OPTARG ;;
++	s )     sha=$OPTARG ;;
+ 	\? ) 	echo "$usage"  >&2
+ 	esac
+ done
+@@ -191,6 +193,12 @@ rm "$tmp_dir"/tarX
+ echo "2.0" > "$tmp_dir"/debian-binary
+ 
+ pkg_file=$dest_dir/${pkg}_${version}_${arch}.ipk
++[ -z "$sign_file" ] || {
++	for file in `find $pkg_dir -type f | grep ".ko"`
++	do
++		eval "$sign_file $sha $(dirname $sign_file)/../certs/signing_key.pem $(dirname $sign_file)/../certs/signing_key.x509 $file"
++	done
++}
+ rm -f "$pkg_file"
+ ( cd "$tmp_dir" && $TAR --format=gnu --numeric-owner --sort=name -cf -  --mtime="$TIMESTAMP" ./debian-binary ./data.tar.gz ./control.tar.gz | gzip -n - > "$pkg_file" )
+ 
+diff --git a/scripts/rstrip.sh b/scripts/rstrip.sh
+index 2aa7e96fdac6..d979a5e8554e 100755
+--- a/scripts/rstrip.sh
++++ b/scripts/rstrip.sh
+@@ -29,6 +29,7 @@ find $TARGETS -not -path \*/lib/firmware/\* -a -type f -a -exec file {} \; | \
+ 	[ "${S}" = "relocatable" ] && {
+ 		[ "${F##*.}" == "o" ] && continue
+ 		eval "$STRIP_KMOD $F"
++		eval "${MOD_SIGN_CMD} $F"
+ 	} || {
+ 		b=$(stat -c '%a' $F)
+ 		[ -z "$PATCHELF" ] || [ -z "$TOPDIR" ] || {
+-- 
+2.34.1
+
