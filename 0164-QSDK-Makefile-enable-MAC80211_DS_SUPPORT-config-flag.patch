@@ -1,0 +1,35 @@
+From f0739c662db90fe046a85467379e6668a37ce151 Mon Sep 17 00:00:00 2001
+From: Pradeep Kumar Chitrapu <quic_pradeepc@quicinc.com>
+Date: Thu, 25 Jul 2024 16:41:51 -0700
+Subject: [PATCH] QSDK: Makefile: enable MAC80211_DS_SUPPORT config flag
+
+Packet stats in mac80211 is currently enabled using config
+flag MAC80211_DS_SUPPORT. enable this for fixing stats in
+iw wlanX station dump.
+
+Patch-dependency: None
+Patch-work: None
+
+Change-Id: I91c4ec466dfe86642ae407ce4db8db1a93b50841
+Signed-off-by: Pradeep Kumar Chitrapu <quic_pradeepc@quicinc.com>
+(cherry picked from commit 714364aeb595a9ce3083f613dcf6b84684d03cc9)
+---
+ package/kernel/mac80211/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
+index 6e4194deb91c..9e4b0f489104 100644
+--- a/package/kernel/mac80211/Makefile
++++ b/package/kernel/mac80211/Makefile
+@@ -301,7 +301,7 @@ ifdef CONFIG_PACKAGE_MAC80211_TRACING
+ endif
+ 
+ config-$(CONFIG_PACKAGE_MAC80211_PPE_SUPPORT) += MAC80211_PPE_SUPPORT
+-config-$(CONFIG_PACKAGE_MAC80211_DS_SUPPORT) += MAC80211_BONDED_SUPPORT ATH12K_PPE_DS_SUPPORT ATH12K_BONDED_DS_SUPPORT
++config-$(CONFIG_PACKAGE_MAC80211_DS_SUPPORT) += ATH12K_PPE_DS_SUPPORT MAC80211_DS_SUPPORT
+ config-$(CONFIG_PACKAGE_MAC80211_SFE_SUPPORT) += MAC80211_SFE_SUPPORT
+ config-$(CONFIG_PACKAGE_MAC80211_MESSAGE_TRACING) += MAC80211_MESSAGE_TRACING ATH10K_TRACING ATH11K_TRACING ATH12K_TRACING
+ config-$(CONFIG_PACKAGE_MAC80211_DEBUG_MENU) += MAC80211_DEBUG_MENU
+-- 
+2.34.1
+
