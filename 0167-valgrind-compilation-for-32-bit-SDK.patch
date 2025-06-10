@@ -1,0 +1,28 @@
+From 1ce6be810d6508bb8eb18fc3c5b7fa8b3a2635c9 Mon Sep 17 00:00:00 2001
+From: Naveen Raj Ranganathan <quic_naver@quicinc.com>
+Date: Fri, 30 May 2025 11:41:38 +0530
+Subject: [PATCH] valgrind compilation for 32 bit SDK
+
+Change-Id: I0e9b69805dc37aa6203cd7d55de6b5eedc85dc46
+Signed-off-by: Naveen Raj Ranganathan <quic_naver@quicinc.com>
+---
+ package/devel/valgrind/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/package/devel/valgrind/Makefile b/package/devel/valgrind/Makefile
+index bfb8d25b93fb..282c5faff218 100644
+--- a/package/devel/valgrind/Makefile
++++ b/package/devel/valgrind/Makefile
+@@ -95,6 +95,9 @@ else
+ 	CONFIGURE_ARGS += \
+ 		--enable-only32bit
+ 	BITS := 32bit
++ifeq ($(CONFIG_arm_v7),y)
++       CONFIGURE_ARGS += --host=armv7-openwrt-linux$(if $(TARGET_SUFFIX),-$(TARGET_SUFFIX))
++endif
+ endif
+ 
+ CONFIGURE_ARGS += \
+-- 
+2.34.1
+
