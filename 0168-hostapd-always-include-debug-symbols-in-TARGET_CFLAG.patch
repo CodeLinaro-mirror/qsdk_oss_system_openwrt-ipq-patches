@@ -1,0 +1,32 @@
+From bdc4ad902cba6054184033f28b9db87424b45d93 Mon Sep 17 00:00:00 2001
+From: Hari Naraayana Desikan Kannan <quic_hnaraaya@quicinc.com>
+Date: Thu, 12 Jun 2025 11:08:52 +0530
+Subject: [PATCH] hostapd: always include debug symbols in TARGET_CFLAGS
+
+Change-Id: I9f71681064361bbf4ec14c1eaa24c04ad566dd73
+Signed-off-by: Hari Naraayana Desikan Kannan <quic_hnaraaya@quicinc.com>
+---
+ package/network/services/hostapd/Makefile | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index 6a400cd34143..1d9c78f86eb7 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -634,12 +634,7 @@ TARGET_CPPFLAGS := \
+ 	$(if $(CONFIG_WPA_MSG_MIN_PRIORITY),-DCONFIG_MSG_MIN_PRIORITY=$(CONFIG_WPA_MSG_MIN_PRIORITY))
+ 
+ TARGET_LDFLAGS += -lubox -lubus -lblobmsg_json -lucode -lm -lnl-tiny -ludebug
+-TARGET_CFLAGS += -fPIC -Wall -Werror
+-
+-ifdef CONFIG_DEBUG
+-	TARGET_CFLAGS += -g3
+-endif
+-
++TARGET_CFLAGS += -fPIC -Wall -Werror -g
+ 
+ ifdef CONFIG_WPA_ENABLE_WEP
+     DRIVER_MAKEOPTS += CONFIG_WEP=y
+-- 
+2.34.1
+
