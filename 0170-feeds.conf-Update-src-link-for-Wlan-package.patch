@@ -1,0 +1,27 @@
+From cd59109c447fcdbbc7d4e6cbcc89bbc5601adf50 Mon Sep 17 00:00:00 2001
+From: Balamurugan S <bselvara@qti.qualcomm.com>
+Date: Wed, 21 May 2025 16:48:16 +0530
+Subject: [PATCH] feeds.conf: Update src link for Wlan package
+
+Change-Id: I3d2e807c4a58d2647ff4ae21cb11ed22f4c1dc1c
+Signed-off-by: Balamurugan S <bselvara@qti.qualcomm.com>
+(cherry picked from commit 7b18048cd7f70459cb678c186786ca53598d24c1)
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 4ef9751cff95..c65e2beaa525 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -8,6 +8,7 @@ src-link qca_platform_utils ../qca/feeds/qca-platform-utils
+ src-link nss ../qca/feeds/nss
+ src-link wifi_debug_tools ../qca/feeds/wifi-debug-tools
+ src-link wifi_fw_headers ../qca/feeds/wifi-fw-headers
++src-link wlan_open ../qca/feeds/wlan-open
+ src-link athdiag ../qca/feeds/athdiag
+ src-link wlan ../qca/feeds/wlan
+ src-link qca ../qca/feeds/qca
+-- 
+2.34.1
+
