@@ -1,0 +1,23 @@
+From a6858b13d3d9b961f5d68b15aa5f91d1e309b310 Mon Sep 17 00:00:00 2001
+From: Suvidh Subodh Hegde <suvidhsu@qti.qualcomm.com>
+Date: Fri, 27 Jun 2025 10:00:45 +0530
+Subject: [PATCH] Add prplmesh src-link in feeds.conf
+
+Change-Id: I8abd8a2c1e487b1d387132b637c6569689d5f238
+Signed-off-by: Suvidh Subodh Hegde <suvidhsu@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 4ef9751cff95..ee5da07912dd 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -59,3 +59,4 @@ src-link container_interfaces ../qca/feeds/container_interfaces
+ src-link fault_detection ../qca/feeds/faultdetection
+ src-link btdaemon ../qca/feeds/btdaemon
+ src-link powerboost ../qca/feeds/powerboost
++src-link feed_prplmesh ../qca/feeds/feed_prplmesh
+-- 
+2.34.1
+
