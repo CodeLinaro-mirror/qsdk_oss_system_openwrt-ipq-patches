@@ -1,0 +1,25 @@
+From 6a05ad571257e736adc77b0857f2e1b1a288f5fd Mon Sep 17 00:00:00 2001
+From: Saahil Tomar <saahtoma@qti.qualcomm.com>
+Date: Tue, 1 Jul 2025 01:56:55 -0700
+Subject: [PATCH] Revert "kernel: modules: Add hash value for kernel 6.6.88"
+
+This reverts commit 4bf6feb8bbafb6d56543a28a47ccd04c8ea01f9f.
+
+Change-Id: I9934ceeccd0e2c1f0c8ec4aeb05d9f2836aa7de8
+Signed-off-by: Saahil Tomar <quic_saahtoma@quicinc.com>
+---
+ include/kernel-6.6 | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/kernel-6.6 b/include/kernel-6.6
+index 07ba30cb3aaf..826c0c433251 100644
+--- a/include/kernel-6.6
++++ b/include/kernel-6.6
+@@ -1,2 +1,2 @@
+-LINUX_VERSION-6.6 = .88
+-LINUX_KERNEL_HASH-6.6.88 = 19df89b63ef7e950de7297dabfac0569183bf87636f4c300a25336c7da490650
++LINUX_VERSION-6.6 = .47
++LINUX_KERNEL_HASH-6.6.47 = d43376c9e9eaa92bb1b926054bd160d329c58a62d64bd65fe1222c11c6564f50
+-- 
+2.34.1
+
