@@ -1,0 +1,28 @@
+From 238d9d2f28a58f683b66efcfdc172e40bd851ab1 Mon Sep 17 00:00:00 2001
+From: Sriram Sankar Sankarapandian Thangaraj <sriramsa@qti.qualcomm.com>
+Date: Tue, 1 Jul 2025 14:37:22 +0530
+Subject: [PATCH] KUNIT: add kunit unit-test package feed.
+
+feeds.conf: Added kunit unit-test package feed.
+
+Change-Id: I4a5437c16d97bc6c9d4f4e4d48387314a46dafa2
+Signed-off-by: Sriram Sankar Sankarapandian Thangaraj <sriramsa@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index ae3452fa3281..b7afa7ea9069 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -24,6 +24,7 @@ src-link qca_cp ../qca/feeds/qca-cp
+ src-link sigma_dut ../qca/feeds/sigma-dut
+ src-link wapid ../qca/feeds/wapid
+ src-link qca_wapi ../qca/feeds/qca-wapi
++src-link qca_wifi_unit_test ../qca/feeds/qca-wifi-unit-test
+ src-link wlan_utils ../qca/feeds/wlan_utils
+ src-link qca_mcs ../qca/feeds/qca-mcs
+ src-link sigma_dut_open ../qca/feeds/sigma-dut-open
+-- 
+2.34.1
+
