@@ -1,0 +1,39 @@
+From 31110302ba07037249e8aa4196ddc5b1dcb01c0c Mon Sep 17 00:00:00 2001
+From: Yuvarani V <yuvarani@qti.qualcomm.com>
+Date: Mon, 7 Jul 2025 22:36:50 +0530
+Subject: [PATCH] QSDK: Makefile: Fix cross-component dependency via
+ conditional include
+
+Include wlan-hostapd.mk from the
+openwrt-patches/package/network/services/hostapd/ if it exists.
+
+This file provides SHA details for the wlan_host_opensource
+variant of hostapd and disables the default patching logic.
+By overriding the default SHA configuration, it resolves
+cross-component dependency issues.
+
+Change-Id: I9b469357b3d3fd378c0eaabe80e17ef61f4b3ebc
+Signed-off-by: Yuvarani V <yuvarani@qti.qualcomm.com>
+---
+ package/network/services/hostapd/Makefile | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index 1d9c78f86eb7..ea78cb7a322f 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -67,6 +67,11 @@ ifeq ($(LOCAL_VARIANT),mesh)
+   CONFIG_VARIANT:=full
+ endif
+ 
++FILE_DIR_HOSTAPD:=$(TOPDIR)/openwrt-patches/package/network/services/hostapd/
++ifneq ("$(wildcard $(FILE_DIR_HOSTAPD)/wlan-hostapd.mk)","")
++   include $(FILE_DIR_HOSTAPD)/wlan-hostapd.mk
++endif
++
+ include $(INCLUDE_DIR)/package.mk
+ 
+ STAMP_CONFIGURED:=$(STAMP_CONFIGURED)_$(CONFIG_WPA_MSG_MIN_PRIORITY)
+-- 
+2.34.1
+

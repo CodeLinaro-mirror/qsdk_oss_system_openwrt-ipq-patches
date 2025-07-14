@@ -1,0 +1,23 @@
+From a98841270e9027c01d9a884743df623050009683 Mon Sep 17 00:00:00 2001
+From: Pragyan Jain <pragjain@qti.qualcomm.com>
+Date: Tue, 10 Jun 2025 14:40:58 -0700
+Subject: [PATCH] feeds.conf : Added support of libmmap-telemetry
+
+Change-Id: I9d65edbf64ef00e08735e732d5b10b627a1e4708
+Signed-off-by: Pragyan Jain <pragjain@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index e1a19d43541c..63f3b71b6acd 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -72,3 +72,4 @@ src-link btdaemon ../qca/feeds/btdaemon
+ src-link powerboost ../qca/feeds/powerboost
+ src-link feed_prplmesh ../qca/feeds/feed_prplmesh
+ src-link wapid_cfg80211_internal ../qca/feeds/wapid-cfg80211-internal
++src-link libmmap_telemetry ../qca/feeds/libmmap-telemetry
+-- 
+2.34.1
+

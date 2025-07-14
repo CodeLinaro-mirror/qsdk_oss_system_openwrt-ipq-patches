@@ -1,0 +1,25 @@
+From e30f544f0d67cfbbb6a9450776dac69bd82ae265 Mon Sep 17 00:00:00 2001
+From: Haribabu Krishnasamy <hkr@qti.qualcomm.com>
+Date: Wed, 25 Jun 2025 14:50:35 +0530
+Subject: [PATCH] QSDK:WAPI: Compilation trigger in feeds.conf
+
+wapidinternal compilation trigger from feed.conf
+
+Change-Id: I86db51b3f23e12400a66a2fdaaf6ab4194aff276
+Signed-off-by: Haribabu Krishnasamy <hkr@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index ae3452fa3281..040342fe358c 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -70,3 +70,4 @@ src-link fault_detection ../qca/feeds/faultdetection
+ src-link btdaemon ../qca/feeds/btdaemon
+ src-link powerboost ../qca/feeds/powerboost
+ src-link feed_prplmesh ../qca/feeds/feed_prplmesh
++src-link wapid_cfg80211_internal ../qca/feeds/wapid-cfg80211-internal
+-- 
+2.34.1
+
