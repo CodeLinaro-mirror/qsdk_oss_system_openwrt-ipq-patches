@@ -1,0 +1,26 @@
+From 11ec197080f2ef2e469a1b1e015c159c232b90e7 Mon Sep 17 00:00:00 2001
+From: Jhalak Naik <jhalnaik@qti.qualcomm.com>
+Date: Thu, 17 Jul 2025 15:39:46 +0530
+Subject: [PATCH] [qsdk] Remove feeds for interference classification
+
+Signed-off-by: Jhalak Naik <quic_jhalnaik@quicinc.com>
+Change-Id: I889a1eac7eee11de0ac7b543917867b7f9d4d2d4
+---
+ feeds.conf | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index 63f3b71b6acd..eda02f6c0ca3 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -60,7 +60,6 @@ src-link data_modem_monitor ../qca/feeds/data-modem-monitor
+ src-link kickstart ../qca/feeds/kickstart
+ src-link qwes_tools ../qca/feeds/qwes_tools
+ src-link winai ../qca/feeds/win-ai
+-src-link interferenceclassify ../qca/feeds/interferenceclassify
+ src-link qti_data_logger ../qca/feeds/qti-data-logger
+ src-link ai_cloud_agent ../qca/feeds/ai_cloud_agent
+ src-link ai_cloud_lib ../qca/feeds/ai_cloud_lib
+-- 
+2.34.1
+

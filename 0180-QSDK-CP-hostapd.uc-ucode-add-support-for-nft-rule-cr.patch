@@ -1,0 +1,123 @@
+From 4140bdb312de26664d6623e3012c48abe2c40271 Mon Sep 17 00:00:00 2001
+From: Hari Chandrakanthan <haric@qti.qualcomm.com>
+Date: Thu, 17 Jul 2025 03:04:51 +0530
+Subject: [PATCH] QSDK:CP: hostapd.uc: ucode: add support for nft rule
+ creation/deletion
+
+WLAN qos features like SCS/MSCS needs nft rule programming
+to do packet match.
+
+Add support to receive networking parameters through
+functions and create/delete nft rule.
+
+Change-Id: I7dcb791d07c8400c240ee0b9cb012b55cabd7e30
+Signed-off-by: Hari Chandrakanthan <haric@qti.qualcomm.com>
+Co-developed-by: Vivek Chettri <vchettri@qti.qualcomm.com>
+---
+ .../network/services/hostapd/files/hostapd.uc | 92 +++++++++++++++++++
+ 1 file changed, 92 insertions(+)
+
+diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
+index 1f626fe5ba85..704c99474873 100644
+--- a/package/network/services/hostapd/files/hostapd.uc
++++ b/package/network/services/hostapd/files/hostapd.uc
+@@ -1141,4 +1141,96 @@ return {
+ 			hostapd.data.auth_obj.notify("sta_connected", msg, data_cb, null, null, 1000);
+ 		return ret;
+ 	},
++	config_nft_table: function(table, add) {
++                let add_del = {};
++                let ret = {};
++                if (add)
++                        add_del = "add";
++                else
++                        add_del = "delete";
++
++                ret = system(`nft ${add_del} table netdev ${table}`);
++	},
++	config_nft_chain: function(table, chain, iface, add) {
++                let add_del = {};
++                let hook = {};
++                let ret = {};
++                if (add) {
++                        add_del = "add";
++                } else {
++                        add_del = "delete";
++                }
++
++                hook = "{ type filter hook egress device " + iface + " priority 0\\; }";
++                ret = system(`nft ${add_del} chain netdev ${table} ${chain} ${hook}`);
++	},
++	config_nft_rule: function(table, chain, iface, add,
++				  dst_mac_addr, proto,
++				  v6_src_addr, v6_dst_addr, v4_src_addr, v4_dst_addr,
++				  sport, dport, mark, esp_spi, dscp) {
++		let cmd = {};
++		if (add) {
++                let rule = "nft add rule netdev" + " " + table + " " + chain;
++
++		if (dst_mac_addr)
++			rule = rule + " ether daddr " + dst_mac_addr;
++
++                if (v6_src_addr)
++                        rule = rule + " ip6 saddr " + v6_src_addr;
++
++                if (v6_dst_addr)
++                        rule = rule + " ip6 daddr " + v6_dst_addr;
++
++                if (v4_src_addr)
++                        rule = rule + " ip saddr " + v4_src_addr;
++
++                if (v4_dst_addr)
++                        rule = rule + " ip daddr " + v4_dst_addr;
++
++		if (proto == 6)
++			rule = rule + " tcp ";
++
++		if (proto == 17)
++			rule = rule + " udp ";
++
++                if (sport)
++                        rule = rule + " sport " + sport;
++
++                if (dport)
++                        rule = rule + " dport " + dport;
++
++                rule = rule + " meta mark set " + mark + " counter";
++
++                hostapd.printf(`${rule}`);
++		system(`${rule}`);
++
++		} else {
++			let cmd = `nft -a list chain  netdev wifi_qos_table ${chain} > /tmp/nft_info`;
++			system(`${cmd}`);
++
++			if (!mark || !dst_mac_addr) {
++				hostapd.printf(`ERROR: NFT Delete Rule, mandatory info not provided `);
++			} else {
++				let mark_hex = sprintf("%x", mark);
++				let f = open("/tmp/nft_info", "r");
++                                let line;
++                                while ((line = rtrim(f.read("line"), "\n")) != null) {
++					let rule = "nft delete rule netdev" + " " + table + " " + chain;
++					let handle;
++                                        if (match(line, regexp(mark_hex)) && match(line, regexp(dst_mac_addr))) {
++						handle = split(line, "#")[1];
++						rule = rule + handle;
++						hostapd.printf(`${rule}`);
++						system(`${rule}`);
++                                        }
++                                }
++                                f.close();
++
++			}
++
++			cmd = "rm /tmp/nft_info";
++			system(`${cmd}`);
++
++		}
++	},
+ };
+-- 
+2.34.1
+
