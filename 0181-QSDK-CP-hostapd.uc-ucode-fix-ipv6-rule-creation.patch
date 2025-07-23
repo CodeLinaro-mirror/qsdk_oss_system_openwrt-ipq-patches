@@ -1,0 +1,86 @@
+From cabd3e0edcd8daa4834d396bfff545602eb1558f Mon Sep 17 00:00:00 2001
+From: Hari Chandrakanthan <haric@qti.qualcomm.com>
+Date: Tue, 22 Jul 2025 19:13:21 +0530
+Subject: [PATCH] QSDK:CP: hostapd.uc: ucode: fix ipv6 rule creation
+
+Fix ipv6 rule creation by using next_header instead of protocol.
+
+Include SPI field in rule creation for tclass 10 support.
+
+Change-Id: I775f6bd8cf2dfec663e39612b1a3498ee3677a5f
+Signed-off-by: Hari Chandrakanthan <haric@qti.qualcomm.com>
+---
+ .../network/services/hostapd/files/hostapd.uc | 44 +++++++++++++++----
+ 1 file changed, 35 insertions(+), 9 deletions(-)
+
+diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
+index 704c99474873..52052adcf772 100644
+--- a/package/network/services/hostapd/files/hostapd.uc
++++ b/package/network/services/hostapd/files/hostapd.uc
+@@ -1167,10 +1167,11 @@ return {
+ 	config_nft_rule: function(table, chain, iface, add,
+ 				  dst_mac_addr, proto,
+ 				  v6_src_addr, v6_dst_addr, v4_src_addr, v4_dst_addr,
+-				  sport, dport, mark, esp_spi, dscp) {
++				  sport, dport, mark, esp_spi, dscp, ip_family) {
+ 		let cmd = {};
+ 		if (add) {
+                 let rule = "nft add rule netdev" + " " + table + " " + chain;
++		let pr = {};
+ 
+ 		if (dst_mac_addr)
+ 			rule = rule + " ether daddr " + dst_mac_addr;
+@@ -1187,17 +1188,42 @@ return {
+                 if (v4_dst_addr)
+                         rule = rule + " ip daddr " + v4_dst_addr;
+ 
+-		if (proto == 6)
+-			rule = rule + " tcp ";
++		if (proto) {
++			let temp = {};
+ 
+-		if (proto == 17)
+-			rule = rule + " udp ";
++			if (ip_family == 4)
++				temp = " ip protocol ";
++			else
++				temp = " ip6 nexthdr ";
+ 
+-                if (sport)
+-                        rule = rule + " sport " + sport;
++			if (proto == 6)
++				pr = " tcp ";
+ 
+-                if (dport)
+-                        rule = rule + " dport " + dport;
++			if (proto == 17)
++				pr = " udp ";
++
++			if (proto == 50)
++				pr = " esp ";
++
++			if (pr) {
++				rule = rule + temp + pr;
++			}
++		}
++
++		if (pr) {
++			if (sport)
++				rule = rule + pr +" sport " + sport;
++
++	                if (proto == 17 && dport == 4500) {
++				rule = rule + pr + " dport { 4500, 5200 } ";
++			} else if (dport) {
++				rule = rule + pr + " dport " + dport;
++			}
++		}
++
++		if (esp_spi && proto == 50) {
++			rule = rule + " esp spi " + esp_spi;
++		}
+ 
+                 rule = rule + " meta mark set " + mark + " counter";
+ 
+-- 
+2.34.1
+
