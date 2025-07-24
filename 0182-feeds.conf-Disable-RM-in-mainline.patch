@@ -1,0 +1,28 @@
+From c6592d1a319fc58ce42aad322c104f1a47577fda Mon Sep 17 00:00:00 2001
+From: Anirban Sirkhell <anirban@qti.qualcomm.com>
+Date: Wed, 16 Jul 2025 19:23:03 +0530
+Subject: [PATCH] feeds.conf: Disable RM in mainline
+
+Removal of GWAPPs components from mainline
+
+Change-Id: I78819e9e9e85fad81d0a9efc765a4846c9b7f3cb
+Signed-off-by: Anirban Sirkhell <anirban@qti.qualcomm.com>
+---
+ feeds.conf | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index eda02f6c0ca3..5a41d293b2e9 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -52,7 +52,6 @@ src-link optic_drivers_prop ../qca/feeds/optic-drivers-prop
+ src-link em_ext_ctrl ../qca/feeds/em-ext-ctrl
+ src-link qca_son_mem_debug ../qca/feeds/qca-son-mem-debug
+ src-link afc ../qca/feeds/afc
+-src-link qca_rsrcmgr ../qca/feeds/qca-rsrcmgr
+ src-link qca_afc_daemon ../qca/feeds/qca-afc-daemon
+ src-link lte_data_oss ../qca/feeds/lte-data-oss
+ src-link lte_data_prop ../qca/feeds/lte-data-prop
+-- 
+2.34.1
+
