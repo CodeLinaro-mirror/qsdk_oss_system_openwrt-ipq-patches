@@ -14,10 +14,10 @@ index 5fbb10e0524f..3f93ad37f99e 100644
 --- a/include/kernel-6.6
 +++ b/include/kernel-6.6
 @@ -1,2 +1,2 @@
--LINUX_VERSION-6.6 = .52
--LINUX_KERNEL_HASH-6.6.52 = 1591ab348399d4aa53121158525056a69c8cf0fe0e90935b0095e9a58e37b4b8
-+LINUX_VERSION-6.6 = .3
-+LINUX_KERNEL_HASH-6.6.3 = 28edfc3d4f90cd738f2a20f5a2d68510268176d6111f6278d8f495edfd9495a7
+-LINUX_VERSION-6.6 = .83
+-LINUX_KERNEL_HASH-6.6.83 = 894bbbe63b7484a0bc576a1e11a8dbc090fbd476d6424431bdc8435e03c2c208
++LINUX_VERSION-6.6 = .47
++LINUX_KERNEL_HASH-6.6.47 = d43376c9e9eaa92bb1b926054bd160d329c58a62d64bd65fe1222c11c6564f50
 diff --git a/package/kernel/linux/modules/netfilter.mk b/package/kernel/linux/modules/netfilter.mk
 index 3cf63982ba44..41cc7cb773fa 100644
 --- a/package/kernel/linux/modules/netfilter.mk

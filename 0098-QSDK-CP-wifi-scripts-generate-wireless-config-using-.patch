@@ -25,18 +25,9 @@ Signed-off-by: Gunaal R <quic_gunar@quicinc.com>
  3 files changed, 197 insertions(+), 24 deletions(-)
 
 diff --git a/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc b/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
-index 8f25a791b38b..dd6cf44d69a7 100644
+index e82525e247df..09b35965c1a7 100644
 --- a/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
 +++ b/package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
-@@ -3,7 +3,7 @@ import { readfile } from "fs";
- import * as uci from 'uci';
- 
- const bands_order = [ "6G", "5G", "2G" ];
--const htmode_order = [ "HE", "VHT", "HT" ];
-+const htmode_order = [ "EHT", "HE", "VHT", "HT" ];
- 
- let board = json(readfile("/etc/board.json"));
- if (!board.wlan)
 @@ -11,9 +11,35 @@ if (!board.wlan)
  
  let idx = 0;
@@ -70,10 +61,10 @@ index 8f25a791b38b..dd6cf44d69a7 100644
 +	return 0;
 +}
 +
- function radio_exists(path, macaddr, phy) {
+ function radio_exists(path, macaddr, phy, radio) {
  	for (let name, s in config) {
  		if (s[".type"] != "wifi-device")
-@@ -29,24 +55,76 @@ function radio_exists(path, macaddr, phy) {
+@@ -31,70 +57,116 @@ function radio_exists(path, macaddr, phy, radio) {
  	}
  }
  
@@ -81,6 +72,12 @@ index 8f25a791b38b..dd6cf44d69a7 100644
 -	let info = phy.info;
 -	if (!info || !length(info.bands))
 -		continue;
+-
+-	let radios = length(info.radios) > 0 ? info.radios : [{ bands: info.bands }];
+-	for (let radio in radios) {
+-		while (config[`radio${idx}`])
+-			idx++;
+-		let name = "radio" + idx;
 +function get_band(freq) {
 +	if (freq > 50000)
 +		band_name = "60G";
@@ -93,19 +90,23 @@ index 8f25a791b38b..dd6cf44d69a7 100644
 +	return band_name;
 +}
  
--	while (config[`radio${idx}`])
--		idx++;
--	let name = "radio" + idx++;
+-		let s = "wireless." + name;
+-		let si = "wireless.default_" + name;
 +function get_channel_list(start_freq, end_freq) {
 +	channels = freq_to_channel(start_freq) + "-" + freq_to_channel(end_freq);
 +	return channels;
 +}
  
+-		let band_name = filter(bands_order, (b) => radio.bands[b])[0];
+-		if (!band_name)
+-			continue;
 +function generate_config(info, name, single_wiphy, id, radio_idx) {
- 	let s = "wireless." + name;
- 	let si = "wireless.default_" + name;
++	let s = "wireless." + name;
++	let si = "wireless.default_" + name;
  
--	let band_name = filter(bands_order, (b) => info.bands[b])[0];
+-		let band = info.bands[band_name];
+-		let rband = radio.bands[band_name];
+-		let channel = rband.default_channel ?? "auto";
 +	let band_name;
 +	if (!single_wiphy) {
 +		band_name = filter(bands_order, (b) => info.bands[b])[0];
@@ -113,14 +114,18 @@ index 8f25a791b38b..dd6cf44d69a7 100644
 +		let freq = radio_idx.first_freq;
 +		band_name = get_band(freq);
 +	}
-+
- 	if (!band_name)
--		continue;
-+		return;
  
- 	let band = info.bands[band_name];
--	let channel = band.default_channel ?? "auto";
-+	let channel = band.default_channel;
+-		let width = band.max_width;
+-		if (band_name == "2G")
+-			width = 20;
+-		else if (width > 80)
+-			width = 80;
++	if (!band_name)
++		return;
++
++	let band = info.bands[band_name];
++	let rband = radio.bands[band_name];
++	let channel = rband.default_channel;
 +
 +	if (single_wiphy) {
 +		let start_freq = radio_idx.first_freq;
@@ -142,7 +147,7 @@ index 8f25a791b38b..dd6cf44d69a7 100644
 +		}
 +	} else {
 +		if (band_name == "5G") {
-+		       if (band.default_channel == "100")
++			if (band.default_channel == "100")
 +				channel = 149;
 +			else
 +				channel = 36;
@@ -154,31 +159,66 @@ index 8f25a791b38b..dd6cf44d69a7 100644
 +				channel = 49;
 +		}
 +	}
-+
+ 
+-		let htmode = filter(htmode_order, (m) => band[lc(m)])[0];
+-		if (htmode)
+-			htmode += width;
+-		else
+-			htmode = "NOHT";
 +	if (band_name == "2G")
 +		channel = 6;
  
- 	let width = band.max_width;
- 	if (band_name == "2G")
-@@ -60,22 +138,17 @@ for (let phy_name, phy in board.wlan) {
- 	else
- 		htmode = "NOHT";
+-		if (!phy.path)
+-			continue;
  
--	if (!phy.path)
--		continue;
--
--	let macaddr = trim(readfile(`/sys/class/ieee80211/${phy_name}/macaddress`));
--	if (radio_exists(phy.path, macaddr, phy_name))
--		continue;
--
--	let id = `phy='${phy_name}'`;
--	if (match(phy_name, /^phy[0-9]/))
--		id = `path='${phy.path}'`;
--
- 	print(`set ${s}=wifi-device
+-		let macaddr = trim(readfile(`/sys/class/ieee80211/${phy_name}/macaddress`));
+-		if (radio_exists(phy.path, macaddr, phy_name, radio.index))
+-			continue;
++	let width = band.max_width;
++	if (band_name == "2G")
++		width = 20;
++	else if (width > 80)
++		width = 80;
+ 
+-		let id = `phy='${phy_name}'`;
+-		if (match(phy_name, /^phy[0-9]/))
+-			id = `path='${phy.path}'`;
++	let htmode = filter(htmode_order, (m) => band[lc(m)])[0];
++	if (htmode)
++		htmode += width;
++	else
++		htmode = "NOHT";
+ 
+-		band_name = lc(band_name);
++	band_name = lc(band_name);
+ 
+-		let country, defaults, num_global_macaddr;
+-		if (board.wlan.defaults) {
+-			defaults = board.wlan.defaults.ssids?.[band_name]?.ssid ? board.wlan.defaults.ssids?.[band_name] : board.wlan.defaults.ssids?.all;
+-			country = board.wlan.defaults.country;
+-			if (!country && band_name != '2g')
+-				defaults = null;
+-			num_global_macaddr = board.wlan.defaults.ssids?.[band_name]?.mac_count;
+-		}
++	let country, defaults, num_global_macaddr;
++	if (board.wlan.defaults) {
++		defaults = board.wlan.defaults.ssids?.[band_name]?.ssid ? board.wlan.defaults.ssids?.[band_name] : board.wlan.defaults.ssids?.all;
++		country = board.wlan.defaults.country;
++		if (!country && band_name != '2g')
++			defaults = null;
++		num_global_macaddr = board.wlan.defaults.ssids?.[band_name]?.mac_count;
++	}
+ 
+-		if (length(info.radios) > 0)
+-			id += `\nset ${s}.radio='${radio.index}'`;
++	if (length(info.radios) > 0)
++		id += `\nset ${s}.radio='${radio.index}'`;
+ 
+-		print(`set ${s}=wifi-device
++	print(`set ${s}=wifi-device
  set ${s}.type='mac80211'
  set ${s}.${id}
- set ${s}.band='${lc(band_name)}'
+ set ${s}.band='${band_name}'
  set ${s}.channel='${channel}'
 +`);
 +
@@ -187,19 +227,20 @@ index 8f25a791b38b..dd6cf44d69a7 100644
 +
 +print(`
  set ${s}.htmode='${htmode}'
- set ${s}.disabled='1'
- 
-@@ -87,6 +160,49 @@ set ${si}.ssid='OpenWrt'
- set ${si}.encryption='none'
+ set ${s}.country='${country || ''}'
+ set ${s}.num_global_macaddr='${num_global_macaddr || ''}'
+@@ -109,9 +181,50 @@ set ${si}.encryption='${defaults?.encryption || "none"}'
+ set ${si}.key='${defaults?.key || ""}'
  
  `);
+-		config[name] = {};
+-		commit = true;
 +	if (band_name == "6G") {
 +		print(`set ${si}.encryption='sae'
 +		set ${si}.sae_pwe='1'
 +		set ${si}.key='0123456789'
 +`);
 +	}
-+
 +}
 +
 +for (let phy_name, phy in board.wlan) {
@@ -217,7 +258,7 @@ index 8f25a791b38b..dd6cf44d69a7 100644
 +
 +	id = `phy='${phy_name}'`;
 +	if (match(phy_name, /^phy[0-9]/))
-+		id = `path='${phy.path}'`;
++	id = `path='${phy.path}'`;
 +
 +	if (phy.multi_radio)
 +		single_wiphy = true;
@@ -235,10 +276,12 @@ index 8f25a791b38b..dd6cf44d69a7 100644
 +			idx++;
 +		name = "radio" + idx++;
 +		generate_config(info, name, single_wiphy, id, NULL);
-+	}
- 	commit = true;
+ 	}
++	config[name] = {};
++	commit = true;
  }
  
+ if (commit)
 diff --git a/package/network/config/wifi-scripts/files/sbin/wifi b/package/network/config/wifi-scripts/files/sbin/wifi
 index 35592ea3c7b9..11d1f964d35f 100755
 --- a/package/network/config/wifi-scripts/files/sbin/wifi
@@ -252,46 +295,21 @@ index 35592ea3c7b9..11d1f964d35f 100755
  	ucode /lib/wifi/mac80211.uc | uci -q batch
  
 diff --git a/package/network/config/wifi-scripts/files/usr/share/hostap/wifi-detect.uc b/package/network/config/wifi-scripts/files/usr/share/hostap/wifi-detect.uc
-index 109b6a33cfce..9b68f97e53ad 100644
+index db862d40c2a9..1decdeb24eeb 100644
 --- a/package/network/config/wifi-scripts/files/usr/share/hostap/wifi-detect.uc
 +++ b/package/network/config/wifi-scripts/files/usr/share/hostap/wifi-detect.uc
-@@ -79,6 +79,9 @@ function wiphy_detect() {
- 		return;
- 
- 	for (let phy in phys) {
-+		if (!phy)
-+			continue;
-+
- 		let name = phy.wiphy_name;
- 		let path = phy_path(name);
- 		let info = {
-@@ -86,6 +89,9 @@ function wiphy_detect() {
- 			antenna_tx: phy.wiphy_antenna_avail_tx,
+@@ -99,6 +99,9 @@ function wiphy_detect() {
  			bands: {},
+ 			radios: []
  		};
 +		let multi_radio = {};
 +		let start_freq_list = [];
 +		let end_freq_list = [];
  
- 		let bands = info.bands;
- 		for (let band in phy.wiphy_bands) {
-@@ -110,6 +116,7 @@ function wiphy_detect() {
- 			if (band.vht_capa > 0)
- 				band_info.vht = true;
- 			let he_phy_cap = 0;
-+			let eht_phy_cap = 0;
- 
- 			for (let ift in band.iftype_data) {
- 				if (!ift.he_cap_phy)
-@@ -118,9 +125,17 @@ function wiphy_detect() {
- 				band_info.he = true;
- 				he_phy_cap |= ift.he_cap_phy[0];
- 				/* TODO: EHT */
-+				if (!ift.eht_cap_phy)
-+					continue;
-+
-+				band_info.eht = true;
-+				eht_phy_cap |= ift.eht_cap_phy[0];
+ 		for (let radio in phy.radios) {
+ 			// S1G is not supported yet
+@@ -157,7 +160,10 @@ function wiphy_detect() {
+ 				eht_phy_cap |= ift.eht_cap_phy[0];
  			}
  
 -			if (band_name != "2G" &&
@@ -302,48 +320,10 @@ index 109b6a33cfce..9b68f97e53ad 100644
  			    (he_phy_cap & 0x18) || ((band.vht_capa >> 2) & 0x3))
  				band_info.max_width = 160;
  			else if (band_name != "2G" &&
-@@ -138,13 +153,17 @@ function wiphy_detect() {
- 				push(modes, "VHT20");
- 			if (band_info.he)
- 				push(modes, "HE20");
-+			if (band_info.eht)
-+				push(modes, "EHT20");
- 			if (band.ht_capa & 0x2) {
- 				push(modes, "HT40");
- 				if (band_info.vht)
- 					push(modes, "VHT40")
- 			}
--			if (he_phy_cap & 0x2)
-+			if (he_phy_cap & 2)
- 				push(modes, "HE40");
-+			if (eht_phy_cap && he_phy_cap & 2)
-+				push(modes, "EHT40");
- 
- 			for (let freq in band.freqs) {
- 				if (freq.disabled)
-@@ -158,18 +177,55 @@ function wiphy_detect() {
- 
- 			if (band_name == "2G")
- 				continue;
-+			if (he_phy_cap & 4)
-+				push(modes, "HE40");
-+			if (eht_phy_cap && he_phy_cap & 4)
-+				push(modes, "EHT40");
- 			if (band_info.vht)
- 				push(modes, "VHT80");
- 			if (he_phy_cap & 4)
- 				push(modes, "HE80");
-+			if (eht_phy_cap && he_phy_cap & 4)
-+				push(modes, "EHT80");
- 			if ((band.vht_capa >> 2) & 0x3)
- 				push(modes, "VHT160");
- 			if (he_phy_cap & 0x18)
- 				push(modes, "HE160");
-+			if (eht_phy_cap && he_phy_cap & 0x18)
-+				push(modes, "EHT160");
-+			if (band_name == "6G" && (eht_phy_cap & 0x2))
-+				push(modes, "EHT320");
-+		}
+@@ -240,9 +246,36 @@ function wiphy_detect() {
+ 			if (eht_phy_cap & 2)
+ 				push(modes, "EHT320");
+ 		}
 +		if (phy.radios) {
 +			let radios = phy.radios;
 +			for (let i=0; i< length(radios) ; i++) {
@@ -367,13 +347,13 @@ index 109b6a33cfce..9b68f97e53ad 100644
 +					"last_freq" : last_freq[i]
 +				};
 +			}
- 		}
++		}
  
  		let entry = wiphy_get_entry(name, path);
  		entry.info = info;
 +		if (phy.radios) {
 +			entry.multi_radio = multi_radio;
-+ 		}
++		}
  	}
  }
  

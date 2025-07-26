@@ -13,18 +13,18 @@ Signed-off-by: Suraj P Kizhakkethil <quic_surapk@quicinc.com>
  1 file changed, 24 deletions(-)
 
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-index 515bf5437613..d89e01009987 100755
+index c00c27d636a0..fd134bb68a0a 100755
 --- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-@@ -799,7 +799,6 @@ ${channel:+channel=$channel}
+@@ -801,7 +801,6 @@ ${channel:+channel=$channel}
  ${channel_list:+chanlist=$channel_list}
  ${hostapd_noscan:+noscan=1}
  ${tx_burst:+tx_queue_data2_burst=$tx_burst}
 -${multiple_bssid:+mbssid=$multiple_bssid}
  #num_global_macaddr=$num_global_macaddr
+ #macaddr_base=$macaddr_base
  $base_cfg
- 
-@@ -1513,7 +1512,6 @@ wpa_supplicant_set_config() {
+@@ -1533,7 +1532,6 @@ wpa_supplicant_set_config() {
  	[ "$ret" != 0 -o -z "$supplicant_res" ] && wireless_setup_vif_failed WPA_SUPPLICANT_FAILED
  
  	wireless_add_process "$(jsonfilter -s "$supplicant_res" -l 1 -e @.pid)" "/usr/sbin/wpa_supplicant" 1 1
@@ -32,7 +32,7 @@ index 515bf5437613..d89e01009987 100755
  }
  
  hostapd_set_config() {
-@@ -1881,28 +1879,6 @@ drv_mac80211_teardown() {
+@@ -1915,28 +1913,6 @@ drv_mac80211_teardown() {
  	mac80211_reset_config "$phy"
  }
  

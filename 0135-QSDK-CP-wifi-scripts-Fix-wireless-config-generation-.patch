@@ -34,7 +34,7 @@ index fe564a0d67e0..4496ac9a4056 100644
  
  	id = `phy='${phy_name}'`;
  	if (match(phy_name, /^phy[0-9]/))
-@@ -203,11 +205,10 @@ for (let phy_name, phy in board.wlan) {
+@@ -223,12 +225,11 @@ for (let phy_name, phy in board.wlan) {
  			generate_config(info, name, single_wiphy, id, radio_idx);
  		}
  	} else {
@@ -44,6 +44,7 @@ index fe564a0d67e0..4496ac9a4056 100644
 +		name = "radio" + idx;
  		generate_config(info, name, single_wiphy, id, NULL);
  	}
+ 	config[name] = {};
 +	idx++;
  	commit = true;
  }

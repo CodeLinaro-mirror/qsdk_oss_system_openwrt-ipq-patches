@@ -14,16 +14,17 @@ diff --git a/package/network/services/ppp/Makefile b/package/network/services/pp
 index 4e3e5e856a91..1492b241e86c 100644
 --- a/package/network/services/ppp/Makefile
 +++ b/package/network/services/ppp/Makefile
-@@ -244,6 +244,9 @@ define Package/ppp-mod-pppoe/install
- 	$(INSTALL_DIR) $(1)/usr/lib/pppd/$(PKG_RELEASE_VERSION)
- 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/lib/pppd/$(PKG_RELEASE_VERSION)/pppoe.so \
- 		$(1)/usr/lib/pppd/$(PKG_RELEASE_VERSION)/
+@@ -228,6 +228,9 @@ define Package/ppp-mod-pppoe/install
+ 	$(INSTALL_DIR) $(1)/usr/lib/pppd/$(PKG_VERSION)
+ 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/pppd/$(PKG_VERSION)/pppoe.so \
+ 		$(1)/usr/lib/pppd/$(PKG_VERSION)/
 +ifeq ($(CONFIG_OPENSYNC_SUPPORTED),y)
 +	$(LN) pppoe.so $(1)/usr/lib/pppd/$(PKG_RELEASE_VERSION)/rp-pppoe.so
 +endif
  endef
  
  define Package/ppp-mod-radius/install
+
 -- 
 2.34.1
 

@@ -183,10 +183,10 @@ index 940b26cc2a95..47ee73dea3f6 100644
  		if (val[0] == "nas_identifier")
  			bss.nasid = val[1];
  
-@@ -829,7 +896,7 @@ let main_obj = {
+@@ -835,7 +902,7 @@ let main_obj = {
  			for (let phy_name in phy_list) {
  				let phy = hostapd.data.config[phy_name];
- 				let config = iface_load_config(phy.phy, radio, phy.orig_file);
+ 				let config = iface_load_config(phy.phy, phy.radio_idx, phy.orig_file);
 -				iface_set_config(phy_name, config);
 +				iface_set_config(phy_name, req.args.radio, config);
  			}

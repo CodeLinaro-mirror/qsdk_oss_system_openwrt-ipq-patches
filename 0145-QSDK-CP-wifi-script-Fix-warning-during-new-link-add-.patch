@@ -29,12 +29,12 @@ Signed-off-by: Rajat Soni <quic_rajson@quicinc.com>
  1 file changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-index 26f66ea2f3b3..eb468b3749b3 100755
+index 025a538a2c4d..edd46a022080 100755
 --- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-@@ -1700,11 +1700,14 @@ drv_mac80211_setup() {
-                 radio=-1
-         fi
+@@ -1728,11 +1728,14 @@ drv_mac80211_setup() {
+ 
+ 	mac80211_set_suffix
  
 -	json_select data && {
 -		json_get_var prev_rxantenna rxantenna

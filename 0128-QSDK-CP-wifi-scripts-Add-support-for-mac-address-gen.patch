@@ -21,7 +21,7 @@ diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80
 index fb17097f8a32..af2c88c2f0b9 100755
 --- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-@@ -924,8 +924,14 @@ mac80211_get_addr() {
+@@ -927,8 +927,14 @@ mac80211_get_addr() {
  mac80211_generate_mac() {
  	local phy="$1"
  	local id="${macidx:-0}"
@@ -32,8 +32,8 @@ index fb17097f8a32..af2c88c2f0b9 100755
 +		group_size="$has_ap"
 +	fi
  
--	wdev_tool "$phy$phy_suffix" get_macaddr id=$id num_global=$num_global_macaddr mbssid=${multiple_bssid:-0}
-+	wdev_tool "$phy$phy_suffix" get_macaddr id=$id num_global=$num_global_macaddr mbssid=$multiple_bssid mbssid_group_size=$group_size
+-	wdev_tool "$phy$phy_suffix" get_macaddr id=$id num_global=$num_global_macaddr mbssid=${multiple_bssid:-0} macaddr_base=${macaddr_base}
++	wdev_tool "$phy$phy_suffix" get_macaddr id=$id num_global=$num_global_macaddr mbssid=$multiple_bssid mbssid_group_size=$group_size macaddr_base=${macaddr_base}
  }
  
  get_board_phy_name() (

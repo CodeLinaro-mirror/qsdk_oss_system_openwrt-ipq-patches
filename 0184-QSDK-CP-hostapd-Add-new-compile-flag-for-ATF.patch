@@ -13,12 +13,12 @@ Signed-off-by: Harshitha Prem <hprem@qti.qualcomm.com>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
-index ea78cb7a322f..b74af4483c12 100644
+index 8358acd517e7..eb4fa4c45b13 100644
 --- a/package/network/services/hostapd/Makefile
 +++ b/package/network/services/hostapd/Makefile
-@@ -92,7 +92,8 @@ DRIVER_MAKEOPTS= \
- 	CONFIG_IEEE80211AC=$(HOSTAPD_IEEE80211AC) \
+@@ -102,7 +102,8 @@ DRIVER_MAKEOPTS= \
  	CONFIG_IEEE80211AX=$(HOSTAPD_IEEE80211AX) \
+ 	CONFIG_IEEE80211BE=$(HOSTAPD_IEEE80211BE) \
  	CONFIG_MBO=$(CONFIG_WPA_MBO_SUPPORT) \
 -	CONFIG_UCODE=y
 +	CONFIG_UCODE=y \

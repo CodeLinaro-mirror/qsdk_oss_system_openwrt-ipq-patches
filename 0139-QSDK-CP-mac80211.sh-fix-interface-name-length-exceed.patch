@@ -48,8 +48,8 @@ diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80
 index 29bfe7d7d869..29f52e3e1a44 100755
 --- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-@@ -1066,14 +1066,6 @@ mac80211_prepare_vif() {
- 	json_get_vars ifname mode ssid wds powersave macaddr enable wpa_psk_file vlan_file ppe_vp mld
+@@ -1069,14 +1069,6 @@ mac80211_prepare_vif() {
+ 	json_get_vars ifname mode ssid wds powersave macaddr enable wpa_psk_file sae_password_file vlan_file ppe_vp mld
  
  	[ -n "$ifname" ] || {
 -		local prefix;
@@ -60,22 +60,22 @@ index 29bfe7d7d869..29f52e3e1a44 100755
 -		monitor) prefix=mon;;
 -		esac
 -
-                 if [ "$is_wiphy_multi_radio" -eq 1 ]; then
-                         if [[ "$htmode" == EHT* ]] && [ -n "$mld" ]; then
+ 		if [ "$is_wiphy_multi_radio" -eq 1 ]; then
+ 			if [[ "$htmode" == EHT* ]] && [ -n "$mld" ]; then
  				config_get mld_ifname "$mld" ifname
-@@ -1083,10 +1075,10 @@ mac80211_prepare_vif() {
+@@ -1086,10 +1078,10 @@ mac80211_prepare_vif() {
  					ifname="$mld_ifname"
  				fi
-                         else
--                                mac80211_set_ifname "$phy-$band_name" "$prefix"
+ 			else
+-				mac80211_set_ifname "$phy-$band_name" "$prefix"
 +				mac80211_set_ifname "$phy$vif_phy_suffix"
-                         fi
-                 else
--                        mac80211_set_ifname "$phy$vif_phy_suffix" "$prefix"
-+                        mac80211_set_ifname "$phy$vif_phy_suffix"
-                 fi
- 
+ 			fi
+ 		else
+-			mac80211_set_ifname "$ifname_prefix" "$prefix"
++			mac80211_set_ifname "$ifname_prefix"
+ 		fi
  	}
+
 -- 
 2.34.1
 

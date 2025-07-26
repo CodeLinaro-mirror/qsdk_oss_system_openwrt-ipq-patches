@@ -33,7 +33,7 @@ index f94ed3323051..8ad6a9a4eb14 100644
  		) \
  	}
  endef
-@@ -171,12 +171,9 @@ define Kernel/CompileImage/Default
+@@ -171,11 +171,9 @@ define Kernel/CompileImage/Default
  endef
  
  define Kernel/PrepareConfigPerRootfs
@@ -41,7 +41,6 @@ index f94ed3323051..8ad6a9a4eb14 100644
 -		[ ! -d "$(1)" ] || rm -rf $(1); \
 -		mkdir $(1) && $(CP) -T $(LINUX_DIR) $(1); \
 -		touch $(1)/.config; \
--		rm -rf $(1)/usr/initramfs_data.cpio*; \
 -	}
 +	[ ! -d "$(1)" ] || rm -rf $(1)
 +	mkdir $(1)
@@ -49,7 +48,7 @@ index f94ed3323051..8ad6a9a4eb14 100644
  endef
  
  ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
-@@ -185,38 +182,32 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
+@@ -184,39 +182,32 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
  # For Separate Initramf with $2 declared, skip kernel compile, it has
  # already been done previously on generic image build
  define Kernel/CompileImage/Initramfs
@@ -58,6 +57,7 @@ index f94ed3323051..8ad6a9a4eb14 100644
 -		$(call Kernel/Configure/Initramfs,$(if $(1),$(1),$(TARGET_DIR)),$(LINUX_DIR)$(2)); \
 -		$(CP) $(GENERIC_PLATFORM_DIR)/other-files/init $(if $(1),$(1),$(TARGET_DIR))/init; \
 -		$(if $(SOURCE_DATE_EPOCH),touch -hcd "@$(SOURCE_DATE_EPOCH)" $(if $(1),$(1),$(TARGET_DIR)) $(if $(1),$(1),$(TARGET_DIR))/init;) \
+-		rm -rf $(LINUX_DIR)$(2)/usr/initramfs_data.cpio*; \
 -		$(if $(CONFIG_TARGET_ROOTFS_INITRAMFS_SEPARATE), \
 -			$(call locked,{ \
 -				$(if $(call qstrip,$(CONFIG_EXTERNAL_CPIO)), \

@@ -177,15 +177,15 @@ index 3f0cb6ecb548..8d0a9340650c 100644
  					if (!status)
  						continue;
  
-@@ -210,6 +253,7 @@ let main_obj = {
+@@ -210,6 +210,7 @@ let main_obj = {
  			phy: "",
  			radio: 0,
- 			num_global_macaddr: 0,
+ 			macaddr_base: "",
 +			is_ml: false,
  			config: [],
  			defer: true,
  		},
-@@ -218,13 +262,14 @@ let main_obj = {
+@@ -218,13 +219,14 @@ let main_obj = {
  			if (!phy)
  				return libubus.STATUS_INVALID_ARGUMENT;
  
@@ -193,7 +193,7 @@ index 3f0cb6ecb548..8d0a9340650c 100644
 +			wpas.printf(`Set new config for phy ${phy} ${req.args.defer} ${req.args.config}`);
  			try {
  				if (req.args.config)
- 					set_config(phy, req.args.phy, req.args.radio, req.args.num_global_macaddr, req.args.config);
+ 					set_config(phy, req.args.phy, req.args.radio, req.args.macaddr_base, req.args.config);
  
 -				if (!req.args.defer)
 +				if (!req.args.defer) {

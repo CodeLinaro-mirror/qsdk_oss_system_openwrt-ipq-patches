@@ -23,7 +23,7 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  3 files changed, 151 insertions(+), 29 deletions(-)
 
 diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
-index 099bdae46fe1..73219b429fb7 100644
+index f924d3468476..2019f170ca9e 100644
 --- a/package/kernel/mac80211/Makefile
 +++ b/package/kernel/mac80211/Makefile
 @@ -10,6 +10,8 @@ include $(INCLUDE_DIR)/kernel.mk
@@ -32,12 +32,12 @@ index 099bdae46fe1..73219b429fb7 100644
  
 +EXTERNAL_MAKEFILE:=$(TOPDIR)/openwrt-patches/package/kernel/mac80211
 +
- PKG_VERSION:=6.9.9
+ PKG_VERSION:=6.12.6
  PKG_RELEASE:=1
  PKG_LICENSE:=GPL-2.0-only
 @@ -18,10 +20,16 @@ PKG_LICENSE_FILES:=COPYING
  PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources/
- PKG_HASH:=3417da091a57c7b1c145d44c1fae9f1e0bac6d0c8ad61b37e57b0a802eeb2837
+ PKG_HASH:=28ec39425a1b3270e1422d92a8131a6a3d8919cc13e8ee250c315e55d922ba68
  
 +ifneq (,$(findstring QSDK_Open,$(CONFIG_TARGET_PROFILE)))
 +	include $(EXTERNAL_MAKEFILE)/backports.mk
@@ -194,7 +194,7 @@ index 099bdae46fe1..73219b429fb7 100644
  $(eval $(call KernelPackage,cfg80211))
  $(eval $(call KernelPackage,mac80211))
 diff --git a/package/kernel/mac80211/ath.mk b/package/kernel/mac80211/ath.mk
-index f56fd7a961cc..362a6b8af858 100644
+index 5b13b6aac4ad..362a6b8af858 100644
 --- a/package/kernel/mac80211/ath.mk
 +++ b/package/kernel/mac80211/ath.mk
 @@ -21,7 +21,13 @@ ifdef CONFIG_PACKAGE_MAC80211_DEBUGFS
@@ -295,9 +295,9 @@ index f56fd7a961cc..362a6b8af858 100644
 -  $(call KernelPackage/mac80211/Default)
 -  TITLE:=Qualcomm 802.11be wireless chipset support
 -  URL:=https://wireless.wiki.kernel.org/en/users/drivers/ath12k
--  DEPENDS+= +kmod-ath +@DRIVER_11AC_SUPPORT +@DRIVER_11AX_SUPPORT \
+-  DEPENDS+= @PCI_SUPPORT +kmod-ath +@DRIVER_11AC_SUPPORT +@DRIVER_11AX_SUPPORT \
 -  +kmod-crypto-michael-mic +kmod-qrtr-mhi \
--  +kmod-qcom-qmi-helpers
+-  +kmod-qcom-qmi-helpers +@DRIVER_11BE_SUPPORT
 -  FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/ath/ath12k/ath12k.ko
 -  AUTOLOAD:=$(call AutoProbe,ath12k)
 -endef
@@ -311,7 +311,7 @@ index f56fd7a961cc..362a6b8af858 100644
    $(call KernelPackage/mac80211/Default)
    TITLE:=Driver for Atheros AR9170 USB sticks
 diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
-index 1c0b6548662e..d7f903c5c3fc 100644
+index 8753782012e5..36a3d58acb35 100644
 --- a/package/network/services/hostapd/Makefile
 +++ b/package/network/services/hostapd/Makefile
 @@ -13,6 +13,13 @@ PKG_SOURCE_DATE:=2024-09-15
@@ -328,7 +328,7 @@ index 1c0b6548662e..d7f903c5c3fc 100644
  PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
  PKG_LICENSE:=BSD-3-Clause
  PKG_CPE_ID:=cpe:/a:w1.fi:hostapd
-@@ -186,6 +193,16 @@ endef
+@@ -196,6 +203,16 @@ endef
  
  Package/hostapd-wolfssl/description = $(Package/hostapd/description)
  
@@ -345,7 +345,7 @@ index 1c0b6548662e..d7f903c5c3fc 100644
  define Package/hostapd-mbedtls
  $(call Package/hostapd/Default,$(1))
    TITLE+= (mbedTLS full)
-@@ -556,6 +573,11 @@ define Package/eapol-test-mbedtls
+@@ -566,6 +583,11 @@ define Package/eapol-test-mbedtls
    PROVIDES:=eapol-test
  endef
  
@@ -357,7 +357,7 @@ index 1c0b6548662e..d7f903c5c3fc 100644
  
  ifneq ($(wildcard $(PKG_BUILD_DIR)/.config_*),$(subst .configured_,.config_,$(STAMP_CONFIGURED)))
    define Build/Configure/rebuild
-@@ -567,6 +589,8 @@ ifneq ($(wildcard $(PKG_BUILD_DIR)/.config_*),$(subst .configured_,.config_,$(ST
+@@ -577,6 +599,8 @@ ifneq ($(wildcard $(PKG_BUILD_DIR)/.config_*),$(subst .configured_,.config_,$(ST
    endef
  endif
  
@@ -366,7 +366,7 @@ index 1c0b6548662e..d7f903c5c3fc 100644
  define Build/Configure
  	$(Build/Configure/rebuild)
  	$(if $(wildcard ./files/hostapd-$(CONFIG_VARIANT).config), \
-@@ -591,6 +615,12 @@ ifdef CONFIG_WPA_ENABLE_WEP
+@@ -601,6 +625,12 @@ ifdef CONFIG_WPA_ENABLE_WEP
      DRIVER_MAKEOPTS += CONFIG_WEP=y
  endif
  
@@ -379,7 +379,7 @@ index 1c0b6548662e..d7f903c5c3fc 100644
  define Build/RunMake
  	CFLAGS="$(TARGET_CPPFLAGS) $(TARGET_CFLAGS)" \
  	$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/$(1) \
-@@ -696,6 +726,7 @@ Package/hostapd/conffiles = $(Package/hostapd-full/conffiles)
+@@ -706,6 +736,7 @@ Package/hostapd/conffiles = $(Package/hostapd-full/conffiles)
  Package/hostapd-openssl/conffiles = $(Package/hostapd-full/conffiles)
  Package/hostapd-wolfssl/conffiles = $(Package/hostapd-full/conffiles)
  Package/hostapd-mbedtls/conffiles = $(Package/hostapd-full/conffiles)
@@ -387,10 +387,10 @@ index 1c0b6548662e..d7f903c5c3fc 100644
  endif
  
  define Install/hostapd
-@@ -711,11 +742,20 @@ endef
- 
- define Package/hostapd-common/install
- 	$(INSTALL_DIR) $(1)/etc/capabilities $(1)/etc/rc.button $(1)/etc/hotplug.d/ieee80211 $(1)/etc/init.d $(1)/lib/netifd  $(1)/usr/share/acl.d $(1)/usr/share/hostap
+@@ -727,11 +758,20 @@ define Package/hostapd-common/install
+ 	  $(1)/etc/init.d $(1)/lib/netifd \
+ 	  $(1)/usr/share/acl.d \
+ 	  $(1)/usr/share/hostap
 +ifeq (,$(findstring QSDK_Open,$(CONFIG_TARGET_PROFILE)))
  	$(INSTALL_BIN) ./files/dhcp-get-server.sh $(1)/lib/netifd/dhcp-get-server.sh
  	$(INSTALL_BIN) ./files/wpad.init $(1)/etc/init.d/wpad
@@ -408,7 +408,7 @@ index 1c0b6548662e..d7f903c5c3fc 100644
  endef
  
  define Package/hostapd/install
-@@ -730,6 +770,7 @@ Package/hostapd-mini/install = $(Package/hostapd/install)
+@@ -746,6 +786,7 @@ Package/hostapd-mini/install = $(Package/hostapd/install)
  Package/hostapd-openssl/install = $(Package/hostapd/install)
  Package/hostapd-wolfssl/install = $(Package/hostapd/install)
  Package/hostapd-mbedtls/install = $(Package/hostapd/install)
@@ -416,7 +416,7 @@ index 1c0b6548662e..d7f903c5c3fc 100644
  
  ifneq ($(LOCAL_TYPE),supplicant)
    define Package/hostapd-utils/install
-@@ -770,6 +811,7 @@ Package/wpa-supplicant-mbedtls/install = $(Package/wpa-supplicant/install)
+@@ -786,6 +827,7 @@ Package/wpa-supplicant-mbedtls/install = $(Package/wpa-supplicant/install)
  Package/wpa-supplicant-mesh-openssl/install = $(Package/wpa-supplicant/install)
  Package/wpa-supplicant-mesh-wolfssl/install = $(Package/wpa-supplicant/install)
  Package/wpa-supplicant-mesh-mbedtls/install = $(Package/wpa-supplicant/install)

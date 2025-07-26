@@ -71,15 +71,15 @@ index 54cd8e3a908c..e4fbc7b242b9 100644
  ifeq ($(wildcard $(STAGING_DIR_HOST)/bin/quilt),)
    prepare_kernel_conf:
  	@+$(SUBMAKE) -r tools/quilt/compile
-@@ -275,7 +278,7 @@ package/symlinks-clean:
+@@ -260,7 +263,7 @@ package/symlinks-clean:
  help:
  	cat README.md
  
 -distclean:
 +distclean: clean_kernel
- 	rm -rf bin build_dir .ccache .config* dl feeds key-build* logs package/feeds staging_dir tmp
+ 	rm -rf bin build_dir .ccache .config* dl feeds key-build* logs package/feeds target/linux/feeds staging_dir tmp
  	@$(_SINGLE)$(SUBMAKE) -C scripts/config clean
- 
+
 -- 
 2.34.1
 

@@ -19,7 +19,7 @@ diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80
 index af2c88c2f0b9..515bf5437613 100755
 --- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-@@ -925,13 +925,19 @@ mac80211_generate_mac() {
+@@ -928,13 +928,19 @@ mac80211_generate_mac() {
  	local phy="$1"
  	local id="${macidx:-0}"
  	local group_size
@@ -31,12 +31,12 @@ index af2c88c2f0b9..515bf5437613 100755
  		group_size="$has_ap"
  	fi
  
--	wdev_tool "$phy$phy_suffix" get_macaddr id=$id num_global=$num_global_macaddr mbssid=$multiple_bssid mbssid_group_size=$group_size
+-	wdev_tool "$phy$phy_suffix" get_macaddr id=$id num_global=$num_global_macaddr mbssid=$multiple_bssid mbssid_group_size=$group_size macaddr_base=${macaddr_base}
 +	if [ "$mode" = "ap" ]; then
 +		mbssid=$multiple_bssid
 +	fi
 +
-+	wdev_tool "$phy$phy_suffix" get_macaddr id=$id num_global=$num_global_macaddr mbssid=$mbssid mbssid_group_size=$group_size
++	wdev_tool "$phy$phy_suffix" get_macaddr id=$id num_global=$num_global_macaddr mbssid=$mbssid mbssid_group_size=$group_size macaddr_base=${macaddr_base}
  }
  
  get_board_phy_name() (
@@ -63,12 +63,9 @@ diff --git a/package/network/config/wifi-scripts/files/usr/share/hostap/common.u
 index 81ba48bd4c11..cc568984afb0 100644
 --- a/package/network/config/wifi-scripts/files/usr/share/hostap/common.uc
 +++ b/package/network/config/wifi-scripts/files/usr/share/hostap/common.uc
-@@ -226,9 +226,8 @@ const phy_proto = {
- 			} else {
+@@ -232,6 +232,7 @@ const phy_proto = {
  				if (idx < length(addrs))
  					return addrs[idx];
--
--				base_mask = "ff:ff:ff:ff:ff:ff";
  			}
 +			base_mask = "ff:ff:ff:ff:ff:ff";
  		}

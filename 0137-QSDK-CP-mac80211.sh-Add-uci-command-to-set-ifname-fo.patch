@@ -16,11 +16,11 @@ Signed-off-by: Rajat Soni <quic_rajson@quicinc.com>
  1 file changed, 5 insertions(+)
 
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-index 34bc97403b20..ff85d2808bb3 100755
+index 526fbd90b626..2ebeed9e6f8f 100755
 --- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-@@ -1092,6 +1092,11 @@ mac80211_prepare_vif() {
- 
+@@ -1093,6 +1093,11 @@ mac80211_prepare_vif() {
+ 		fi
  	}
  
 +	[ -z "$mld" ] || {
@@ -30,7 +30,7 @@ index 34bc97403b20..ff85d2808bb3 100755
 +
  	[ -z $ppe_vp ] && ppe_vp="ds"
  
-         if [ $mode == "mesh" ] && [ $ppe_vp == "ds" ]; then
+ 	if [ $mode == "mesh" ] && [ $ppe_vp == "ds" ]; then
 -- 
 2.34.1
 

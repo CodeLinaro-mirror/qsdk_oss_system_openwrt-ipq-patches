@@ -13,7 +13,7 @@ Signed-off-by: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
  1 file changed, 217 insertions(+), 186 deletions(-)
 
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
-index 7d225dfa0427..40b97d9a355b 100644
+index 233951603add..b3a8c093c849 100644
 --- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
 @@ -5,14 +5,14 @@ wpa_supplicant_add_rate() {
@@ -114,7 +114,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  	esac
  
  	[ "$fils" -gt 0 ] && {
-@@ -170,17 +169,17 @@ hostapd_prepare_device_config() {
+@@ -172,17 +171,17 @@ hostapd_prepare_device_config() {
  	set_default airtime_mode 0
  	set_default cell_density 0
  
@@ -142,7 +142,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  
  	[ -n "$acs_chan_bias" ] && append base_cfg "acs_chan_bias=$acs_chan_bias" "$N"
  
-@@ -400,31 +399,39 @@ hostapd_common_add_bss_config() {
+@@ -410,31 +409,39 @@ hostapd_common_add_bss_config() {
  	config_add_boolean fils
  	config_add_string fils_dhcp
  
@@ -191,7 +191,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  }
  
  hostapd_set_psk_file() {
-@@ -435,14 +442,14 @@ hostapd_set_psk_file() {
+@@ -445,18 +452,18 @@ hostapd_set_psk_file() {
  	json_get_vars mac vid key
  	set_default mac "00:00:00:00:00:00"
  	[ -n "$vid" ] && vlan_id="vlanid=$vid "
@@ -203,13 +203,17 @@ index 7d225dfa0427..40b97d9a355b 100644
  	local ifname="$1"
  
 -	rm -f /var/run/hostapd-${ifname}.psk
--	for_each_station hostapd_set_psk_file ${ifname}
 +	rm -f /var/run/hostapd-"${ifname}".psk
+ 	case "$auth_type" in
+ 		psk|psk-sae) ;;
+ 		*) return ;;
+ 	esac
+-	for_each_station hostapd_set_psk_file ${ifname}
 +	for_each_station hostapd_set_psk_file "${ifname}"
  }
  
- append_iw_roaming_consortium() {
-@@ -461,7 +468,7 @@ append_iw_anqp_3gpp_cell_net() {
+ hostapd_set_sae_file() {
+@@ -498,7 +505,7 @@ append_iw_anqp_3gpp_cell_net() {
  	if [ -z "$iw_anqp_3gpp_cell_net_conf" ]; then
  		iw_anqp_3gpp_cell_net_conf="$1"
  	else
@@ -218,7 +222,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  	fi
  }
  
-@@ -596,7 +603,10 @@ hostapd_set_bss_options() {
+@@ -633,7 +640,10 @@ hostapd_set_bss_options() {
  		ppsk airtime_bss_weight airtime_bss_limit airtime_sta_weight \
  		multicast_to_unicast_all proxy_arp per_sta_vif \
  		eap_server eap_user_file ca_cert server_cert private_key private_key_passwd server_id radius_server_clients radius_server_auth_port \
@@ -230,9 +234,9 @@ index 7d225dfa0427..40b97d9a355b 100644
  
  	json_get_values sae_groups sae_groups
  	json_get_values owe_groups owe_groups
-@@ -684,17 +694,42 @@ hostapd_set_bss_options() {
+@@ -721,17 +731,42 @@ hostapd_set_bss_options() {
  			set_default sae_require_mfp 1
- 			set_default sae_pwe 2
+ 			[ "$ppsk" -eq 0 ] && set_default sae_pwe 2
  		;;
 -                ft-sae-ext-key|sae-ext-key)
 -                        set_default ieee80211w 2
@@ -280,25 +284,25 @@ index 7d225dfa0427..40b97d9a355b 100644
  
  	local vlan_possible=""
  
-@@ -711,7 +746,7 @@ hostapd_set_bss_options() {
+@@ -748,7 +783,7 @@ hostapd_set_bss_options() {
  			# with WPS enabled, we got to be in unconfigured state.
  			wps_not_configured=1
  		;;
 -		psk|sae|psk-sae)
 +		psk|*sae*)
- 			json_get_vars key wpa_psk_file
- 			if [ "$auth_type" = "psk" ] && [ "$ppsk" -ne 0 ] ; then
+ 			json_get_vars key wpa_psk_file sae_password_file
+ 			if [ "$ppsk" -ne 0 ]; then
  				json_get_vars auth_secret auth_port
-@@ -732,7 +767,7 @@ hostapd_set_bss_options() {
- 				[ -e "$wpa_psk_file" ] || touch "$wpa_psk_file"
- 				append bss_conf "wpa_psk_file=$wpa_psk_file" "$N"
+@@ -774,7 +809,7 @@ hostapd_set_bss_options() {
+ 				[ -e "$sae_password_file" ] || touch "$sae_password_file"
+ 				append bss_conf "sae_password_file=$sae_password_file" "$N"
  			}
 -			[ "$eapol_version" -ge "1" -a "$eapol_version" -le "2" ] && append bss_conf "eapol_version=$eapol_version" "$N"
 +			([ "$eapol_version" -ge "1" ] && [ "$eapol_version" -le "2" ]) && append bss_conf "eapol_version=$eapol_version" "$N"
  
  			set_default dynamic_vlan 0
  			vlan_possible=1
-@@ -775,7 +810,7 @@ hostapd_set_bss_options() {
+@@ -817,7 +852,7 @@ hostapd_set_bss_options() {
  						[ -n "$fils_dhcp" ] && break
  					done
  
@@ -307,7 +311,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  						fils_dhcp="$(udhcpc -B -n -q -s /lib/netifd/dhcp-get-server.sh -t 1 -i "$network_ifname" 2>/dev/null)"
  				}
  				[ -n "$fils_dhcp" ] && append bss_conf "dhcp_server=$fils_dhcp" "$N"
-@@ -789,7 +824,7 @@ hostapd_set_bss_options() {
+@@ -831,7 +866,7 @@ hostapd_set_bss_options() {
  			[ "$request_cui" -gt 0 ] && append bss_conf "radius_request_cui=$request_cui" "$N"
  			[ -n "$eap_reauth_period" ] && append bss_conf "eap_reauth_period=$eap_reauth_period" "$N"
  
@@ -316,7 +320,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  				append bss_conf "radius_das_port=$dae_port" "$N"
  				append bss_conf "radius_das_client=$dae_client $dae_secret" "$N"
  			}
-@@ -805,7 +840,7 @@ hostapd_set_bss_options() {
+@@ -847,7 +882,7 @@ hostapd_set_bss_options() {
  			append bss_conf "eapol_key_index_workaround=1" "$N"
  			append bss_conf "ieee8021x=1" "$N"
  
@@ -325,7 +329,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  		;;
  		wep)
  			local wep_keyidx=0
-@@ -817,7 +852,7 @@ hostapd_set_bss_options() {
+@@ -859,7 +894,7 @@ hostapd_set_bss_options() {
  	esac
  
  	case "$auth_type" in
@@ -334,7 +338,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  			json_get_vars \
  			auth_server auth_port auth_secret \
  			ownip radius_client_addr
-@@ -833,7 +868,7 @@ hostapd_set_bss_options() {
+@@ -875,7 +910,7 @@ hostapd_set_bss_options() {
  		;;
  	esac
  
@@ -343,7 +347,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  	append bss_conf "auth_algs=${auth_algs:-1}" "$N"
  	append bss_conf "wpa=$wpa" "$N"
  	[ -n "$wpa_pairwise" ] && append bss_conf "wpa_pairwise=$wpa_pairwise" "$N"
-@@ -849,7 +884,7 @@ hostapd_set_bss_options() {
+@@ -891,7 +926,7 @@ hostapd_set_bss_options() {
  	# WPS not possible on Multi-AP backhaul-only SSID
  	[ "$multi_ap" = 1 ] && wps_possible=
  
@@ -352,7 +356,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  		set_default ext_registrar 0
  		set_default wps_device_type "6-0050F204-1"
  		set_default wps_device_name "OpenWrt AP"
-@@ -948,6 +983,7 @@ hostapd_set_bss_options() {
+@@ -990,6 +1025,7 @@ hostapd_set_bss_options() {
  		append bss_conf "wpa_disable_eapol_key_retries=$wpa_disable_eapol_key_retries" "$N"
  
  		hostapd_append_wpa_key_mgmt
@@ -360,7 +364,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  		[ -n "$wpa_key_mgmt" ] && append bss_conf "wpa_key_mgmt=$wpa_key_mgmt" "$N"
  	fi
  
-@@ -982,8 +1018,8 @@ hostapd_set_bss_options() {
+@@ -1024,8 +1060,8 @@ hostapd_set_bss_options() {
  				set_default r0_key_lifetime 10000
  				set_default pmk_r1_push 0
  
@@ -371,7 +375,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  						wireless_setup_vif_failed FT_KEY_CANT_BE_DERIVED
  						return 1
  					fi
-@@ -1006,24 +1042,13 @@ hostapd_set_bss_options() {
+@@ -1048,24 +1084,13 @@ hostapd_set_bss_options() {
  			fi
  		fi
  
@@ -398,7 +402,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  				set_default auth_cache 1
  			;;
  			*)
-@@ -1033,7 +1058,7 @@ hostapd_set_bss_options() {
+@@ -1075,7 +1100,7 @@ hostapd_set_bss_options() {
  		fi
  
  		append bss_conf "okc=$auth_cache" "$N"
@@ -407,7 +411,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  
  		# RSN -> allow management frame protection
  		case "$ieee80211w" in
-@@ -1081,14 +1106,14 @@ hostapd_set_bss_options() {
+@@ -1123,14 +1148,14 @@ hostapd_set_bss_options() {
  			for mac in $maclist; do
  				echo "$mac"
  			done
@@ -425,7 +429,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  		append bss_conf "dynamic_vlan=$dynamic_vlan" "$N"
  		append bss_conf "vlan_naming=$vlan_naming" "$N"
  		if [ -n "$vlan_bridge" ]; then
-@@ -1166,7 +1191,7 @@ hostapd_set_bss_options() {
+@@ -1208,7 +1233,7 @@ hostapd_set_bss_options() {
  		hs20_t_c_server_url
  
  	set_default hs20 0
@@ -434,7 +438,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  	set_default osen 0
  	set_default anqp_domain_id 0
  	set_default hs20_deauth_req_timeout 60
-@@ -1231,21 +1256,21 @@ hostapd_set_bss_options() {
+@@ -1273,21 +1298,21 @@ hostapd_set_bss_options() {
  		append bss_conf "$val" "$N"
  	done
  
@@ -469,7 +473,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  
  	append "$var" "$bss_conf" "$N"
  	return 0
-@@ -1267,13 +1292,13 @@ hostapd_set_log_options() {
+@@ -1309,13 +1334,13 @@ hostapd_set_log_options() {
  	set_default log_mlme   1
  
  	local log_mask="$(( \
@@ -490,7 +494,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  	))"
  
  	append "$var" "logger_syslog=$log_mask" "$N"
-@@ -1285,11 +1310,11 @@ hostapd_set_log_options() {
+@@ -1327,11 +1352,11 @@ hostapd_set_log_options() {
  }
  
  hostapd_dpp_action() {
@@ -506,7 +510,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  }
  
  _wpa_supplicant_common() {
-@@ -1319,7 +1344,7 @@ wpa_supplicant_prepare_interface() {
+@@ -1361,7 +1386,7 @@ wpa_supplicant_prepare_interface() {
  				fail=1
  			;;
  			sta)
@@ -515,7 +519,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  			;;
  		esac
  
-@@ -1372,22 +1397,22 @@ wpa_supplicant_set_fixed_freq() {
+@@ -1414,22 +1439,22 @@ wpa_supplicant_set_fixed_freq() {
  		VHT*) append network_data "vht=1" "$N$T";;
  	esac
  	case "$htmode" in
@@ -554,7 +558,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  	esac
  }
  
-@@ -1396,10 +1421,10 @@ wpa_supplicant_add_network() {
+@@ -1438,10 +1463,10 @@ wpa_supplicant_add_network() {
  	local freq="$2"
  	local htmode="$3"
  	local noscan="$4"
@@ -569,7 +573,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  
  	_wpa_supplicant_common "$1"
  	wireless_vif_parse_encryption
-@@ -1409,12 +1434,12 @@ wpa_supplicant_add_network() {
+@@ -1451,12 +1476,12 @@ wpa_supplicant_add_network() {
  		basic_rate mcast_rate \
  		ieee80211w ieee80211r fils ocv \
  		multi_ap \
@@ -584,7 +588,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  			set_default ieee80211w 2
  		;;
  		psk-sae)
-@@ -1427,9 +1452,9 @@ wpa_supplicant_add_network() {
+@@ -1469,9 +1494,9 @@ wpa_supplicant_add_network() {
  	set_default default_disabled 0
  
  	local key_mgmt='NONE'
@@ -595,7 +599,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  
  	local scan_ssid="scan_ssid=1"
  	local freq wpa_key_mgmt
-@@ -1444,40 +1469,43 @@ wpa_supplicant_add_network() {
+@@ -1486,40 +1511,43 @@ wpa_supplicant_add_network() {
  		[ "$_w_driver" = "nl80211" ] ||	append wpa_key_mgmt "WPA-NONE"
  	}
  
@@ -652,7 +656,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  	}
  
  	[ -n "$ocv" ] && append network_data "ocv=$ocv" "$N$T"
-@@ -1496,7 +1524,7 @@ wpa_supplicant_add_network() {
+@@ -1538,7 +1566,7 @@ wpa_supplicant_add_network() {
  		wps)
  			key_mgmt='WPS'
  		;;
@@ -661,7 +665,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  			local passphrase
  
  			if [ "$_w_mode" != "mesh" ]; then
-@@ -1523,7 +1551,7 @@ wpa_supplicant_add_network() {
+@@ -1565,7 +1593,7 @@ wpa_supplicant_add_network() {
  			json_get_vars eap_type identity anonymous_identity ca_cert ca_cert_usesystem
  
  			[ "$fils" -gt 0 ] && append network_data "erp=1" "$N$T"
@@ -670,7 +674,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  				append network_data "ca_cert=\"/etc/ssl/certs/ca-certificates.crt\"" "$N$T"
  			else
  				[ -n "$ca_cert" ] && append network_data "ca_cert=\"$ca_cert\"" "$N$T"
-@@ -1572,7 +1600,7 @@ wpa_supplicant_add_network() {
+@@ -1614,7 +1642,7 @@ wpa_supplicant_add_network() {
  					set_default auth MSCHAPV2
  
  					if [ "$auth" = "EAP-TLS" ]; then
@@ -679,7 +683,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  							append network_data "ca_cert2=\"/etc/ssl/certs/ca-certificates.crt\"" "$N$T"
  						else
  							[ -n "$ca_cert2" ] && append network_data "ca_cert2=\"$ca_cert2\"" "$N$T"
-@@ -1661,9 +1689,9 @@ wpa_supplicant_add_network() {
+@@ -1703,9 +1731,9 @@ wpa_supplicant_add_network() {
  		;;
  	esac
  
@@ -692,7 +696,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  	}
  
  	[ "$mode" = mesh ] || {
-@@ -1689,10 +1717,13 @@ wpa_supplicant_add_network() {
+@@ -1731,10 +1759,13 @@ wpa_supplicant_add_network() {
  	json_get_values bssid_blacklist bssid_blacklist
  	json_get_values bssid_whitelist bssid_whitelist
  	json_get_var sae_pwe sae_pwe
@@ -706,7 +710,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  
  	[ -n "$basic_rate" ] && {
  		local br rate_list=
-@@ -1708,40 +1739,39 @@ wpa_supplicant_add_network() {
+@@ -1750,40 +1781,39 @@ wpa_supplicant_add_network() {
  		append network_data "mcast_rate=$mc_rate" "$N$T"
  	}
  
@@ -779,7 +783,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  
  	if [ "$key_mgmt" = "WPS" ]; then
  		echo "wps_cred_processing=1" >> "$_config"
-@@ -1751,6 +1781,7 @@ $mesh_ctrl_interface
+@@ -1793,6 +1823,7 @@ $mesh_ctrl_interface
  $user_mpm
  $disable_csa_dfs
  $saepwe
@@ -787,7 +791,7 @@ index 7d225dfa0427..40b97d9a355b 100644
  ppe_vp=$ppe_vp_type
  $freq_list
  network={
-@@ -1758,10 +1789,10 @@ network={
+@@ -1800,10 +1831,10 @@ network={
  	ssid="$ssid"
  	key_mgmt=$key_mgmt
  	$network_data

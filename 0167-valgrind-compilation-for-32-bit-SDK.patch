@@ -10,7 +10,7 @@ Signed-off-by: Naveen Raj Ranganathan <quic_naver@quicinc.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/package/devel/valgrind/Makefile b/package/devel/valgrind/Makefile
-index bfb8d25b93fb..282c5faff218 100644
+index 313df7592191..f67da7a3c880 100644
 --- a/package/devel/valgrind/Makefile
 +++ b/package/devel/valgrind/Makefile
 @@ -95,6 +95,9 @@ else
@@ -22,7 +22,7 @@ index bfb8d25b93fb..282c5faff218 100644
 +endif
  endif
  
- CONFIGURE_ARGS += \
+ ifeq ($(CONFIG_arm_v7),y)
 -- 
 2.34.1
 

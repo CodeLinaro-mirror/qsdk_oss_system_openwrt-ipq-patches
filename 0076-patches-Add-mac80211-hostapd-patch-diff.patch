@@ -11,7 +11,6 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  .../ath10k/080-ath10k_thermal_config.patch    |   4 +-
  ...21-ath10k_init_devices_synchronously.patch |   2 +-
  .../930-ath10k_add_tpt_led_trigger.patch      |   4 +-
- ...LED-and-GPIO-controlling-support-for.patch |  68 +++++-----
  ...75-ath10k-use-tpt-trigger-by-default.patch |   4 +-
  ...-power-reduction-for-US-regulatory-d.patch |   8 +-
  ...h10k-Try-to-get-mac-address-from-dts.patch |   4 +-
@@ -19,10 +18,9 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  .../ath10k/990-ath10k-small-buffers.patch     |  10 +-
  ...-ath11k-disable-coldboot-for-ipq6018.patch |   2 +-
  ...i-ath11k-use-unique-QRTR-instance-ID.patch |  10 +-
- ...-add-support-DT-ieee80211-freq-limit.patch |   2 +-
  ...k-control-thermal-support-via-symbol.patch |  10 +-
  ...upport-setting-FW-memory-mode-via-DT.patch |   6 +-
- ...tersection-support-for-regulatory-ru.patch |  93 ++++++-------
+ ...tersection-support-for-regulatory-ru.patch |  94 ++++++-------
  .../ath9k/512-ath9k_channelbw_debugfs.patch   |   2 +-
  .../ath9k/531-ath9k_extra_platform_leds.patch |  12 ++
  .../ath9k/542-ath9k_debugfs_diag.patch        |   2 +-
@@ -38,9 +36,7 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  ...62-brcmfmac-Disable-power-management.patch |   2 +-
  ...mfmac-disable-dump_survey-on-bcm2835.patch |   6 +-
  .../patches/build/001-fix_build.patch         |  23 ++--
- .../patches/build/060-no_local_ssb_bcma.patch |  10 +-
  .../100-backports-drop-QRTR-and-MHI.patch     |   6 +-
- .../build/120-headers_version_fix.patch       |   2 +-
  ...700-mwl8k-missing-pci-id-for-WNR854T.patch |   2 +-
  ...940-mwl8k_init_devices_synchronously.patch |   4 +-
  ...ringified-name-of-command-in-error-l.patch |   4 +-
@@ -53,13 +49,13 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  .../110-mac80211_keep_keys_on_stop_ap.patch   |  13 +-
  .../patches/subsys/130-disable_auto_vif.patch |   6 +-
  .../mac80211/patches/subsys/210-ap_scan.patch |   2 +-
+ .../230-avoid-crashing-missing-band.patch     |   2 +-
  ...domize-BA-session-dialog-token-alloc.patch |   6 +-
  ...crease-quantum-for-airtime-scheduler.patch |  12 +-
  ...race-period-for-DFS-available-after-.patch |  18 +--
  ...dd-AQL-support-for-broadcast-packets.patch |  47 ++++---
- .../780-avoid-crashing-missing-band.patch     |   2 +-
- .../network/services/hostapd/files/hostapd.uc |  26 ++--
- .../services/hostapd/files/wpa_supplicant.uc  |   9 +-
+ .../network/services/hostapd/files/hostapd.uc |  27 ++--
+ .../services/hostapd/files/wpa_supplicant.uc  |  11 +-
  ...hannels-to-be-selected-if-dfs-is-ena.patch |  24 ++--
  ...erministic-channel-on-channel-switch.patch |   8 +-
  ...ix-sta-add-after-previous-connection.patch |   4 +-
@@ -102,17 +98,17 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  .../services/hostapd/src/src/ap/ubus.h        |   7 +-
  .../services/hostapd/src/src/ap/ucode.c       |  50 +++----
  .../services/hostapd/src/src/ap/ucode.h       |  27 +---
- 97 files changed, 547 insertions(+), 602 deletions(-)
+ 93 files changed, 507 insertions(+), 564 deletions(-)
 
 diff --git a/package/kernel/mac80211/patches/ath/402-ath_regd_optional.patch b/package/kernel/mac80211/patches/ath/402-ath_regd_optional.patch
-index 0f6a570cb09d..601ebdc7583c 100644
+index 5f5ac20ddbae..601ebdc7583c 100644
 --- a/package/kernel/mac80211/patches/ath/402-ath_regd_optional.patch
 +++ b/package/kernel/mac80211/patches/ath/402-ath_regd_optional.patch
 @@ -82,7 +82,7 @@
   	help
  --- a/local-symbols
  +++ b/local-symbols
--@@ -94,6 +94,7 @@ ADM8211=
+-@@ -96,6 +96,7 @@ ADM8211=
 +@@ -101,6 +101,7 @@ ADM8211=
   ATH_COMMON=
   WLAN_VENDOR_ATH=
@@ -139,26 +135,26 @@ index 895e2ff8d8de..d0f4b15772fd 100644
   void regulatory_hint_disconnect(void)
   {
 diff --git a/package/kernel/mac80211/patches/ath/431-add_platform_eeprom_support_to_ath5k.patch b/package/kernel/mac80211/patches/ath/431-add_platform_eeprom_support_to_ath5k.patch
-index c762aa6d643f..136be198945f 100644
+index abadadf856c7..8033ac5d9066 100644
 --- a/package/kernel/mac80211/patches/ath/431-add_platform_eeprom_support_to_ath5k.patch
 +++ b/package/kernel/mac80211/patches/ath/431-add_platform_eeprom_support_to_ath5k.patch
 @@ -18,7 +18,7 @@
   static bool
   ath5k_pci_eeprom_read(struct ath_common *common, u32 offset, u16 *data)
- @@ -79,6 +80,19 @@ ath5k_pci_eeprom_read(struct ath_common
+ @@ -81,6 +82,19 @@ ath5k_pci_eeprom_read(struct ath_common
 - 	struct ath5k_hw *ah = common->ah;
-+ 	struct ath5k_hw *ah = (struct ath5k_hw *) common->ah;
++	struct ath5k_hw *ah = (struct ath5k_hw *) common->ah;
   	u32 status, timeout;
   
  +	struct ath5k_platform_data *pdata = NULL;
 diff --git a/package/kernel/mac80211/patches/ath10k/080-ath10k_thermal_config.patch b/package/kernel/mac80211/patches/ath10k/080-ath10k_thermal_config.patch
-index c41bfa8888c1..f1b5ce1f1b25 100644
+index 10d95d36bf8a..67a2f86da4fe 100644
 --- a/package/kernel/mac80211/patches/ath10k/080-ath10k_thermal_config.patch
 +++ b/package/kernel/mac80211/patches/ath10k/080-ath10k_thermal_config.patch
 @@ -1,6 +1,6 @@
  --- a/drivers/net/wireless/ath/ath10k/Kconfig
  +++ b/drivers/net/wireless/ath/ath10k/Kconfig
--@@ -88,6 +88,12 @@ config ATH10K_TRACING
+-@@ -94,6 +94,12 @@ config ATH10K_TRACING
 +@@ -87,6 +87,12 @@ config ATH10K_TRACING
   	help
   	  Select this to ath10k use tracing infrastructure.
@@ -167,32 +163,32 @@ index c41bfa8888c1..f1b5ce1f1b25 100644
   void ath10k_thermal_event_temperature(struct ath10k *ar, int temperature);
  --- a/local-symbols
  +++ b/local-symbols
--@@ -153,6 +153,7 @@ ATH10K_SNOC=
-+@@ -160,6 +160,7 @@ ATH10K_SNOC=
-  ATH10K_DEBUG=
+-@@ -156,6 +156,7 @@ ATH10K_DEBUG=
++@@ -160,6 +160,7 @@ ATH10K_DEBUG=
   ATH10K_DEBUGFS=
+  ATH10K_LEDS=
   ATH10K_SPECTRAL=
 diff --git a/package/kernel/mac80211/patches/ath10k/921-ath10k_init_devices_synchronously.patch b/package/kernel/mac80211/patches/ath10k/921-ath10k_init_devices_synchronously.patch
-index 479c74e47343..adfeb3eaaea7 100644
+index a7e11679a319..adfeb3eaaea7 100644
 --- a/package/kernel/mac80211/patches/ath10k/921-ath10k_init_devices_synchronously.patch
 +++ b/package/kernel/mac80211/patches/ath10k/921-ath10k_init_devices_synchronously.patch
 @@ -14,7 +14,7 @@ Signed-off-by: Sven Eckelmann <sven@open-mesh.com>
  
  --- a/drivers/net/wireless/ath/ath10k/core.c
  +++ b/drivers/net/wireless/ath/ath10k/core.c
--@@ -3527,6 +3527,16 @@ int ath10k_core_register(struct ath10k *
+-@@ -3539,6 +3539,16 @@ int ath10k_core_register(struct ath10k *
 +@@ -3507,6 +3507,16 @@ int ath10k_core_register(struct ath10k *
   
   	queue_work(ar->workqueue, &ar->register_work);
   
 diff --git a/package/kernel/mac80211/patches/ath10k/930-ath10k_add_tpt_led_trigger.patch b/package/kernel/mac80211/patches/ath10k/930-ath10k_add_tpt_led_trigger.patch
-index c9ad4018c816..1a043f7b15ec 100644
+index b13bc3349820..1a043f7b15ec 100644
 --- a/package/kernel/mac80211/patches/ath10k/930-ath10k_add_tpt_led_trigger.patch
 +++ b/package/kernel/mac80211/patches/ath10k/930-ath10k_add_tpt_led_trigger.patch
 @@ -1,6 +1,6 @@
  --- a/drivers/net/wireless/ath/ath10k/mac.c
  +++ b/drivers/net/wireless/ath/ath10k/mac.c
--@@ -9918,6 +9918,21 @@ static int ath10k_mac_init_rd(struct ath
+-@@ -9919,6 +9919,21 @@ static int ath10k_mac_init_rd(struct ath
 +@@ -9917,6 +9917,21 @@ static int ath10k_mac_init_rd(struct ath
   	return 0;
   }
@@ -201,330 +197,20 @@ index c9ad4018c816..1a043f7b15ec 100644
   int ath10k_mac_register(struct ath10k *ar)
   {
   	static const u32 cipher_suites[] = {
--@@ -10280,6 +10295,12 @@ int ath10k_mac_register(struct ath10k *a
+-@@ -10281,6 +10296,12 @@ int ath10k_mac_register(struct ath10k *a
 +@@ -10275,6 +10290,12 @@ int ath10k_mac_register(struct ath10k *a
   
   	ar->hw->weight_multiplier = ATH10K_AIRTIME_WEIGHT_MULTIPLIER;
   
-diff --git a/package/kernel/mac80211/patches/ath10k/974-wifi-ath10k-add-LED-and-GPIO-controlling-support-for.patch b/package/kernel/mac80211/patches/ath10k/974-wifi-ath10k-add-LED-and-GPIO-controlling-support-for.patch
-index a9eb38e57642..05e3b2a28d66 100644
---- a/package/kernel/mac80211/patches/ath10k/974-wifi-ath10k-add-LED-and-GPIO-controlling-support-for.patch
-+++ b/package/kernel/mac80211/patches/ath10k/974-wifi-ath10k-add-LED-and-GPIO-controlling-support-for.patch
-@@ -38,7 +38,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
- 
- --- a/drivers/net/wireless/ath/ath10k/Kconfig
- +++ b/drivers/net/wireless/ath/ath10k/Kconfig
--@@ -73,6 +73,12 @@ config ATH10K_DEBUGFS
-+@@ -72,6 +72,12 @@ config ATH10K_DEBUGFS
-  
-  	  If unsure, say Y to make it easier to debug problems.
-  
-@@ -63,7 +63,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  ath10k_core-$(CONFIG_DEV_COREDUMP) += coredump.o
- --- a/local-symbols
- +++ b/local-symbols
--@@ -154,6 +154,7 @@ ATH10K_DEBUG=
-+@@ -161,6 +161,7 @@ ATH10K_DEBUG=
-  ATH10K_DEBUGFS=
-  ATH10K_SPECTRAL=
-  ATH10K_THERMAL=
-@@ -73,7 +73,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  WCN36XX=
- --- a/drivers/net/wireless/ath/ath10k/core.c
- +++ b/drivers/net/wireless/ath/ath10k/core.c
--@@ -27,6 +27,7 @@
-+@@ -26,6 +26,7 @@
-  #include "testmode.h"
-  #include "wmi-ops.h"
-  #include "coredump.h"
-@@ -81,7 +81,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  
-  unsigned int ath10k_debug_mask;
-  EXPORT_SYMBOL(ath10k_debug_mask);
--@@ -68,6 +69,7 @@ static const struct ath10k_hw_params ath
-+@@ -67,6 +68,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca988x hw2.0",
-  		.patch_load_addr = QCA988X_HW_2_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 7,
-@@ -89,7 +89,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_ALL,
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
--@@ -109,6 +111,7 @@ static const struct ath10k_hw_params ath
-+@@ -107,6 +109,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca988x hw2.0 ubiquiti",
-  		.patch_load_addr = QCA988X_HW_2_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 7,
-@@ -97,7 +97,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_ALL,
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
--@@ -151,6 +154,7 @@ static const struct ath10k_hw_params ath
-+@@ -148,6 +151,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca9887 hw1.0",
-  		.patch_load_addr = QCA9887_HW_1_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 7,
-@@ -105,7 +105,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_ALL,
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
--@@ -193,6 +197,7 @@ static const struct ath10k_hw_params ath
-+@@ -189,6 +193,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca6174 hw3.2 sdio",
-  		.patch_load_addr = QCA6174_HW_3_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 19,
-@@ -113,7 +113,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
-  		.max_probe_resp_desc_thres = 0,
--@@ -230,6 +235,7 @@ static const struct ath10k_hw_params ath
-+@@ -225,6 +230,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca6164 hw2.1",
-  		.patch_load_addr = QCA6174_HW_2_1_PATCH_LOAD_ADDR,
-  		.uart_pin = 6,
-@@ -121,7 +121,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
-  		.max_probe_resp_desc_thres = 0,
--@@ -271,6 +277,7 @@ static const struct ath10k_hw_params ath
-+@@ -265,6 +271,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca6174 hw2.1",
-  		.patch_load_addr = QCA6174_HW_2_1_PATCH_LOAD_ADDR,
-  		.uart_pin = 6,
-@@ -129,7 +129,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
-  		.max_probe_resp_desc_thres = 0,
--@@ -312,6 +319,7 @@ static const struct ath10k_hw_params ath
-+@@ -305,6 +312,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca6174 hw3.0",
-  		.patch_load_addr = QCA6174_HW_3_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 6,
-@@ -137,7 +137,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
-  		.max_probe_resp_desc_thres = 0,
--@@ -353,6 +361,7 @@ static const struct ath10k_hw_params ath
-+@@ -345,6 +353,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca6174 hw3.2",
-  		.patch_load_addr = QCA6174_HW_3_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 6,
-@@ -145,7 +145,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
-  		.max_probe_resp_desc_thres = 0,
--@@ -398,6 +407,7 @@ static const struct ath10k_hw_params ath
-+@@ -389,6 +398,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca99x0 hw2.0",
-  		.patch_load_addr = QCA99X0_HW_2_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 7,
-@@ -153,7 +153,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.otp_exe_param = 0x00000700,
-  		.continuous_frag_desc = true,
-  		.cck_rate_map_rev2 = true,
--@@ -445,6 +455,7 @@ static const struct ath10k_hw_params ath
-+@@ -435,6 +445,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca9984/qca9994 hw1.0",
-  		.patch_load_addr = QCA9984_HW_1_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 7,
-@@ -161,7 +161,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_EACH,
-  		.otp_exe_param = 0x00000700,
-  		.continuous_frag_desc = true,
--@@ -499,6 +510,7 @@ static const struct ath10k_hw_params ath
-+@@ -488,6 +499,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca9888 hw2.0",
-  		.patch_load_addr = QCA9888_HW_2_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 7,
-@@ -169,7 +169,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_EACH,
-  		.otp_exe_param = 0x00000700,
-  		.continuous_frag_desc = true,
--@@ -550,6 +562,7 @@ static const struct ath10k_hw_params ath
-+@@ -538,6 +550,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca9377 hw1.0",
-  		.patch_load_addr = QCA9377_HW_1_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 6,
-@@ -177,7 +177,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
-  		.max_probe_resp_desc_thres = 0,
--@@ -591,6 +604,7 @@ static const struct ath10k_hw_params ath
-+@@ -578,6 +591,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca9377 hw1.1",
-  		.patch_load_addr = QCA9377_HW_1_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 6,
-@@ -185,7 +185,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
-  		.max_probe_resp_desc_thres = 0,
--@@ -634,6 +648,7 @@ static const struct ath10k_hw_params ath
-+@@ -620,6 +634,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca9377 hw1.1 sdio",
-  		.patch_load_addr = QCA9377_HW_1_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 19,
-@@ -193,7 +193,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.otp_exe_param = 0,
-  		.channel_counters_freq_hz = 88000,
-  		.max_probe_resp_desc_thres = 0,
--@@ -668,6 +683,7 @@ static const struct ath10k_hw_params ath
-+@@ -653,6 +668,7 @@ static const struct ath10k_hw_params ath
-  		.name = "qca4019 hw1.0",
-  		.patch_load_addr = QCA4019_HW_1_0_PATCH_LOAD_ADDR,
-  		.uart_pin = 7,
-@@ -201,7 +201,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_EACH,
-  		.otp_exe_param = 0x0010000,
-  		.continuous_frag_desc = true,
--@@ -714,6 +730,7 @@ static const struct ath10k_hw_params ath
-+@@ -698,6 +714,7 @@ static const struct ath10k_hw_params ath
-  		.dev_id = 0,
-  		.bus = ATH10K_BUS_SNOC,
-  		.name = "wcn3990 hw1.0",
-@@ -209,7 +209,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		.continuous_frag_desc = true,
-  		.tx_chain_mask = 0x7,
-  		.rx_chain_mask = 0x7,
--@@ -3242,6 +3259,10 @@ int ath10k_core_start(struct ath10k *ar,
-+@@ -3222,6 +3239,10 @@ int ath10k_core_start(struct ath10k *ar,
-  		goto err_hif_stop;
-  	}
-  
-@@ -220,7 +220,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  	return 0;
-  
-  err_hif_stop:
--@@ -3500,9 +3521,18 @@ static void ath10k_core_register_work(st
-+@@ -3480,9 +3501,18 @@ static void ath10k_core_register_work(st
-  		goto err_spectral_destroy;
-  	}
-  
-@@ -239,7 +239,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  err_spectral_destroy:
-  	ath10k_spectral_destroy(ar);
-  err_debug_destroy:
--@@ -3548,6 +3578,8 @@ void ath10k_core_unregister(struct ath10
-+@@ -3528,6 +3558,8 @@ void ath10k_core_unregister(struct ath10
-  	if (!test_bit(ATH10K_FLAG_CORE_REGISTERED, &ar->dev_flags))
-  		return;
-  
-@@ -250,7 +250,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  	 * relayfs debugfs file cleanly. Otherwise the parent debugfs tree
- --- a/drivers/net/wireless/ath/ath10k/core.h
- +++ b/drivers/net/wireless/ath/ath10k/core.h
--@@ -15,6 +15,7 @@
-+@@ -14,6 +14,7 @@
-  #include <linux/pci.h>
-  #include <linux/uuid.h>
-  #include <linux/time.h>
-@@ -258,7 +258,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  
-  #include "htt.h"
-  #include "htc.h"
--@@ -1257,6 +1258,13 @@ struct ath10k {
-+@@ -1256,6 +1257,13 @@ struct ath10k {
-  	} testmode;
-  
-  	struct {
-@@ -274,7 +274,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  		u32 fw_crash_counter;
- --- a/drivers/net/wireless/ath/ath10k/hw.h
- +++ b/drivers/net/wireless/ath/ath10k/hw.h
--@@ -521,6 +521,7 @@ struct ath10k_hw_params {
-+@@ -519,6 +519,7 @@ struct ath10k_hw_params {
-  	const char *name;
-  	u32 patch_load_addr;
-  	int uart_pin;
-@@ -414,7 +414,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
- +#endif /* _LEDS_H_ */
- --- a/drivers/net/wireless/ath/ath10k/mac.c
- +++ b/drivers/net/wireless/ath/ath10k/mac.c
--@@ -25,6 +25,7 @@
-+@@ -24,6 +24,7 @@
-  #include "wmi-tlv.h"
-  #include "wmi-ops.h"
-  #include "wow.h"
-@@ -473,7 +473,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  {
- --- a/drivers/net/wireless/ath/ath10k/wmi-tlv.c
- +++ b/drivers/net/wireless/ath/ath10k/wmi-tlv.c
--@@ -4606,6 +4606,8 @@ static const struct wmi_ops wmi_tlv_ops
-+@@ -4601,6 +4601,8 @@ static const struct wmi_ops wmi_tlv_ops
-  	.gen_echo = ath10k_wmi_tlv_op_gen_echo,
-  	.gen_vdev_spectral_conf = ath10k_wmi_tlv_op_gen_vdev_spectral_conf,
-  	.gen_vdev_spectral_enable = ath10k_wmi_tlv_op_gen_vdev_spectral_enable,
-@@ -484,7 +484,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  static const struct wmi_peer_flags_map wmi_tlv_peer_flags_map = {
- --- a/drivers/net/wireless/ath/ath10k/wmi.c
- +++ b/drivers/net/wireless/ath/ath10k/wmi.c
--@@ -7493,6 +7493,49 @@ ath10k_wmi_op_gen_peer_set_param(struct
-+@@ -7472,6 +7472,49 @@ ath10k_wmi_op_gen_peer_set_param(struct
-  	return skb;
-  }
-  
-@@ -534,7 +534,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  static struct sk_buff *
-  ath10k_wmi_op_gen_set_psmode(struct ath10k *ar, u32 vdev_id,
-  			     enum wmi_sta_ps_mode psmode)
--@@ -9157,6 +9200,9 @@ static const struct wmi_ops wmi_ops = {
-+@@ -9138,6 +9181,9 @@ static const struct wmi_ops wmi_ops = {
-  	.fw_stats_fill = ath10k_wmi_main_op_fw_stats_fill,
-  	.get_vdev_subtype = ath10k_wmi_op_get_vdev_subtype,
-  	.gen_echo = ath10k_wmi_op_gen_echo,
-@@ -544,7 +544,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  	/* .gen_bcn_tmpl not implemented */
-  	/* .gen_prb_tmpl not implemented */
-  	/* .gen_p2p_go_bcn_ie not implemented */
--@@ -9227,6 +9273,8 @@ static const struct wmi_ops wmi_10_1_ops
-+@@ -9208,6 +9254,8 @@ static const struct wmi_ops wmi_10_1_ops
-  	.fw_stats_fill = ath10k_wmi_10x_op_fw_stats_fill,
-  	.get_vdev_subtype = ath10k_wmi_op_get_vdev_subtype,
-  	.gen_echo = ath10k_wmi_op_gen_echo,
-@@ -553,7 +553,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  	/* .gen_bcn_tmpl not implemented */
-  	/* .gen_prb_tmpl not implemented */
-  	/* .gen_p2p_go_bcn_ie not implemented */
--@@ -9299,6 +9347,8 @@ static const struct wmi_ops wmi_10_2_ops
-+@@ -9280,6 +9328,8 @@ static const struct wmi_ops wmi_10_2_ops
-  	.gen_delba_send = ath10k_wmi_op_gen_delba_send,
-  	.fw_stats_fill = ath10k_wmi_10x_op_fw_stats_fill,
-  	.get_vdev_subtype = ath10k_wmi_op_get_vdev_subtype,
-@@ -562,7 +562,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  	/* .gen_pdev_enable_adaptive_cca not implemented */
-  };
-  
--@@ -9370,6 +9420,8 @@ static const struct wmi_ops wmi_10_2_4_o
-+@@ -9351,6 +9401,8 @@ static const struct wmi_ops wmi_10_2_4_o
-  		ath10k_wmi_op_gen_pdev_enable_adaptive_cca,
-  	.get_vdev_subtype = ath10k_wmi_10_2_4_op_get_vdev_subtype,
-  	.gen_bb_timing = ath10k_wmi_10_2_4_op_gen_bb_timing,
-@@ -571,7 +571,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  	/* .gen_bcn_tmpl not implemented */
-  	/* .gen_prb_tmpl not implemented */
-  	/* .gen_p2p_go_bcn_ie not implemented */
--@@ -9451,6 +9503,8 @@ static const struct wmi_ops wmi_10_4_ops
-+@@ -9432,6 +9484,8 @@ static const struct wmi_ops wmi_10_4_ops
-  	.gen_pdev_bss_chan_info_req = ath10k_wmi_10_2_op_gen_pdev_bss_chan_info,
-  	.gen_echo = ath10k_wmi_op_gen_echo,
-  	.gen_pdev_get_tpc_config = ath10k_wmi_10_2_4_op_gen_pdev_get_tpc_config,
-@@ -582,7 +582,7 @@ Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
-  int ath10k_wmi_attach(struct ath10k *ar)
- --- a/drivers/net/wireless/ath/ath10k/wmi.h
- +++ b/drivers/net/wireless/ath/ath10k/wmi.h
--@@ -3034,6 +3034,41 @@ enum wmi_10_4_feature_mask {
-+@@ -3030,6 +3030,41 @@ enum wmi_10_4_feature_mask {
-  
-  };
-  
 diff --git a/package/kernel/mac80211/patches/ath10k/975-ath10k-use-tpt-trigger-by-default.patch b/package/kernel/mac80211/patches/ath10k/975-ath10k-use-tpt-trigger-by-default.patch
-index 5bd9186d1923..2e598199c486 100644
+index fc41f5f15116..2e598199c486 100644
 --- a/package/kernel/mac80211/patches/ath10k/975-ath10k-use-tpt-trigger-by-default.patch
 +++ b/package/kernel/mac80211/patches/ath10k/975-ath10k-use-tpt-trigger-by-default.patch
 @@ -16,7 +16,7 @@ Signed-off-by: Mathias Kresin <dev@kresin.me>
  
  --- a/drivers/net/wireless/ath/ath10k/core.h
  +++ b/drivers/net/wireless/ath/ath10k/core.h
--@@ -1313,6 +1313,10 @@ struct ath10k {
+-@@ -1315,6 +1315,10 @@ struct ath10k {
 +@@ -1312,6 +1312,10 @@ struct ath10k {
   	s32 tx_power_2g_limit;
   	s32 tx_power_5g_limit;
@@ -579,7 +265,7 @@ index f1770cfbe024..3626debf1989 100644
   			ch->max_power = channel->max_power * 2;
   			ch->max_reg_power = channel->max_reg_power * 2;
 diff --git a/package/kernel/mac80211/patches/ath10k/984-ath10k-Try-to-get-mac-address-from-dts.patch b/package/kernel/mac80211/patches/ath10k/984-ath10k-Try-to-get-mac-address-from-dts.patch
-index 5d70df15adcc..6439ff98038e 100644
+index beec6a95eafe..6439ff98038e 100644
 --- a/package/kernel/mac80211/patches/ath10k/984-ath10k-Try-to-get-mac-address-from-dts.patch
 +++ b/package/kernel/mac80211/patches/ath10k/984-ath10k-Try-to-get-mac-address-from-dts.patch
 @@ -18,7 +18,7 @@ Signed-off-by: Ansuel Smith <ansuelsmth@gmail.com>
@@ -595,7 +281,7 @@ index 5d70df15adcc..6439ff98038e 100644
   #include <linux/property.h>
   #include <linux/dmi.h>
   #include <linux/ctype.h>
--@@ -3429,6 +3430,8 @@ static int ath10k_core_probe_fw(struct a
+-@@ -3411,6 +3412,8 @@ static int ath10k_core_probe_fw(struct a
 +@@ -3409,6 +3410,8 @@ static int ath10k_core_probe_fw(struct a
   
   	device_get_mac_address(ar->dev, ar->mac_addr);
@@ -675,7 +361,7 @@ index 325724e68d98..db646f7620e8 100644
   		.idle_ps = false,
   		.supports_sta_ps = false,
 diff --git a/package/kernel/mac80211/patches/ath11k/100-wifi-ath11k-use-unique-QRTR-instance-ID.patch b/package/kernel/mac80211/patches/ath11k/100-wifi-ath11k-use-unique-QRTR-instance-ID.patch
-index f1583b6e96ad..30472b322987 100644
+index 272876288b7d..8f64bca3e805 100644
 --- a/package/kernel/mac80211/patches/ath11k/100-wifi-ath11k-use-unique-QRTR-instance-ID.patch
 +++ b/package/kernel/mac80211/patches/ath11k/100-wifi-ath11k-use-unique-QRTR-instance-ID.patch
 @@ -49,7 +49,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
@@ -700,12 +386,12 @@ index f1583b6e96ad..30472b322987 100644
   	default:
   		return "UNKNOWN";
   	}
--@@ -282,27 +312,14 @@ static void ath11k_mhi_op_status_cb(stru
+-@@ -290,6 +320,9 @@ static void ath11k_mhi_op_status_cb(stru
 +@@ -337,27 +367,14 @@ static void ath11k_mhi_op_status_cb(stru
-  		if (!(test_bit(ATH11K_FLAG_UNREGISTERING, &ab->dev_flags)))
   			queue_work(ab->workqueue_aux, &ab->reset_work);
+  
   		break;
-@@ -126,7 +126,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
+@@ -128,7 +128,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
   	struct device_node *np;
  --- a/drivers/net/wireless/ath/ath11k/mhi.h
  +++ b/drivers/net/wireless/ath/ath11k/mhi.h
@@ -714,7 +400,7 @@ index f1583b6e96ad..30472b322987 100644
   #define MHICTRL					0x38
   #define MHICTRL_RESET_MASK			0x2
   
-@@ -138,7 +138,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
+@@ -140,7 +140,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
   int ath11k_mhi_register(struct ath11k_pci *ar_pci);
  --- a/drivers/net/wireless/ath/ath11k/pci.c
  +++ b/drivers/net/wireless/ath/ath11k/pci.c
@@ -723,28 +409,15 @@ index f1583b6e96ad..30472b322987 100644
   static void ath11k_pci_init_qmi_ce_config(struct ath11k_base *ab)
   {
   	struct ath11k_qmi_ce_cfg *cfg = &ab->qmi.ce_cfg;
-diff --git a/package/kernel/mac80211/patches/ath11k/101-wifi-ath11k-add-support-DT-ieee80211-freq-limit.patch b/package/kernel/mac80211/patches/ath11k/101-wifi-ath11k-add-support-DT-ieee80211-freq-limit.patch
-index 6088b26e6bae..9571f7f20750 100644
---- a/package/kernel/mac80211/patches/ath11k/101-wifi-ath11k-add-support-DT-ieee80211-freq-limit.patch
-+++ b/package/kernel/mac80211/patches/ath11k/101-wifi-ath11k-add-support-DT-ieee80211-freq-limit.patch
-@@ -14,7 +14,7 @@ Signed-off-by: Christian Lamparter <chunkeey@gmail.com>
- 
- --- a/drivers/net/wireless/ath/ath11k/mac.c
- +++ b/drivers/net/wireless/ath/ath11k/mac.c
--@@ -10034,6 +10034,7 @@ static int __ath11k_mac_register(struct
-+@@ -9455,6 +9455,7 @@ static int __ath11k_mac_register(struct
-  	if (ret)
-  		goto err;
-  
 diff --git a/package/kernel/mac80211/patches/ath11k/900-ath11k-control-thermal-support-via-symbol.patch b/package/kernel/mac80211/patches/ath11k/900-ath11k-control-thermal-support-via-symbol.patch
-index 6b351cc81d72..dcfb4b5ac8b1 100644
+index 6a0e4ff77ea8..c8191c760c8d 100644
 --- a/package/kernel/mac80211/patches/ath11k/900-ath11k-control-thermal-support-via-symbol.patch
 +++ b/package/kernel/mac80211/patches/ath11k/900-ath11k-control-thermal-support-via-symbol.patch
 @@ -34,7 +34,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
  +	  Enable ath11k thermal sensors and throttling support.
  --- a/drivers/net/wireless/ath/ath11k/Makefile
  +++ b/drivers/net/wireless/ath/ath11k/Makefile
--@@ -23,7 +23,7 @@ ath11k-y += core.o \
+-@@ -24,7 +24,7 @@ ath11k-y += core.o \
 +@@ -22,7 +22,7 @@ ath11k-y += core.o \
   ath11k-$(CPTCFG_ATH11K_DEBUGFS) += debugfs.o debugfs_htt_stats.o debugfs_sta.o
   ath11k-$(CPTCFG_NL80211_TESTMODE) += testmode.o
@@ -767,13 +440,13 @@ index 6b351cc81d72..dcfb4b5ac8b1 100644
   int ath11k_thermal_set_throttling(struct ath11k *ar, u32 throttle_state);
  --- a/local-symbols
  +++ b/local-symbols
--@@ -166,6 +166,7 @@ ATH11K_DEBUG=
+-@@ -168,6 +168,7 @@ ATH11K_DEBUG=
 +@@ -173,6 +173,7 @@ ATH11K_DEBUG=
   ATH11K_DEBUGFS=
   ATH11K_TRACING=
   ATH11K_SPECTRAL=
 diff --git a/package/kernel/mac80211/patches/ath11k/903-ath11k-support-setting-FW-memory-mode-via-DT.patch b/package/kernel/mac80211/patches/ath11k/903-ath11k-support-setting-FW-memory-mode-via-DT.patch
-index dcf1f5f27654..71373b2136f7 100644
+index 1250147e2bda..71373b2136f7 100644
 --- a/package/kernel/mac80211/patches/ath11k/903-ath11k-support-setting-FW-memory-mode-via-DT.patch
 +++ b/package/kernel/mac80211/patches/ath11k/903-ath11k-support-setting-FW-memory-mode-via-DT.patch
 @@ -22,7 +22,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
@@ -789,7 +462,7 @@ index dcf1f5f27654..71373b2136f7 100644
   	{
   		.hw_rev = ATH11K_HW_IPQ8074,
   		.name = "ipq8074 hw2.0",
--@@ -2138,7 +2138,8 @@ static void ath11k_core_reset(struct wor
+-@@ -2147,7 +2147,8 @@ static void ath11k_core_reset(struct wor
 +@@ -2040,7 +2040,8 @@ static void ath11k_core_reset(struct wor
   static int ath11k_init_hw_params(struct ath11k_base *ab)
   {
@@ -798,20 +471,20 @@ index dcf1f5f27654..71373b2136f7 100644
   
   	for (i = 0; i < ARRAY_SIZE(ath11k_hw_params); i++) {
   		hw_params = &ath11k_hw_params[i];
--@@ -2154,7 +2155,31 @@ static int ath11k_init_hw_params(struct
+-@@ -2163,7 +2164,31 @@ static int ath11k_init_hw_params(struct
 +@@ -2056,7 +2057,31 @@ static int ath11k_init_hw_params(struct
   
   	ab->hw_params = *hw_params;
   
 diff --git a/package/kernel/mac80211/patches/ath11k/905-ath11k-remove-intersection-support-for-regulatory-ru.patch b/package/kernel/mac80211/patches/ath11k/905-ath11k-remove-intersection-support-for-regulatory-ru.patch
-index 19f4e7dbe262..74317e0262a4 100644
+index f30e03475f51..5ef4f9479139 100644
 --- a/package/kernel/mac80211/patches/ath11k/905-ath11k-remove-intersection-support-for-regulatory-ru.patch
 +++ b/package/kernel/mac80211/patches/ath11k/905-ath11k-remove-intersection-support-for-regulatory-ru.patch
 @@ -23,7 +23,7 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
  
  --- a/drivers/net/wireless/ath/ath11k/reg.c
  +++ b/drivers/net/wireless/ath/ath11k/reg.c
--@@ -363,134 +363,6 @@ static u32 ath11k_map_fw_phy_flags(u32 p
+-@@ -361,134 +361,6 @@ static u32 ath11k_map_fw_phy_flags(u32 p
 +@@ -362,129 +362,6 @@ static u32 ath11k_map_fw_phy_flags(u32 p
   	return flags;
   }
@@ -828,40 +501,41 @@ index 19f4e7dbe262..74317e0262a4 100644
  -	/* To be safe, lts use the max cac timeout of both rules */
  -	new_rule->dfs_cac_ms = max_t(u32, rule1->dfs_cac_ms,
  -				     rule2->dfs_cac_ms);
-@@ -158,22 +153,20 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
+@@ -158,23 +153,21 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
   static const char *
   ath11k_reg_get_regdom_str(enum nl80211_dfs_regions dfs_region)
   {
--@@ -641,11 +513,11 @@ ath11k_reg_ap_pwr_convert(enum ieee80211
-+@@ -619,9 +496,9 @@ ath11k_reg_update_weather_radar_band(str
+-@@ -639,11 +511,11 @@ ath11k_reg_ap_pwr_convert(enum ieee80211
++@@ -619,9 +496,9 @@ ath11k_reg_ap_pwr_convert(enum ieee80211
   
   struct ieee80211_regdomain *
   ath11k_reg_build_regd(struct ath11k_base *ab,
---		      struct cur_regulatory_info *reg_info, bool intersect,
+ -		      struct cur_regulatory_info *reg_info, bool intersect,
 -+		      struct cur_regulatory_info *reg_info,
 - 		      enum wmi_vdev_type vdev_type,
 - 		      enum ieee80211_ap_reg_power power_type)
-+-		      struct cur_regulatory_info *reg_info, bool intersect)
 ++		      struct cur_regulatory_info *reg_info)
   {
  -	struct ieee80211_regdomain *tmp_regd, *default_regd, *new_regd = NULL;
  +	struct ieee80211_regdomain *new_regd = NULL;
 - 	struct cur_reg_rule *reg_rule, *reg_rule_6ghz;
-+ 	struct cur_reg_rule *reg_rule;
++	struct cur_reg_rule *reg_rule;
   	u8 i = 0, j = 0, k = 0;
   	u8 num_rules;
--@@ -688,26 +560,26 @@ ath11k_reg_build_regd(struct ath11k_base
+-@@ -686,26 +558,26 @@ ath11k_reg_build_regd(struct ath11k_base
 - 	}
+- 
 +@@ -638,26 +515,26 @@ ath11k_reg_build_regd(struct ath11k_base
-+ 		num_rules += reg_info->num_6ghz_rules_ap[WMI_REG_INDOOR_AP];
-  
++		num_rules += reg_info->num_6ghz_rules_ap[WMI_REG_INDOOR_AP];
++
   	if (!num_rules)
  -		goto ret;
+ +		return new_regd;
 @@ -206,7 +199,7 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
   		   reg_info->dfs_region, num_rules);
   	/* Update reg_rules[] below. Firmware is expected to
   	 * send these rules in order(2 GHz rules first and then 5 GHz)
--@@ -746,7 +618,7 @@ ath11k_reg_build_regd(struct ath11k_base
+-@@ -744,7 +616,7 @@ ath11k_reg_build_regd(struct ath11k_base
 +@@ -697,7 +574,7 @@ ath11k_reg_build_regd(struct ath11k_base
   		flags |= ath11k_map_fw_reg_flags(reg_rule->flags);
   		flags |= ath11k_map_fw_phy_flags(reg_info->phybitmap);
@@ -870,7 +544,7 @@ index 19f4e7dbe262..74317e0262a4 100644
   				       reg_rule->start_freq,
   				       reg_rule->end_freq, max_bw,
   				       reg_rule->ant_gain, reg_rule->reg_power,
--@@ -761,7 +633,7 @@ ath11k_reg_build_regd(struct ath11k_base
+-@@ -759,7 +631,7 @@ ath11k_reg_build_regd(struct ath11k_base
 +@@ -712,7 +589,7 @@ ath11k_reg_build_regd(struct ath11k_base
   		    reg_info->dfs_region == ATH11K_DFS_REG_ETSI &&
   		    (reg_rule->end_freq > ETSI_WEATHER_RADAR_BAND_LOW &&
@@ -879,7 +553,7 @@ index 19f4e7dbe262..74317e0262a4 100644
   							     reg_rule, &i,
   							     flags, max_bw);
   			continue;
--@@ -772,51 +644,23 @@ ath11k_reg_build_regd(struct ath11k_base
+-@@ -770,51 +642,23 @@ ath11k_reg_build_regd(struct ath11k_base
 +@@ -723,37 +600,20 @@ ath11k_reg_build_regd(struct ath11k_base
   				   "\t%d. (%d - %d @ %d) (%d, %d) (%d ms) (FLAGS %d) (%d, %d)\n",
   				   i + 1, reg_rule->start_freq, reg_rule->end_freq,
@@ -925,37 +599,38 @@ index 19f4e7dbe262..74317e0262a4 100644
  -static bool ath11k_reg_is_world_alpha(char *alpha)
  -{
  -	if (alpha[0] == '0' && alpha[1] == '0')
-@@ -276,20 +286,19 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
+@@ -276,20 +286,20 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
  -	return false;
  -}
  -
 - static enum wmi_vdev_type ath11k_reg_get_ar_vdev_type(struct ath11k *ar)
 - {
 - 	struct ath11k_vif *arvif;
--@@ -839,7 +683,6 @@ int ath11k_reg_handle_chan_list(struct a
+-@@ -837,7 +681,6 @@ int ath11k_reg_handle_chan_list(struct a
 - 				enum ieee80211_ap_reg_power power_type)
-+ static int ath11k_reg_chan_list_event(struct ath11k_base *ab,
-+ 				      struct sk_buff *skb,
-+ 				      enum wmi_reg_chan_list_cmd_type id)
++static int ath11k_reg_chan_list_event(struct ath11k_base *ab,
++				struct sk_buff *skb,
++				enum wmi_reg_chan_list_cmd_type id)
++
   {
 - 	struct ieee80211_regdomain *regd;
-+ 	struct cur_regulatory_info *reg_info = NULL;
-+ 	struct ieee80211_regdomain *regd = NULL;
++	struct cur_regulatory_info *reg_info = NULL;
++	struct ieee80211_regdomain *regd = NULL;
  -	bool intersect = false;
 - 	int pdev_idx;
-+ 	int ret = 0, pdev_idx, i, j;
++	int ret = 0, pdev_idx, i, j;
   	struct ath11k *ar;
 - 	enum wmi_vdev_type vdev_type;
--@@ -891,24 +734,14 @@ int ath11k_reg_handle_chan_list(struct a
-+ 
+-@@ -889,24 +732,14 @@ int ath11k_reg_handle_chan_list(struct a
++
 +@@ -7141,17 +7129,7 @@ static int ath11k_reg_chan_list_event(st
   		    (char *)reg_info->alpha2, 2))
 - 		goto retfail;
-+ 		goto mem_free;
++		goto mem_free;
   
  -	/* Intersect new rules with default regd if a new country setting was
  -	 * requested, i.e a default regd was already set during initialization
-@@ -301,28 +310,8 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
+@@ -301,28 +311,8 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
  -	    !ath11k_reg_is_world_alpha((char *)reg_info->alpha2))
  -		intersect = true;
  -
@@ -987,7 +662,7 @@ index 19f4e7dbe262..74317e0262a4 100644
 - 		      enum ieee80211_ap_reg_power power_type);
 - int ath11k_regd_update(struct ath11k *ar);
 diff --git a/package/kernel/mac80211/patches/ath9k/512-ath9k_channelbw_debugfs.patch b/package/kernel/mac80211/patches/ath9k/512-ath9k_channelbw_debugfs.patch
-index 72eae8c7d6ea..3ec2d6ec6eb8 100644
+index 87d18626da37..14371224f754 100644
 --- a/package/kernel/mac80211/patches/ath9k/512-ath9k_channelbw_debugfs.patch
 +++ b/package/kernel/mac80211/patches/ath9k/512-ath9k_channelbw_debugfs.patch
 @@ -10,7 +10,7 @@
@@ -1020,7 +695,7 @@ index 1055bd335c1d..8ed7ad8a09a1 100644
  +++ b/drivers/net/wireless/ath/ath9k/gpio.c
  @@ -15,6 +15,7 @@
 diff --git a/package/kernel/mac80211/patches/ath9k/542-ath9k_debugfs_diag.patch b/package/kernel/mac80211/patches/ath9k/542-ath9k_debugfs_diag.patch
-index a0e5a24ed8e8..f00ce5f3dca4 100644
+index f08301c7f4f2..2f943f6189ce 100644
 --- a/package/kernel/mac80211/patches/ath9k/542-ath9k_debugfs_diag.patch
 +++ b/package/kernel/mac80211/patches/ath9k/542-ath9k_debugfs_diag.patch
 @@ -125,7 +125,7 @@
@@ -1077,7 +752,7 @@ index 6027741cd809..d3bf07ff9220 100644
   		u32 on = param ? 1 : 0;
   
 diff --git a/package/kernel/mac80211/patches/ath9k/549-ath9k_enable_gpio_buttons.patch b/package/kernel/mac80211/patches/ath9k/549-ath9k_enable_gpio_buttons.patch
-index 0b2acf8af146..83076b8ae491 100644
+index d164d8903149..0269e0c458aa 100644
 --- a/package/kernel/mac80211/patches/ath9k/549-ath9k_enable_gpio_buttons.patch
 +++ b/package/kernel/mac80211/patches/ath9k/549-ath9k_enable_gpio_buttons.patch
 @@ -128,3 +128,16 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
@@ -1098,7 +773,7 @@ index 0b2acf8af146..83076b8ae491 100644
 + 
 + #endif /* _LINUX_ATH9K_PLATFORM_H */
 diff --git a/package/kernel/mac80211/patches/ath9k/551-ath9k_ubnt_uap_plus_hsr.patch b/package/kernel/mac80211/patches/ath9k/551-ath9k_ubnt_uap_plus_hsr.patch
-index 4e4cab986b32..efd2932446d7 100644
+index 3ccd3fc4871f..efd2932446d7 100644
 --- a/package/kernel/mac80211/patches/ath9k/551-ath9k_ubnt_uap_plus_hsr.patch
 +++ b/package/kernel/mac80211/patches/ath9k/551-ath9k_ubnt_uap_plus_hsr.patch
 @@ -339,7 +339,7 @@
@@ -1123,7 +798,7 @@ index 4e4cab986b32..efd2932446d7 100644
   
  --- a/local-symbols
  +++ b/local-symbols
--@@ -121,6 +121,7 @@ ATH9K_WOW=
+-@@ -123,6 +123,7 @@ ATH9K_WOW=
 +@@ -128,6 +128,7 @@ ATH9K_WOW=
   ATH9K_RFKILL=
   ATH9K_CHANNEL_CONTEXT=
@@ -1135,7 +810,7 @@ index 4e4cab986b32..efd2932446d7 100644
 - 	depends on ATH9K && DEBUG_FS && MAC80211_DEBUGFS
 + 	depends on ATH9K && DEBUG_FS
 diff --git a/package/kernel/mac80211/patches/ath9k/552-ath9k-ahb_of.patch b/package/kernel/mac80211/patches/ath9k/552-ath9k-ahb_of.patch
-index a4efdcd1bcbe..29e66c070c30 100644
+index 3adc8bb8d684..99a9b9c3df52 100644
 --- a/package/kernel/mac80211/patches/ath9k/552-ath9k-ahb_of.patch
 +++ b/package/kernel/mac80211/patches/ath9k/552-ath9k-ahb_of.patch
 @@ -209,7 +209,7 @@
@@ -1289,27 +964,27 @@ index 84b989d8589c..b06172ec0ef3 100644
   	struct brcmf_pub *drvr = cfg->pub;
   	struct wireless_dev *wdev;
 diff --git a/package/kernel/mac80211/patches/brcm/862-brcmfmac-Disable-power-management.patch b/package/kernel/mac80211/patches/brcm/862-brcmfmac-Disable-power-management.patch
-index 9f91b29c4001..92e647816b49 100644
+index 3472ff6afc6b..92e647816b49 100644
 --- a/package/kernel/mac80211/patches/brcm/862-brcmfmac-Disable-power-management.patch
 +++ b/package/kernel/mac80211/patches/brcm/862-brcmfmac-Disable-power-management.patch
 @@ -14,7 +14,7 @@ Signed-off-by: Phil Elwell <phil@raspberrypi.org>
  
  --- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
  +++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
--@@ -3313,6 +3313,10 @@ brcmf_cfg80211_set_power_mgmt(struct wip
+-@@ -3314,6 +3314,10 @@ brcmf_cfg80211_set_power_mgmt(struct wip
 +@@ -3327,6 +3327,10 @@ brcmf_cfg80211_set_power_mgmt(struct wip
   	 * preference in cfg struct to apply this to
   	 * FW later while initializing the dongle
   	 */
 diff --git a/package/kernel/mac80211/patches/brcm/865-brcmfmac-disable-dump_survey-on-bcm2835.patch b/package/kernel/mac80211/patches/brcm/865-brcmfmac-disable-dump_survey-on-bcm2835.patch
-index 975647444f9e..bb87c69ff383 100644
+index 275f0aa166e4..bb87c69ff383 100644
 --- a/package/kernel/mac80211/patches/brcm/865-brcmfmac-disable-dump_survey-on-bcm2835.patch
 +++ b/package/kernel/mac80211/patches/brcm/865-brcmfmac-disable-dump_survey-on-bcm2835.patch
 @@ -9,7 +9,7 @@ Signed-off-by: Álvaro Fernández Rojas <noltari@gmail.com>
  
  --- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
  +++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
--@@ -7979,6 +7979,7 @@ static s32 brcmf_translate_country_code(
+-@@ -7986,6 +7986,7 @@ static s32 brcmf_translate_country_code(
 +@@ -7987,6 +7987,7 @@ static s32 brcmf_translate_country_code(
   	return 0;
   }
@@ -1318,7 +993,7 @@ index 975647444f9e..bb87c69ff383 100644
   static int
   brcmf_parse_dump_obss(char *buf, struct brcmf_dump_survey *survey)
   {
--@@ -8201,6 +8202,7 @@ exit:
+-@@ -8208,6 +8209,7 @@ exit:
 +@@ -8209,6 +8210,7 @@ exit:
   		brcmf_set_mpc(ifp, 1);
   	return err;
@@ -1327,7 +1002,7 @@ index 975647444f9e..bb87c69ff383 100644
   
   static void brcmf_cfg80211_reg_notifier(struct wiphy *wiphy,
   					struct regulatory_request *req)
--@@ -8353,8 +8355,10 @@ struct brcmf_cfg80211_info *brcmf_cfg802
+-@@ -8360,8 +8362,10 @@ struct brcmf_cfg80211_info *brcmf_cfg802
 +@@ -8361,8 +8363,10 @@ struct brcmf_cfg80211_info *brcmf_cfg802
   	if (brcmf_feat_is_enabled(ifp, BRCMF_FEAT_WOWL_GTK))
   		ops->set_rekey_data = brcmf_cfg80211_set_rekey_data;
@@ -1393,56 +1068,8 @@ index 085eae3cd3b4..8f63d36e2e86 100644
  +				sed 's/.*=\s*\([0-9]*\)/\1/;t;d')		;\
  +	RHEL_MINOR=$$(grep '^RHEL_MINOR' $(KERNEL_MAKEFILE) | 			\
  +				sed 's/.*=\s*\([0-9]*\)/\1/;t;d')		;\
-diff --git a/package/kernel/mac80211/patches/build/060-no_local_ssb_bcma.patch b/package/kernel/mac80211/patches/build/060-no_local_ssb_bcma.patch
-index 0dad745b4fa4..2a0f9ede420c 100644
---- a/package/kernel/mac80211/patches/build/060-no_local_ssb_bcma.patch
-+++ b/package/kernel/mac80211/patches/build/060-no_local_ssb_bcma.patch
-@@ -1,6 +1,6 @@
- --- a/local-symbols
- +++ b/local-symbols
--@@ -471,43 +471,6 @@ USB_VL600=
-+@@ -493,43 +493,6 @@ USB_VL600=
-  USB_NET_CH9200=
-  USB_NET_AQC111=
-  USB_RTL8153_ECM=
-@@ -90,7 +90,7 @@
-  config B43_PHY_G
- --- a/drivers/net/wireless/broadcom/b43/main.c
- +++ b/drivers/net/wireless/broadcom/b43/main.c
--@@ -2854,7 +2854,7 @@ static struct ssb_device *b43_ssb_gpio_d
-+@@ -2853,7 +2853,7 @@ static struct ssb_device *b43_ssb_gpio_d
-  {
-  	struct ssb_bus *bus = dev->dev->sdev->bus;
-  
-@@ -99,7 +99,7 @@
-  	return (bus->chipco.dev ? bus->chipco.dev : bus->pcicore.dev);
-  #else
-  	return bus->chipco.dev;
--@@ -4873,7 +4873,7 @@ static int b43_wireless_core_init(struct
-+@@ -4871,7 +4871,7 @@ static int b43_wireless_core_init(struct
-  	}
-  	if (sprom->boardflags_lo & B43_BFL_XTAL_NOSLOW)
-  		hf |= B43_HF_DSCRQ; /* Disable slowclock requests from ucode. */
-@@ -171,7 +171,7 @@
-  	depends on CORDIC
- --- a/Kconfig.local
- +++ b/Kconfig.local
--@@ -1417,117 +1417,6 @@ config BACKPORTED_USB_NET_AQC111
-+@@ -1483,117 +1483,6 @@ config BACKPORTED_USB_NET_AQC111
-  config BACKPORTED_USB_RTL8153_ECM
-  	tristate
-  	default USB_RTL8153_ECM
-@@ -303,7 +303,7 @@
-  source "$BACKPORT_DIR/drivers/staging/Kconfig"
- --- a/Makefile.kernel
- +++ b/Makefile.kernel
--@@ -42,8 +42,6 @@ obj-$(CPTCFG_QRTR) += net/qrtr/
-+@@ -43,8 +43,6 @@ obj-$(CPTCFG_QRTR) += net/qrtr/
-  obj-$(CPTCFG_QCOM_QMI_HELPERS) += drivers/soc/qcom/
-  obj-$(CPTCFG_MHI_BUS) += drivers/bus/mhi/
-  obj-$(CPTCFG_WLAN) += drivers/net/wireless/
 diff --git a/package/kernel/mac80211/patches/build/100-backports-drop-QRTR-and-MHI.patch b/package/kernel/mac80211/patches/build/100-backports-drop-QRTR-and-MHI.patch
-index a3a65c2d2ab7..b017a0ce1460 100644
+index f4dc5508b115..32ad31ac74fa 100644
 --- a/package/kernel/mac80211/patches/build/100-backports-drop-QRTR-and-MHI.patch
 +++ b/package/kernel/mac80211/patches/build/100-backports-drop-QRTR-and-MHI.patch
 @@ -32,7 +32,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
@@ -1455,7 +1082,7 @@ index a3a65c2d2ab7..b017a0ce1460 100644
   obj-$(CPTCFG_CFG80211) += net/wireless/
   obj-$(CPTCFG_MAC80211) += net/mac80211/
 @@ -59,7 +59,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
-  
+  	  This module adds support for PCIE bus
  --- a/local-symbols
  +++ b/local-symbols
 -@@ -59,14 +59,6 @@ MAC80211_MESH_PS_DEBUG=
@@ -1469,38 +1096,26 @@ index a3a65c2d2ab7..b017a0ce1460 100644
   QCOM_COMMAND_DB=
 - QCOM_GENI_SE=
 + QCOM_CPR=
-diff --git a/package/kernel/mac80211/patches/build/120-headers_version_fix.patch b/package/kernel/mac80211/patches/build/120-headers_version_fix.patch
-index 21cf0b3134dd..9a8c4749b2f0 100644
---- a/package/kernel/mac80211/patches/build/120-headers_version_fix.patch
-+++ b/package/kernel/mac80211/patches/build/120-headers_version_fix.patch
-@@ -1,6 +1,6 @@
- --- a/backport-include/linux/random.h
- +++ b/backport-include/linux/random.h
--@@ -15,7 +15,7 @@ static inline u16 get_random_u16(void)
-+@@ -23,7 +23,7 @@ static inline u16 get_random_u16(void)
-  }
-  #endif
-  
 diff --git a/package/kernel/mac80211/patches/mwl/700-mwl8k-missing-pci-id-for-WNR854T.patch b/package/kernel/mac80211/patches/mwl/700-mwl8k-missing-pci-id-for-WNR854T.patch
-index fb774b52011f..11536651b5e3 100644
+index cfb7dcf7386b..11536651b5e3 100644
 --- a/package/kernel/mac80211/patches/mwl/700-mwl8k-missing-pci-id-for-WNR854T.patch
 +++ b/package/kernel/mac80211/patches/mwl/700-mwl8k-missing-pci-id-for-WNR854T.patch
 @@ -1,6 +1,6 @@
  --- a/drivers/net/wireless/marvell/mwl8k.c
  +++ b/drivers/net/wireless/marvell/mwl8k.c
--@@ -5707,6 +5707,7 @@ MODULE_FIRMWARE("mwl8k/fmimage_8366.fw")
+-@@ -5712,6 +5712,7 @@ MODULE_FIRMWARE("mwl8k/fmimage_8366.fw")
 +@@ -5703,6 +5703,7 @@ MODULE_FIRMWARE("mwl8k/fmimage_8366.fw")
   MODULE_FIRMWARE(MWL8K_8366_AP_FW(MWL8K_8366_AP_FW_API));
   
   static const struct pci_device_id mwl8k_pci_id_table[] = {
 diff --git a/package/kernel/mac80211/patches/mwl/940-mwl8k_init_devices_synchronously.patch b/package/kernel/mac80211/patches/mwl/940-mwl8k_init_devices_synchronously.patch
-index 06edc441ecc1..c8d24283aad9 100644
+index d09cfac448cc..c8d24283aad9 100644
 --- a/package/kernel/mac80211/patches/mwl/940-mwl8k_init_devices_synchronously.patch
 +++ b/package/kernel/mac80211/patches/mwl/940-mwl8k_init_devices_synchronously.patch
 @@ -1,6 +1,6 @@
  --- a/drivers/net/wireless/marvell/mwl8k.c
  +++ b/drivers/net/wireless/marvell/mwl8k.c
--@@ -6293,6 +6293,8 @@ static int mwl8k_probe(struct pci_dev *p
+-@@ -6298,6 +6298,8 @@ static int mwl8k_probe(struct pci_dev *p
 +@@ -6289,6 +6289,8 @@ static int mwl8k_probe(struct pci_dev *p
   
   	priv->running_bsses = 0;
@@ -1509,20 +1124,20 @@ index 06edc441ecc1..c8d24283aad9 100644
   	return rc;
   
   err_stop_firmware:
--@@ -6326,8 +6328,6 @@ static void mwl8k_remove(struct pci_dev
+-@@ -6331,8 +6333,6 @@ static void mwl8k_remove(struct pci_dev
 +@@ -6322,8 +6324,6 @@ static void mwl8k_remove(struct pci_dev
   		return;
   	priv = hw->priv;
   
 diff --git a/package/kernel/mac80211/patches/mwl/950-mwifiex-Print-stringified-name-of-command-in-error-l.patch b/package/kernel/mac80211/patches/mwl/950-mwifiex-Print-stringified-name-of-command-in-error-l.patch
-index a7ecabde8296..f4d97eeee2b9 100644
+index 93a213265c64..a1c61128c8d0 100644
 --- a/package/kernel/mac80211/patches/mwl/950-mwifiex-Print-stringified-name-of-command-in-error-l.patch
 +++ b/package/kernel/mac80211/patches/mwl/950-mwifiex-Print-stringified-name-of-command-in-error-l.patch
 @@ -139,7 +139,7 @@ Signed-off-by: Pali Rohár <pali@kernel.org>
   			mwifiex_init_fw_complete(adapter);
   			return -1;
   		} else if (adapter->last_init_cmd == cmdresp_no)
--@@ -1265,8 +1345,8 @@ mwifiex_process_sleep_confirm_resp(struc
+-@@ -1287,8 +1367,8 @@ mwifiex_process_sleep_confirm_resp(struc
 +@@ -1273,8 +1353,8 @@ mwifiex_process_sleep_confirm_resp(struc
   
   	if (command != HostCmd_CMD_802_11_PS_MODE_ENH) {
@@ -1531,20 +1146,20 @@ index a7ecabde8296..f4d97eeee2b9 100644
   
  --- a/drivers/net/wireless/marvell/mwifiex/main.h
  +++ b/drivers/net/wireless/marvell/mwifiex/main.h
--@@ -1084,6 +1084,8 @@ void mwifiex_cancel_all_pending_cmd(stru
+-@@ -1100,6 +1100,8 @@ void mwifiex_cancel_all_pending_cmd(stru
 +@@ -1086,6 +1086,8 @@ void mwifiex_cancel_all_pending_cmd(stru
   void mwifiex_cancel_pending_scan_cmd(struct mwifiex_adapter *adapter);
   void mwifiex_cancel_scan(struct mwifiex_adapter *adapter);
   
 diff --git a/package/kernel/mac80211/patches/rt2x00/602-01-wifi-rt2x00-Add-support-for-loading-EEPROM-from-user.patch b/package/kernel/mac80211/patches/rt2x00/602-01-wifi-rt2x00-Add-support-for-loading-EEPROM-from-user.patch
-index 1516c6cb4349..8b04473dbe01 100644
+index f3c8ddd4f653..72a13255d010 100644
 --- a/package/kernel/mac80211/patches/rt2x00/602-01-wifi-rt2x00-Add-support-for-loading-EEPROM-from-user.patch
 +++ b/package/kernel/mac80211/patches/rt2x00/602-01-wifi-rt2x00-Add-support-for-loading-EEPROM-from-user.patch
 @@ -21,7 +21,7 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
  
  --- a/local-symbols
  +++ b/local-symbols
--@@ -334,6 +334,7 @@ RT2X00_LIB_FIRMWARE=
+-@@ -339,6 +339,7 @@ RT2X00_LIB_FIRMWARE=
 +@@ -352,6 +352,7 @@ RT2X00_LIB_FIRMWARE=
   RT2X00_LIB_CRYPTO=
   RT2X00_LIB_LEDS=
@@ -1620,24 +1235,24 @@ index 4a819039da0b..8ee4e6cafa6a 100644
   	rt2800_init_led(rt2x00dev, &rt2x00dev->led_qual, LED_TYPE_QUALITY);
   
 diff --git a/package/kernel/mac80211/patches/rt2x00/994-rt2x00-import-support-for-external-LNA-on-MT7620.patch b/package/kernel/mac80211/patches/rt2x00/994-rt2x00-import-support-for-external-LNA-on-MT7620.patch
-index 5b950539b98d..3e48eab5d202 100644
+index 88a72fd03ec3..798bcb159c00 100644
 --- a/package/kernel/mac80211/patches/rt2x00/994-rt2x00-import-support-for-external-LNA-on-MT7620.patch
 +++ b/package/kernel/mac80211/patches/rt2x00/994-rt2x00-import-support-for-external-LNA-on-MT7620.patch
 @@ -52,7 +52,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
   static const unsigned int rt2800_eeprom_map[EEPROM_WORD_COUNT] = {
   	[EEPROM_CHIP_ID]		= 0x0000,
   	[EEPROM_VERSION]		= 0x0001,
--@@ -10404,8 +10422,10 @@ static void rt2800_calibration_rt6352(st
-+@@ -10407,8 +10425,10 @@ static void rt2800_calibration_rt6352(st
-  	u32 reg;
-  
+-@@ -10428,8 +10446,10 @@ static void rt2800_restore_rf_bbp_rt6352
++@@ -10407,8 +10425,10 @@ static void rt2800_restore_rf_bbp_rt6352
+  static void rt2800_calibration_rt6352_stage1(struct rt2x00_dev *rt2x00dev)
+  {
   	if (rt2x00_has_cap_external_pa(rt2x00dev) ||
 @@ -64,7 +64,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
   
   	rt2800_r_calibration(rt2x00dev);
-  	rt2800_rf_self_txdc_cal(rt2x00dev);
--@@ -10423,6 +10443,8 @@ static void rt2800_calibration_rt6352(st
-+@@ -10426,6 +10446,8 @@ static void rt2800_calibration_rt6352(st
+  }
+-@@ -10453,6 +10473,8 @@ static void rt2800_calibration_rt6352_st
++@@ -10426,6 +10446,8 @@ static void rt2800_calibration_rt6352_st
   	    !rt2x00_has_cap_external_lna_bg(rt2x00dev))
   		return;
   
@@ -1694,68 +1309,68 @@ index cb7a3617eeca..19f1edc928bc 100644
   	.drv_get_txwi		= rt2800usb_get_txwi,
   	.drv_get_dma_done	= rt2800usb_get_dma_done,
 diff --git a/package/kernel/mac80211/patches/rt2x00/996-rt2x00-mt7620-differentiate-based-on-SoC-CHIP_VER.patch b/package/kernel/mac80211/patches/rt2x00/996-rt2x00-mt7620-differentiate-based-on-SoC-CHIP_VER.patch
-index 4c07a1059069..0f699f5e18b0 100644
+index eb0237a38938..03c317848af3 100644
 --- a/package/kernel/mac80211/patches/rt2x00/996-rt2x00-mt7620-differentiate-based-on-SoC-CHIP_VER.patch
 +++ b/package/kernel/mac80211/patches/rt2x00/996-rt2x00-mt7620-differentiate-based-on-SoC-CHIP_VER.patch
-@@ -202,7 +202,7 @@
+@@ -203,7 +203,7 @@
   
   	/* BBP for G band GLRT function (BBP_128 ~ BBP_221) */
   	rt2800_bbp_glrt_write(rt2x00dev, 0, 0x00);
--@@ -10378,6 +10407,9 @@ static void rt2800_restore_rf_bbp_rt6352
+-@@ -10404,6 +10434,9 @@ static void rt2800_restore_rf_bbp_rt6352
 +@@ -10381,6 +10410,9 @@ static void rt2800_restore_rf_bbp_rt6352
   		rt2800_register_write(rt2x00dev, RF_BYPASS3, 0x0);
   	}
   
-@@ -212,7 +212,7 @@
+@@ -213,7 +213,7 @@
   	if (rt2x00_has_cap_external_lna_bg(rt2x00dev)) {
   		rt2800_rfcsr_write_chanreg(rt2x00dev, 14, 0x16);
   		rt2800_rfcsr_write_chanreg(rt2x00dev, 17, 0x23);
--@@ -10455,6 +10487,9 @@ static void rt2800_calibration_rt6352(st
-+@@ -10458,6 +10490,9 @@ static void rt2800_calibration_rt6352(st
+-@@ -10485,6 +10518,9 @@ static void rt2800_calibration_rt6352_st
++@@ -10458,6 +10490,9 @@ static void rt2800_calibration_rt6352_st
   		rt2800_register_write(rt2x00dev, RF_BYPASS3, reg);
   	}
   
-@@ -222,7 +222,7 @@
+@@ -223,7 +223,7 @@
   	if (rt2x00_has_cap_external_lna_bg(rt2x00dev)) {
   		rt2800_rfcsr_write_chanreg(rt2x00dev, 14, 0x66);
   		rt2800_rfcsr_write_chanreg(rt2x00dev, 17, 0x20);
--@@ -10545,31 +10580,36 @@ static void rt2800_init_rfcsr_6352(struc
+-@@ -10575,31 +10611,36 @@ static void rt2800_init_rfcsr_6352(struc
 +@@ -10548,31 +10583,36 @@ static void rt2800_init_rfcsr_6352(struc
   	rt2800_rfcsr_write(rt2x00dev, 42, 0x5B);
   	rt2800_rfcsr_write(rt2x00dev, 43, 0x00);
   
-@@ -284,7 +284,7 @@
+@@ -285,7 +285,7 @@
   
   	/* Initialize RF channel register to default value */
   	rt2800_rfcsr_write_chanreg(rt2x00dev, 0, 0x03);
--@@ -10635,63 +10675,71 @@ static void rt2800_init_rfcsr_6352(struc
+-@@ -10665,63 +10706,71 @@ static void rt2800_init_rfcsr_6352(struc
 +@@ -10638,63 +10678,71 @@ static void rt2800_init_rfcsr_6352(struc
   
   	rt2800_rfcsr_write_bank(rt2x00dev, 6, 45, 0xC5);
   
-@@ -411,7 +411,7 @@
+@@ -412,7 +412,7 @@
   
   	/* Initialize RF DC calibration register to default value */
   	rt2800_rfcsr_write_dccal(rt2x00dev, 0, 0x47);
--@@ -10754,12 +10802,17 @@ static void rt2800_init_rfcsr_6352(struc
+-@@ -10784,12 +10833,17 @@ static void rt2800_init_rfcsr_6352(struc
 +@@ -10757,12 +10805,17 @@ static void rt2800_init_rfcsr_6352(struc
   	rt2800_rfcsr_write_dccal(rt2x00dev, 62, 0x00);
   	rt2800_rfcsr_write_dccal(rt2x00dev, 63, 0x00);
   
 diff --git a/package/kernel/mac80211/patches/subsys/110-mac80211_keep_keys_on_stop_ap.patch b/package/kernel/mac80211/patches/subsys/110-mac80211_keep_keys_on_stop_ap.patch
-index c71f1f2ffcaf..7bf99bec2866 100644
+index 68534f4e7b40..c79952771ccf 100644
 --- a/package/kernel/mac80211/patches/subsys/110-mac80211_keep_keys_on_stop_ap.patch
 +++ b/package/kernel/mac80211/patches/subsys/110-mac80211_keep_keys_on_stop_ap.patch
 @@ -9,16 +9,11 @@ Used for AP+STA support in OpenWrt - preserve AP mode keys across STA reconnect
  
  --- a/net/mac80211/cfg.c
  +++ b/net/mac80211/cfg.c
--@@ -1647,12 +1647,6 @@ static int ieee80211_stop_ap(struct wiph
+-@@ -1649,12 +1649,6 @@ static int ieee80211_stop_ap(struct wiph
 +@@ -1635,7 +1635,6 @@ static int ieee80211_stop_ap(struct wiph
-+ 	link_conf->bssid_indicator = 0;
++	link_conf->bssid_indicator = 0;
   
 - 	__sta_info_flush(sdata, true, link_id);
-+ 	__sta_info_flush(sdata, true);
++	__sta_info_flush(sdata, true);
 +-	ieee80211_free_keys(sdata, true);
   
 --	ieee80211_remove_link_keys(link, &keys);
@@ -1768,61 +1383,74 @@ index c71f1f2ffcaf..7bf99bec2866 100644
   	sdata->beacon_rate_set = false;
 - 	sdata->vif.cfg.ssid_len = 0;
 diff --git a/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch b/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch
-index d4341a135022..43507f2985e4 100644
+index c9496b5e709c..79d11062fe35 100644
 --- a/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch
 +++ b/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch
 @@ -1,8 +1,8 @@
  --- a/net/mac80211/main.c
  +++ b/net/mac80211/main.c
--@@ -1564,24 +1564,6 @@ int ieee80211_register_hw(struct ieee802
+-@@ -1583,24 +1583,6 @@ int ieee80211_register_hw(struct ieee802
 - 
 - 	ieee80211_check_wbrf_support(local);
 +@@ -1393,24 +1393,6 @@ int ieee80211_register_hw(struct ieee802
-+ 	debugfs_hw_add(local);
-+ 	rate_control_add_debugfs(local);
++	debugfs_hw_add(local);
++	rate_control_add_debugfs(local);
   
  -	rtnl_lock();
  -	wiphy_lock(hw->wiphy);
 diff --git a/package/kernel/mac80211/patches/subsys/210-ap_scan.patch b/package/kernel/mac80211/patches/subsys/210-ap_scan.patch
-index a1f96cb3a04f..1e9676fd0b69 100644
+index ca4ac8adb626..1e9676fd0b69 100644
 --- a/package/kernel/mac80211/patches/subsys/210-ap_scan.patch
 +++ b/package/kernel/mac80211/patches/subsys/210-ap_scan.patch
 @@ -8,7 +8,7 @@ Subject: [PATCH] mac80211: allow scans in access point mode (for site survey)
  
  --- a/net/mac80211/cfg.c
  +++ b/net/mac80211/cfg.c
--@@ -2844,6 +2844,8 @@ static int ieee80211_scan(struct wiphy *
+-@@ -2863,6 +2863,8 @@ static int ieee80211_scan(struct wiphy *
 +@@ -2847,6 +2847,8 @@ static int ieee80211_scan(struct wiphy *
   		 */
   		fallthrough;
   	case NL80211_IFTYPE_AP:
+diff --git a/package/kernel/mac80211/patches/subsys/230-avoid-crashing-missing-band.patch b/package/kernel/mac80211/patches/subsys/230-avoid-crashing-missing-band.patch
+index 9e9e3844b7ac..35fa961d21a7 100644
+--- a/package/kernel/mac80211/patches/subsys/230-avoid-crashing-missing-band.patch
++++ b/package/kernel/mac80211/patches/subsys/230-avoid-crashing-missing-band.patch
+@@ -18,7 +18,7 @@ Signed-off-by: David Bauer <mail@david-bauer.net>
+ 
+ --- a/net/mac80211/sta_info.c
+ +++ b/net/mac80211/sta_info.c
+-@@ -2439,6 +2439,13 @@ static void sta_stats_decode_rate(struct
++@@ -2445,6 +2445,13 @@ static void sta_stats_decode_rate(struct
+  
+  		sband = local->hw.wiphy->bands[band];
+  
 diff --git a/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch b/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch
-index d576661bd200..1034e2c928fd 100644
+index edec97cce940..9868d204bc31 100644
 --- a/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch
 +++ b/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch
 @@ -28,10 +28,10 @@ Signed-off-by: Johannes Berg <johannes.berg@intel.com>
  
  --- a/net/mac80211/sta_info.c
  +++ b/net/mac80211/sta_info.c
--@@ -565,6 +565,11 @@ __sta_info_alloc(struct ieee80211_sub_if
+-@@ -565,6 +565,7 @@ __sta_info_alloc(struct ieee80211_sub_if
 - 	spin_lock_init(&sta->ps_lock);
-+@@ -561,6 +561,11 @@ __sta_info_alloc(struct ieee80211_sub_if
++@@ -561,6 +561,7 @@ __sta_info_alloc(struct ieee80211_sub_if
   	INIT_WORK(&sta->drv_deliver_wk, sta_deliver_ps_frames);
 - 	wiphy_work_init(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
-+ 	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
-+ 	mutex_init(&sta->ampdu_mlme.mtx);
- +#if LINUX_VERSION_IS_LESS(6,2,0)
- +	sta->ampdu_mlme.dialog_token_allocator = prandom_u32_max(U8_MAX);
- +#else
++	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
++	mutex_init(&sta->ampdu_mlme.mtx);
+ +	sta->ampdu_mlme.dialog_token_allocator = get_random_u32_below(U8_MAX);
+  #ifdef CPTCFG_MAC80211_MESH
+  	if (ieee80211_vif_is_mesh(&sdata->vif)) {
 diff --git a/package/kernel/mac80211/patches/subsys/305-mac80211-increase-quantum-for-airtime-scheduler.patch b/package/kernel/mac80211/patches/subsys/305-mac80211-increase-quantum-for-airtime-scheduler.patch
-index 71ce340d3114..e4575ca7ba74 100644
+index 6cf46ce7e514..e4575ca7ba74 100644
 --- a/package/kernel/mac80211/patches/subsys/305-mac80211-increase-quantum-for-airtime-scheduler.patch
 +++ b/package/kernel/mac80211/patches/subsys/305-mac80211-increase-quantum-for-airtime-scheduler.patch
 @@ -12,9 +12,9 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
  
  --- a/net/mac80211/ieee80211_i.h
  +++ b/net/mac80211/ieee80211_i.h
--@@ -101,6 +101,8 @@ ieee80211_sta_keep_active(struct sta_inf
+-@@ -103,6 +103,8 @@ ieee80211_sta_keep_active(struct sta_inf
 - 	return time_before_eq(jiffies, sta->airtime[ac].last_active + HZ / 10);
 - }
 +@@ -92,6 +92,8 @@ extern const u8 ieee80211_ac_to_qos_mask
@@ -1835,7 +1463,7 @@ index 71ce340d3114..e4575ca7ba74 100644
   
  --- a/net/mac80211/tx.c
  +++ b/net/mac80211/tx.c
--@@ -4082,7 +4082,7 @@ struct ieee80211_txq *ieee80211_next_txq
+-@@ -4081,7 +4081,7 @@ struct ieee80211_txq *ieee80211_next_txq
 +@@ -4060,7 +4060,7 @@ struct ieee80211_txq *ieee80211_next_txq
   
   		if (deficit < 0)
@@ -1844,7 +1472,7 @@ index 71ce340d3114..e4575ca7ba74 100644
   
   		if (deficit < 0 || !aql_check) {
   			list_move_tail(&txqi->schedule_order,
--@@ -4225,7 +4225,8 @@ bool ieee80211_txq_may_transmit(struct i
+-@@ -4224,7 +4224,8 @@ bool ieee80211_txq_may_transmit(struct i
 +@@ -4203,7 +4203,8 @@ bool ieee80211_txq_may_transmit(struct i
   		}
   		sta = container_of(iter->txq.sta, struct sta_info, sta);
@@ -1853,20 +1481,20 @@ index 71ce340d3114..e4575ca7ba74 100644
   		list_move_tail(&iter->schedule_order, &local->active_txqs[ac]);
   	}
   
--@@ -4233,7 +4234,7 @@ bool ieee80211_txq_may_transmit(struct i
+-@@ -4232,7 +4233,7 @@ bool ieee80211_txq_may_transmit(struct i
 +@@ -4211,7 +4212,7 @@ bool ieee80211_txq_may_transmit(struct i
   	if (sta->airtime[ac].deficit >= 0)
   		goto out;
   
-diff --git a/package/kernel/mac80211/patches/subsys/320-cfg80211-allow-grace-period-for-DFS-available-after-.patch b/package/kernel/mac80211/patches/subsys/320-cfg80211-allow-grace-period-for-DFS-available-after-.patch
-index 39f23f78391a..ec381303cebe 100644
---- a/package/kernel/mac80211/patches/subsys/320-cfg80211-allow-grace-period-for-DFS-available-after-.patch
-+++ b/package/kernel/mac80211/patches/subsys/320-cfg80211-allow-grace-period-for-DFS-available-after-.patch
+diff --git a/package/kernel/mac80211/patches/subsys/310-cfg80211-allow-grace-period-for-DFS-available-after-.patch b/package/kernel/mac80211/patches/subsys/310-cfg80211-allow-grace-period-for-DFS-available-after-.patch
+index c86b836f2f56..6f8149db02ee 100644
+--- a/package/kernel/mac80211/patches/subsys/310-cfg80211-allow-grace-period-for-DFS-available-after-.patch
++++ b/package/kernel/mac80211/patches/subsys/310-cfg80211-allow-grace-period-for-DFS-available-after-.patch
 @@ -11,23 +11,23 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
  
  --- a/include/net/cfg80211.h
  +++ b/include/net/cfg80211.h
--@@ -189,6 +189,8 @@ enum ieee80211_channel_flags {
+-@@ -187,6 +187,8 @@ enum ieee80211_channel_flags {
 +@@ -175,6 +175,8 @@ enum ieee80211_channel_flags {
    * @dfs_state: current state of this channel. Only relevant if radar is required
    *	on this channel.
@@ -1876,7 +1504,7 @@ index 39f23f78391a..ec381303cebe 100644
    * @dfs_cac_ms: DFS CAC time in milliseconds, this is valid for DFS channels.
 -  * @psd: power spectral density (in dBm)
    */
--@@ -206,6 +208,7 @@ struct ieee80211_channel {
+-@@ -204,6 +206,7 @@ struct ieee80211_channel {
 + struct ieee80211_channel {
 +@@ -191,6 +193,7 @@ struct ieee80211_channel {
   	int orig_mag, orig_mpwr;
@@ -1886,7 +1514,7 @@ index 39f23f78391a..ec381303cebe 100644
   	unsigned int dfs_cac_ms;
 - 	s8 psd;
   };
-+ 
++
  --- a/net/wireless/ap.c
  +++ b/net/wireless/ap.c
  @@ -30,6 +30,9 @@ static int ___cfg80211_stop_ap(struct cf
@@ -1894,7 +1522,7 @@ index 39f23f78391a..ec381303cebe 100644
   
  --- a/net/wireless/chan.c
  +++ b/net/wireless/chan.c
--@@ -560,6 +560,8 @@ static void cfg80211_set_chans_dfs_state
+-@@ -598,6 +598,8 @@ static void cfg80211_set_chans_dfs_state
 +@@ -461,6 +461,8 @@ static void cfg80211_set_chans_dfs_state
   
   		c->dfs_state = dfs_state;
@@ -1903,7 +1531,7 @@ index 39f23f78391a..ec381303cebe 100644
   	}
   }
   
--@@ -1049,6 +1051,49 @@ static bool cfg80211_get_chans_dfs_avail
+-@@ -1087,6 +1089,49 @@ static bool cfg80211_get_chans_dfs_avail
 +@@ -874,6 +876,49 @@ static bool cfg80211_get_chans_dfs_avail
   	return true;
   }
@@ -1912,7 +1540,7 @@ index 39f23f78391a..ec381303cebe 100644
   {
  --- a/net/wireless/core.h
  +++ b/net/wireless/core.h
--@@ -467,6 +467,8 @@ void cfg80211_set_dfs_state(struct wiphy
+-@@ -475,6 +475,8 @@ void cfg80211_set_dfs_state(struct wiphy
 +@@ -481,6 +481,8 @@ void cfg80211_set_dfs_state(struct wiphy
   			    enum nl80211_dfs_state dfs_state);
   
@@ -1921,7 +1549,7 @@ index 39f23f78391a..ec381303cebe 100644
   
  --- a/net/wireless/mlme.c
  +++ b/net/wireless/mlme.c
--@@ -1037,6 +1037,8 @@ void cfg80211_dfs_channels_update_work(s
+-@@ -1031,6 +1031,8 @@ void cfg80211_dfs_channels_update_work(s
 +@@ -930,6 +930,8 @@ void cfg80211_dfs_channels_update_work(s
   			if (c->dfs_state == NL80211_DFS_UNAVAILABLE) {
   				time_dfs_update = IEEE80211_DFS_MIN_NOP_TIME_MS;
@@ -1930,20 +1558,20 @@ index 39f23f78391a..ec381303cebe 100644
   			} else {
   				if (regulatory_pre_cac_allowed(wiphy) ||
   				    cfg80211_any_wiphy_oper_chan(wiphy, c))
--@@ -1044,11 +1046,10 @@ void cfg80211_dfs_channels_update_work(s
+-@@ -1038,11 +1040,10 @@ void cfg80211_dfs_channels_update_work(s
 +@@ -937,11 +939,10 @@ void cfg80211_dfs_channels_update_work(s
   
   				time_dfs_update = REG_PRE_CAC_EXPIRY_GRACE_MS;
   				radar_event = NL80211_RADAR_PRE_CAC_EXPIRED;
-diff --git a/package/kernel/mac80211/patches/subsys/330-mac80211-add-AQL-support-for-broadcast-packets.patch b/package/kernel/mac80211/patches/subsys/330-mac80211-add-AQL-support-for-broadcast-packets.patch
-index d822e45357ab..d53afcf5919c 100644
---- a/package/kernel/mac80211/patches/subsys/330-mac80211-add-AQL-support-for-broadcast-packets.patch
-+++ b/package/kernel/mac80211/patches/subsys/330-mac80211-add-AQL-support-for-broadcast-packets.patch
+diff --git a/package/kernel/mac80211/patches/subsys/320-mac80211-add-AQL-support-for-broadcast-packets.patch b/package/kernel/mac80211/patches/subsys/320-mac80211-add-AQL-support-for-broadcast-packets.patch
+index 9513dc14bc34..481b18cdf4c0 100644
+--- a/package/kernel/mac80211/patches/subsys/320-mac80211-add-AQL-support-for-broadcast-packets.patch
++++ b/package/kernel/mac80211/patches/subsys/320-mac80211-add-AQL-support-for-broadcast-packets.patch
 @@ -12,7 +12,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
  
  --- a/include/net/cfg80211.h
  +++ b/include/net/cfg80211.h
--@@ -3416,6 +3416,7 @@ enum wiphy_params_flags {
+-@@ -3423,6 +3423,7 @@ enum wiphy_params_flags {
 +@@ -3324,6 +3324,7 @@ enum wiphy_params_flags {
   /* The per TXQ device queue limit in airtime */
   #define IEEE80211_DEFAULT_AQL_TXQ_LIMIT_L	5000
@@ -1952,7 +1580,7 @@ index d822e45357ab..d53afcf5919c 100644
   
  --- a/net/mac80211/ieee80211_i.h
  +++ b/net/mac80211/ieee80211_i.h
--@@ -1338,10 +1338,12 @@ struct ieee80211_local {
+-@@ -1351,10 +1351,12 @@ struct ieee80211_local {
 +@@ -1328,10 +1328,12 @@ struct ieee80211_local {
   	spinlock_t handle_wake_tx_queue_lock;
   
@@ -1961,7 +1589,7 @@ index d822e45357ab..d53afcf5919c 100644
   	const struct ieee80211_ops *ops;
  --- a/net/mac80211/main.c
  +++ b/net/mac80211/main.c
--@@ -944,6 +944,7 @@ struct ieee80211_hw *ieee80211_alloc_hw_
+-@@ -954,6 +954,7 @@ struct ieee80211_hw *ieee80211_alloc_hw_
 +@@ -788,6 +788,7 @@ struct ieee80211_hw *ieee80211_alloc_hw_
   	spin_lock_init(&local->rx_path_lock);
   	spin_lock_init(&local->queue_stop_reason_lock);
@@ -1970,7 +1598,7 @@ index d822e45357ab..d53afcf5919c 100644
   		spin_lock_init(&local->active_txq_lock[i]);
  --- a/net/mac80211/sta_info.c
  +++ b/net/mac80211/sta_info.c
--@@ -2357,13 +2357,28 @@ EXPORT_SYMBOL(ieee80211_sta_recalc_aggre
+-@@ -2353,13 +2353,28 @@ EXPORT_SYMBOL(ieee80211_sta_recalc_aggre
 +@@ -2343,13 +2343,28 @@ EXPORT_SYMBOL(ieee80211_sta_recalc_aggre
   
   void ieee80211_sta_update_pending_airtime(struct ieee80211_local *local,
@@ -1988,11 +1616,11 @@ index d822e45357ab..d53afcf5919c 100644
   		spin_unlock_irqrestore(&local->ack_status_lock, flags);
   
   		if (id >= 0) {
--@@ -3983,20 +3983,20 @@ begin:
+-@@ -3982,20 +3982,20 @@ begin:
 +@@ -3958,20 +3958,20 @@ begin:
   encap_out:
 - 	info->control.vif = vif;
-+ 	IEEE80211_SKB_CB(skb)->control.vif = vif;
++	IEEE80211_SKB_CB(skb)->control.vif = vif;
   
  -	if (tx.sta &&
  -	    wiphy_ext_feature_isset(local->hw.wiphy, NL80211_EXT_FEATURE_AQL)) {
@@ -2000,7 +1628,7 @@ index d822e45357ab..d53afcf5919c 100644
   	}
   
   	return skb;
--@@ -4048,6 +4048,7 @@ struct ieee80211_txq *ieee80211_next_txq
+-@@ -4047,6 +4047,7 @@ struct ieee80211_txq *ieee80211_next_txq
 +@@ -4026,6 +4026,7 @@ struct ieee80211_txq *ieee80211_next_txq
   	struct ieee80211_txq *ret = NULL;
   	struct txq_info *txqi = NULL, *head = NULL;
@@ -2009,7 +1637,7 @@ index d822e45357ab..d53afcf5919c 100644
   
   	spin_lock_bh(&local->active_txq_lock[ac]);
   
--@@ -4071,26 +4072,26 @@ struct ieee80211_txq *ieee80211_next_txq
+-@@ -4070,26 +4071,26 @@ struct ieee80211_txq *ieee80211_next_txq
 +@@ -4049,26 +4050,26 @@ struct ieee80211_txq *ieee80211_next_txq
   	if (!head)
   		head = txqi;
@@ -2018,7 +1646,7 @@ index d822e45357ab..d53afcf5919c 100644
   	if (txqi->schedule_round == local->schedule_round[ac])
   		goto out;
   
--@@ -4155,7 +4156,8 @@ bool ieee80211_txq_airtime_check(struct
+-@@ -4154,7 +4155,8 @@ bool ieee80211_txq_airtime_check(struct
 +@@ -4133,7 +4134,8 @@ bool ieee80211_txq_airtime_check(struct
   		return true;
   
@@ -2027,7 +1655,7 @@ index d822e45357ab..d53afcf5919c 100644
   
   	if (unlikely(txq->tid == IEEE80211_NUM_TIDS))
   		return true;
--@@ -4204,15 +4206,15 @@ bool ieee80211_txq_may_transmit(struct i
+-@@ -4203,15 +4205,15 @@ bool ieee80211_txq_may_transmit(struct i
 +@@ -4182,15 +4184,15 @@ bool ieee80211_txq_may_transmit(struct i
   
   	spin_lock_bh(&local->active_txq_lock[ac]);
@@ -2036,11 +1664,11 @@ index d822e45357ab..d53afcf5919c 100644
   		if (iter == txqi)
  --- a/include/net/mac80211.h
  +++ b/include/net/mac80211.h
--@@ -1180,8 +1180,8 @@ struct ieee80211_tx_info {
+-@@ -1222,8 +1222,8 @@ struct ieee80211_tx_info {
 - 	    status_data_idr:1,
 - 	    status_data:13,
 +@@ -1116,6 +1116,7 @@ ieee80211_rate_get_vht_nss(const struct
-+  *	link the frame will be transmitted on
++  *    link the frame will be transmitted on
 +  * @hw_queue: HW queue to put the frame on, skb_get_queue_mapping() gives the AC
 +  * @ack_frame_id: internal frame ID for TX status, used internally
 ++ * @tx_time_mc: TX time is for a multicast packet
@@ -2048,16 +1676,16 @@ index d822e45357ab..d53afcf5919c 100644
 +  * @control: union part for control data
 +  * @control.rates: TX rates array to try
 +@@ -1155,8 +1156,9 @@ struct ieee80211_tx_info {
-+ 	/* common information */
-+ 	u32 flags;
-+ 	u32 band:3,
-+-	    ack_frame_id:13,
-++	    ack_frame_id:12,
++       /* common information */
++       u32 flags;
++       u32 band:3,
++-          ack_frame_id:13,
+++          ack_frame_id:12,
   	    hw_queue:4,
  +	    tx_time_mc:1,
   	    tx_time_est:10;
 --	/* 1 free bit */
-+ 	/* 2 free bits */
++	/* 2 free bit */
   
 - 	union {
 - 		struct {
@@ -2068,7 +1696,7 @@ index d822e45357ab..d53afcf5919c 100644
   
  --- a/net/mac80211/status.c
  +++ b/net/mac80211/status.c
--@@ -717,7 +717,7 @@ static void ieee80211_report_used_skb(st
+-@@ -734,7 +734,7 @@ static void ieee80211_report_used_skb(st
 +@@ -716,7 +716,7 @@ static void ieee80211_report_used_skb(st
   		ieee80211_sta_update_pending_airtime(local, sta,
   						     skb_get_queue_mapping(skb),
@@ -2077,29 +1705,16 @@ index d822e45357ab..d53afcf5919c 100644
   		rcu_read_unlock();
   	}
   
--@@ -1138,10 +1138,11 @@ void ieee80211_tx_status_ext(struct ieee
+-@@ -1158,10 +1158,11 @@ void ieee80211_tx_status_ext(struct ieee
 +@@ -1127,10 +1127,11 @@ void ieee80211_tx_status_ext(struct ieee
   		/* Do this here to avoid the expensive lookup of the sta
   		 * in ieee80211_report_used_skb().
   		 */
-diff --git a/package/kernel/mac80211/patches/subsys/780-avoid-crashing-missing-band.patch b/package/kernel/mac80211/patches/subsys/780-avoid-crashing-missing-band.patch
-index e64ca1753bda..35fa961d21a7 100644
---- a/package/kernel/mac80211/patches/subsys/780-avoid-crashing-missing-band.patch
-+++ b/package/kernel/mac80211/patches/subsys/780-avoid-crashing-missing-band.patch
-@@ -18,7 +18,7 @@ Signed-off-by: David Bauer <mail@david-bauer.net>
- 
- --- a/net/mac80211/sta_info.c
- +++ b/net/mac80211/sta_info.c
--@@ -2459,6 +2459,13 @@ static void sta_stats_decode_rate(struct
-+@@ -2445,6 +2445,13 @@ static void sta_stats_decode_rate(struct
-  
-  		sband = local->hw.wiphy->bands[band];
-  
 diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
-index 6774fbf3ba8e..dfddf8185ba8 100644
+index f4f479c0f672..afe103d86f44 100644
 --- a/package/network/services/hostapd/files/hostapd.uc
 +++ b/package/network/services/hostapd/files/hostapd.uc
-@@ -229,16 +229,6 @@ function iface_pending_init(phydev, config)
+@@ -275,17 +275,6 @@ function iface_pending_init(phydev, config)
  	pending.next();
  }
  
@@ -2107,6 +1722,7 @@ index 6774fbf3ba8e..dfddf8185ba8 100644
 -{
 -	let macaddr_data = {
 -		num_global: config.num_global_macaddr ?? 1,
+-		macaddr_base: config.macaddr_base,
 -		mbssid: config.mbssid ?? 0,
 -	};
 -
@@ -2116,7 +1732,7 @@ index 6774fbf3ba8e..dfddf8185ba8 100644
  function iface_restart(phydev, config, old_config)
  {
  	let phy = phydev.name;
-@@ -256,7 +246,7 @@ function iface_restart(phydev, config, old_config)
+@@ -303,7 +292,7 @@ function iface_restart(phydev, config, old_config)
  		return;
  	}
  
@@ -2125,7 +1741,7 @@ index 6774fbf3ba8e..dfddf8185ba8 100644
  	for (let i = 0; i < length(config.bss); i++) {
  		let bss = config.bss[i];
  		if (bss.default_macaddr)
-@@ -510,7 +500,11 @@ function iface_reload_config(phydev, config, old_config)
+@@ -573,7 +562,11 @@ function iface_reload_config(name, phydev, config, old_config)
  	}
  
  	// Step 6: assign BSSID for newly created interfaces
@@ -2138,18 +1754,18 @@ index 6774fbf3ba8e..dfddf8185ba8 100644
  	for (let i = 0; i < length(config.bss); i++) {
  		if (bss_list[i])
  			continue;
-@@ -681,7 +675,7 @@ function iface_load_config(filename)
+@@ -749,7 +742,7 @@ function iface_load_config(phy, radio, filename)
+ 		}
  
- 		if (val[0] == "#num_global_macaddr" ||
- 		    val[0] == "mbssid")
+ 		if (val[0] == "#num_global_macaddr")
 -			config[substr(val[0], 1)] = int(val[1]);
 +			config[val[0]] = int(val[1]);
- 
- 		push(config.radio.data, line);
- 	}
-@@ -895,13 +889,13 @@ return {
- 		hostapd.udebug_set(null);
- 		hostapd.ubus.disconnect();
+ 		else if (val[0] == "#macaddr_base")
+ 			config[substr(val[0], 1)] = val[1];
+ 		else if (val[0] == "mbssid")
+@@ -1036,13 +1029,13 @@ return {
+ 		if (phy.radio_idx != null && phy.radio_idx >= 0)
+ 			wdev_set_radio_mask(name, 1 << phy.radio_idx);
  	},
 -	bss_add: function(phy, name, obj) {
 +	bss_add: function(name, obj) {
@@ -2162,56 +1778,58 @@ index 6774fbf3ba8e..dfddf8185ba8 100644
 -	bss_remove: function(phy, name, obj) {
 +	bss_remove: function(name, obj) {
  		bss_event("remove", name);
- 	}
- };
+ 	},
+ 	sta_auth: function(iface, sta) {
 diff --git a/package/network/services/hostapd/files/wpa_supplicant.uc b/package/network/services/hostapd/files/wpa_supplicant.uc
-index 31d45346257e..1709bb019e31 100644
+index f288121e9d4b..c38c5b6d7802 100644
 --- a/package/network/services/hostapd/files/wpa_supplicant.uc
 +++ b/package/network/services/hostapd/files/wpa_supplicant.uc
-@@ -68,7 +68,7 @@ function prepare_config(config)
- 	return { config: config };
+@@ -68,7 +68,7 @@ function prepare_config(config, radio)
+ 	return { config };
  }
  
--function set_config(phy_name, num_global_macaddr, config_list)
-+function set_config(phy_name, config_list)
+-function set_config(config_name, phy_name, radio, num_global_macaddr, macaddr_base, config_list)
++function set_config(config_name, phy_name, radio, macaddr_base, config_list)
  {
- 	let phy = wpas.data.config[phy_name];
+ 	let phy = wpas.data.config[config_name];
  
-@@ -77,8 +77,6 @@ function set_config(phy_name, num_global_macaddr, config_list)
- 		wpas.data.config[phy_name] = phy;
+@@ -82,7 +82,6 @@ function set_config(config_name, phy_name, radio, num_global_macaddr, macaddr_ba
  	}
  
+ 	phy.radio = radio;
 -	phy.num_global_macaddr = num_global_macaddr;
--
+ 	phy.macaddr_base = macaddr_base;
+ 
  	let values = [];
- 	for (let config in config_list)
- 		push(values, [ config.iface, prepare_config(config) ]);
-@@ -101,7 +99,7 @@ function start_pending(phy_name)
+@@ -107,10 +106,7 @@ function start_pending(phy_name)
  	}
  
  	let macaddr_list = wpas.data.macaddr_list[phy_name];
--	phydev.macaddr_init(macaddr_list, { num_global: phy.num_global_macaddr });
-+	phydev.macaddr_init(macaddr_list);
+-	phydev.macaddr_init(macaddr_list, {
+-		num_global: phy.num_global_macaddr,
+-		macaddr_base: phy.macaddr_base,
+-	});
++	phydev.macaddr_init(macaddr_list, { macaddr_base: phy.macaddr_base });
  
  	for (let ifname in phy.data)
  		iface_start(phydev, phy.data[ifname]);
-@@ -187,7 +185,6 @@ let main_obj = {
- 	config_set: {
+@@ -213,7 +209,6 @@ let main_obj = {
  		args: {
  			phy: "",
+ 			radio: 0,
 -			num_global_macaddr: 0,
+ 			macaddr_base: "",
  			config: [],
  			defer: true,
- 		},
-@@ -198,7 +195,7 @@ let main_obj = {
- 			wpas.printf(`Set new config for phy ${req.args.phy}`);
+@@ -226,7 +221,7 @@ let main_obj = {
+ 			wpas.printf(`Set new config for phy ${phy}`);
  			try {
  				if (req.args.config)
--					set_config(req.args.phy, req.args.num_global_macaddr, req.args.config);
-+					set_config(req.args.phy, req.args.config);
+-					set_config(phy, req.args.phy, req.args.radio, req.args.num_global_macaddr, req.args.macaddr_base, req.args.config);
++					set_config(phy, req.args.phy, req.args.radio, req.args.macaddr_base, req.args.config);
  
  				if (!req.args.defer)
- 					start_pending(req.args.phy);
+ 					start_pending(phy);
 diff --git a/package/network/services/hostapd/patches/010-mesh-Allow-DFS-channels-to-be-selected-if-dfs-is-ena.patch b/package/network/services/hostapd/patches/010-mesh-Allow-DFS-channels-to-be-selected-if-dfs-is-ena.patch
 index d20a6d76d44c..4291f015180c 100644
 --- a/package/network/services/hostapd/patches/010-mesh-Allow-DFS-channels-to-be-selected-if-dfs-is-ena.patch
@@ -3420,7 +3038,7 @@ index be09ed319c96..e1bb37ea55f1 100644
  +	/* OpenWrt specific statistics */
  +	struct hostapd_openwrt_stats openwrt_stats;
 diff --git a/package/network/services/hostapd/patches/600-ubus_support.patch b/package/network/services/hostapd/patches/600-ubus_support.patch
-index fb3bfb012030..d23f5f1ccdbd 100644
+index 256d1cfcc4bd..a4a21a092ea7 100644
 --- a/package/network/services/hostapd/patches/600-ubus_support.patch
 +++ b/package/network/services/hostapd/patches/600-ubus_support.patch
 @@ -92,7 +92,7 @@ probe/assoc/auth requests via object subscribe.
@@ -3441,7 +3059,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
   		goto fail;
   	}
   
-@@ -187,7 +187,7 @@ probe/assoc/auth requests via object subscribe.
+@@ -195,7 +195,7 @@ probe/assoc/auth requests via object subscribe.
   struct hostapd_iface * hostapd_alloc_iface(void);
  --- a/src/ap/ieee802_11.c
  +++ b/src/ap/ieee802_11.c
@@ -3450,7 +3068,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
   	u16 auth_alg, auth_transaction, status_code;
   	u16 resp = WLAN_STATUS_SUCCESS;
   	struct sta_info *sta = NULL;
-@@ -196,7 +196,7 @@ probe/assoc/auth requests via object subscribe.
+@@ -204,7 +204,7 @@ probe/assoc/auth requests via object subscribe.
   	u16 fc;
   	const u8 *challenge = NULL;
   	u8 resp_ies[2 + WLAN_AUTH_CHALLENGE_LEN];
@@ -3459,7 +3077,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
   #ifdef CONFIG_IEEE80211BE
   	bool mld_sta = false;
   #endif /* CONFIG_IEEE80211BE */
-@@ -208,7 +208,7 @@ probe/assoc/auth requests via object subscribe.
+@@ -216,7 +216,7 @@ probe/assoc/auth requests via object subscribe.
   
   	if (len < IEEE80211_HDRLEN + sizeof(mgmt->u.auth)) {
   		wpa_printf(MSG_INFO, "handle_auth - too short payload (len=%lu)",
@@ -3468,7 +3086,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
   		resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
   		goto fail;
   	}
-@@ -222,7 +222,7 @@ probe/assoc/auth requests via object subscribe.
+@@ -230,7 +230,7 @@ probe/assoc/auth requests via object subscribe.
   	if (res == HOSTAPD_ACL_PENDING)
   		return;
   
@@ -3477,7 +3095,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
   	int resp = WLAN_STATUS_SUCCESS;
   	u16 reply_res = WLAN_STATUS_UNSPECIFIED_FAILURE;
   	const u8 *pos;
-@@ -231,7 +231,7 @@ probe/assoc/auth requests via object subscribe.
+@@ -239,7 +239,7 @@ probe/assoc/auth requests via object subscribe.
   	struct sta_info *sta;
   	u8 *tmp = NULL;
   #ifdef CONFIG_FILS
@@ -3486,7 +3104,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
   		left = res;
   	}
   #endif /* CONFIG_FILS */
-@@ -243,7 +243,7 @@ probe/assoc/auth requests via object subscribe.
+@@ -251,7 +251,7 @@ probe/assoc/auth requests via object subscribe.
   
   	/* followed by SSID and Supported rates; and HT capabilities if 802.11n
   	 * is used */
@@ -3495,7 +3113,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
   	if (set_beacon)
   		ieee802_11_update_beacons(hapd->iface);
   
-@@ -257,7 +257,7 @@ probe/assoc/auth requests via object subscribe.
+@@ -265,7 +265,7 @@ probe/assoc/auth requests via object subscribe.
    fail:
   
   	/*
@@ -3504,7 +3122,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
   			   (unsigned long) len);
   		return;
   	}
-@@ -265,7 +265,7 @@ probe/assoc/auth requests via object subscribe.
+@@ -273,7 +273,7 @@ probe/assoc/auth requests via object subscribe.
   
   	sta = ap_get_sta(hapd, mgmt->sa);
   	if (!sta) {
@@ -3513,7 +3131,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
   	/* Clear the PTKSA cache entries for PASN */
   	ptksa_cache_flush(hapd->ptksa, mgmt->sa, WPA_CIPHER_NONE);
   
-@@ -286,15 +286,14 @@ probe/assoc/auth requests via object subscribe.
+@@ -294,15 +294,14 @@ probe/assoc/auth requests via object subscribe.
   }
   
   
@@ -3532,7 +3150,7 @@ index fb3bfb012030..d23f5f1ccdbd 100644
  +++ b/src/ap/sta_info.c
  @@ -542,6 +542,7 @@ void ap_handle_timer(void *eloop_ctx, vo
 diff --git a/package/network/services/hostapd/patches/601-ucode_support.patch b/package/network/services/hostapd/patches/601-ucode_support.patch
-index 4288e0f78984..b826363248a6 100644
+index 13fd2b1b518a..c8c978fb1d75 100644
 --- a/package/network/services/hostapd/patches/601-ucode_support.patch
 +++ b/package/network/services/hostapd/patches/601-ucode_support.patch
 @@ -8,7 +8,7 @@ as adding/removing interfaces.
@@ -4074,7 +3692,7 @@ index e9d35de6be4d..fb00313f3d91 100644
  +int hostapd_check_max_sta(struct hostapd_data *hapd);
   
 diff --git a/package/network/services/hostapd/patches/730-ft_iface.patch b/package/network/services/hostapd/patches/730-ft_iface.patch
-index ac7d3abd78af..2f47f17d9695 100644
+index f021f1f99ba4..2f47f17d9695 100644
 --- a/package/network/services/hostapd/patches/730-ft_iface.patch
 +++ b/package/network/services/hostapd/patches/730-ft_iface.patch
 @@ -8,7 +8,7 @@ a VLAN interface on top of the bridge, instead of using the bridge directly
@@ -4090,7 +3708,7 @@ index ac7d3abd78af..2f47f17d9695 100644
   	int bridge_hairpin; /* hairpin_mode on bridge members */
  --- a/src/ap/wpa_auth_glue.c
  +++ b/src/ap/wpa_auth_glue.c
--@@ -1821,8 +1821,12 @@ int hostapd_setup_wpa(struct hostapd_dat
+-@@ -1825,8 +1825,12 @@ int hostapd_setup_wpa(struct hostapd_dat
 +@@ -1777,8 +1777,12 @@ int hostapd_setup_wpa(struct hostapd_dat
   	    wpa_key_mgmt_ft(hapd->conf->wpa_key_mgmt)) {
   		const char *ft_iface;
@@ -4235,14 +3853,13 @@ index c110a85e2e73..73b2c8643ba2 100644
   				 phase2, user);
   	if (ret == 0 && user) {
 diff --git a/package/network/services/hostapd/src/src/ap/ubus.c b/package/network/services/hostapd/src/src/ap/ubus.c
-index f21516fc3c78..8689494bcff3 100644
+index 225672075565..9258ac3ea9bf 100644
 --- a/package/network/services/hostapd/src/src/ap/ubus.c
 +++ b/package/network/services/hostapd/src/src/ap/ubus.c
-@@ -2004,18 +2004,3 @@ int hostapd_ubus_notify_bss_transition_query(
- 	return ureq.resp;
+@@ -2010,21 +2010,6 @@ int hostapd_ubus_notify_bss_transition_query(
  #endif
  }
--
+ 
 -#ifdef CONFIG_APUP
 -void hostapd_ubus_notify_apup_newpeer(
 -	struct hostapd_data *hapd, const u8 *addr, const char *ifname)
@@ -4257,8 +3874,12 @@ index f21516fc3c78..8689494bcff3 100644
 -	ubus_notify(ctx, &hapd->ubus.obj, "apup-newpeer", b.head, -1);
 -}
 -#endif // def CONFIG_APUP
+-
+ void hostapd_ubus_notify_csa(struct hostapd_data *hapd, int freq)
+ {
+ 	if (!hapd->ubus.obj.has_subscribers)
 diff --git a/package/network/services/hostapd/src/src/ap/ubus.h b/package/network/services/hostapd/src/src/ap/ubus.h
-index 5c03cb90ad75..22767d67ee75 100644
+index 055a18c092fa..4eba6e0cab30 100644
 --- a/package/network/services/hostapd/src/src/ap/ubus.h
 +++ b/package/network/services/hostapd/src/src/ap/ubus.h
 @@ -8,6 +8,8 @@
@@ -4270,9 +3891,9 @@ index 5c03cb90ad75..22767d67ee75 100644
  enum hostapd_ubus_event_type {
  	HOSTAPD_UBUS_PROBE_REQ,
  	HOSTAPD_UBUS_AUTH_REQ,
-@@ -69,11 +71,6 @@ int hostapd_ubus_notify_bss_transition_query(
- void hostapd_ubus_notify_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+@@ -70,11 +72,6 @@ void hostapd_ubus_notify_authorized(struct hostapd_data *hapd, struct sta_info *
  				    const char *auth_alg);
+ void hostapd_ubus_notify_csa(struct hostapd_data *hapd, int freq);
  
 -#ifdef CONFIG_APUP
 -void hostapd_ubus_notify_apup_newpeer(
@@ -4283,7 +3904,7 @@ index 5c03cb90ad75..22767d67ee75 100644
  
  struct hostapd_ubus_bss {};
 diff --git a/package/network/services/hostapd/src/src/ap/ucode.c b/package/network/services/hostapd/src/src/ap/ucode.c
-index a5630d7eaac3..68fb450884e2 100644
+index b13c0ff77c7f..28c8ff487de1 100644
 --- a/package/network/services/hostapd/src/src/ap/ucode.c
 +++ b/package/network/services/hostapd/src/src/ap/ucode.c
 @@ -3,7 +3,7 @@
@@ -4295,7 +3916,7 @@ index a5630d7eaac3..68fb450884e2 100644
  #include "beacon.h"
  #include "hw_features.h"
  #include "ap_drv_ops.h"
-@@ -259,7 +259,6 @@ uc_hostapd_bss_set_config(uc_vm_t *vm, size_t nargs)
+@@ -260,7 +260,6 @@ uc_hostapd_bss_set_config(uc_vm_t *vm, size_t nargs)
  
  	hostapd_setup_bss(hapd, hapd == iface->bss[0], true);
  	hostapd_ucode_update_interfaces();
@@ -4303,7 +3924,7 @@ index a5630d7eaac3..68fb450884e2 100644
  
  done:
  	ret = 0;
-@@ -380,7 +379,6 @@ uc_hostapd_iface_add_bss(uc_vm_t *vm, size_t nargs)
+@@ -385,7 +384,6 @@ uc_hostapd_iface_add_bss(uc_vm_t *vm, size_t nargs)
  	conf->bss[idx] = NULL;
  	ret = hostapd_ucode_bss_get_uval(hapd);
  	hostapd_ucode_update_interfaces();
@@ -4311,7 +3932,7 @@ index a5630d7eaac3..68fb450884e2 100644
  	goto out;
  
  deinit_ctrl:
-@@ -533,12 +531,10 @@ uc_hostapd_iface_start(uc_vm_t *vm, size_t nargs)
+@@ -538,12 +536,10 @@ uc_hostapd_iface_start(uc_vm_t *vm, size_t nargs)
  		return NULL;
  
  #define UPDATE_VAL(field, name)							\
@@ -4328,7 +3949,7 @@ index a5630d7eaac3..68fb450884e2 100644
  	} while(0)
  
  	conf = iface->conf;
-@@ -611,7 +607,6 @@ out:
+@@ -616,7 +612,6 @@ out:
  
  		ieee802_11_set_beacon(hapd);
  	}
@@ -4336,7 +3957,7 @@ index a5630d7eaac3..68fb450884e2 100644
  
  	return ucv_boolean_new(true);
  }
-@@ -703,7 +698,6 @@ uc_hostapd_bss_rename(uc_vm_t *vm, size_t nargs)
+@@ -708,7 +703,6 @@ uc_hostapd_bss_rename(uc_vm_t *vm, size_t nargs)
  	hostapd_ubus_add_bss(hapd);
  
  	hostapd_ucode_update_interfaces();
@@ -4344,8 +3965,8 @@ index a5630d7eaac3..68fb450884e2 100644
  out:
  	if (interfaces->ctrl_iface_init)
  		interfaces->ctrl_iface_init(hapd);
-@@ -776,52 +770,48 @@ void hostapd_ucode_free_iface(struct hostapd_iface *iface)
- 	wpa_ucode_registry_remove(iface_registry, iface->ucode.idx);
+@@ -883,35 +877,30 @@ void hostapd_ucode_free_iface(struct hostapd_iface *iface)
+ 	ucv_put(wpa_ucode_registry_remove(iface_registry, iface->ucode.idx));
  }
  
 -void hostapd_ucode_bss_cb(struct hostapd_data *hapd, const char *type)
@@ -4354,15 +3975,16 @@ index a5630d7eaac3..68fb450884e2 100644
  	uc_value_t *val;
  
 -	if (wpa_ucode_call_prepare(type))
-+	if (wpa_ucode_call_prepare("bss_add"))
++	if (wpa_ucode_call_prepare(bss_add))
  		return;
  
  	val = hostapd_ucode_bss_get_uval(hapd);
--	uc_value_push(ucv_get(ucv_string_new(hapd->iface->phy)));
- 	uc_value_push(ucv_get(ucv_string_new(hapd->conf->iface)));
+-	uc_value_push(ucv_string_new(hapd->iface->phy));
+ 	uc_value_push(ucv_string_new(hapd->conf->iface));
  	uc_value_push(ucv_get(val));
 -	ucv_put(wpa_ucode_call(3));
 +	ucv_put(wpa_ucode_call(2));
+ 	ucv_put(val);
  	ucv_gc(vm);
  }
  
@@ -4385,6 +4007,8 @@ index a5630d7eaac3..68fb450884e2 100644
 +	uc_value_push(ucv_get(ucv_string_new(hapd->conf->iface)));
  	uc_value_push(ucv_get(val));
  	ucv_put(wpa_ucode_call(2));
+ 
+@@ -919,20 +908,21 @@ void hostapd_ucode_free_bss(struct hostapd_data *hapd)
  	ucv_gc(vm);
  }
  
@@ -4400,29 +4024,32 @@ index a5630d7eaac3..68fb450884e2 100644
  		return;
  
 -	val = hostapd_ucode_bss_get_uval(hapd);
--	uc_value_push(ucv_get(ucv_string_new(hapd->conf->iface))); // BSS ifname
+-	uc_value_push(ucv_string_new(hapd->conf->iface)); // BSS ifname
 +	hapd->ucode.idx = 0;
 +	if (wpa_ucode_call_prepare("bss_remove"))
 +		return;
 +
 +	uc_value_push(ucv_string_new(hapd->conf->iface));
  	uc_value_push(ucv_get(val));
--	uc_value_push(ucv_get(ucv_string_new(ifname))); // APuP peer ifname
+-	uc_value_push(ucv_string_new(ifname)); // APuP peer ifname
  	ucv_put(wpa_ucode_call(2));
+ 	ucv_put(val);
  	ucv_gc(vm);
  }
 -#endif // def CONFIG_APUP
 diff --git a/package/network/services/hostapd/src/src/ap/ucode.h b/package/network/services/hostapd/src/src/ap/ucode.h
-index 2f7bcd6542a2..d00b787169d1 100644
+index d0b00e59652a..348004fbe654 100644
 --- a/package/network/services/hostapd/src/src/ap/ucode.h
 +++ b/package/network/services/hostapd/src/src/ap/ucode.h
-@@ -23,12 +23,9 @@ int hostapd_ucode_init(struct hapd_interfaces *ifaces);
+@@ -23,14 +23,11 @@ int hostapd_ucode_init(struct hapd_interfaces *ifaces);
  
  void hostapd_ucode_free(void);
  void hostapd_ucode_free_iface(struct hostapd_iface *iface);
 +void hostapd_ucode_add_bss(struct hostapd_data *hapd);
  void hostapd_ucode_free_bss(struct hostapd_data *hapd);
 -void hostapd_ucode_bss_cb(struct hostapd_data *hapd, const char *type);
+ int hostapd_ucode_sta_auth(struct hostapd_data *hapd, struct sta_info *sta);
+ void hostapd_ucode_sta_connected(struct hostapd_data *hapd, struct sta_info *sta);
 -
 -#ifdef CONFIG_APUP
 -void hostapd_ucode_apup_newpeer(struct hostapd_data *hapd, const char *ifname);
@@ -4431,13 +4058,20 @@ index 2f7bcd6542a2..d00b787169d1 100644
  
  #else
  
-@@ -42,28 +39,16 @@ static inline void hostapd_ucode_free(void)
+@@ -44,9 +41,6 @@ static inline void hostapd_ucode_free(void)
  static inline void hostapd_ucode_free_iface(struct hostapd_iface *iface)
  {
  }
 -static inline void hostapd_ucode_bss_cb(struct hostapd_data *hapd, const char *type)
 -{
 -}
+ static inline int hostapd_ucode_sta_auth(struct hostapd_data *hapd, struct sta_info *sta)
+ {
+ 	return 0;
+@@ -54,25 +48,16 @@ static inline int hostapd_ucode_sta_auth(struct hostapd_data *hapd, struct sta_i
+ static inline void hostapd_ucode_sta_connected(struct hostapd_data *hapd, struct sta_info *sta)
+ {
+ }
 -static inline void hostapd_ucode_free_bss(struct hostapd_data *hapd)
 -{
 -}

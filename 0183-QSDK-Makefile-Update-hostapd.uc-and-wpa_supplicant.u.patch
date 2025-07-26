@@ -14,10 +14,10 @@ Signed-off-by: Rajat Soni <rajson@qti.qualcomm.com>
  1 file changed, 17 insertions(+)
 
 diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
-index ea78cb7a322f..3184af9b4b3e 100644
+index 7a2880d324b8..8358acd517e7 100644
 --- a/package/network/services/hostapd/Makefile
 +++ b/package/network/services/hostapd/Makefile
-@@ -762,16 +762,33 @@ Package/hostapd-wolfssl/conffiles = $(Package/hostapd-full/conffiles)
+@@ -772,16 +772,33 @@ Package/hostapd-wolfssl/conffiles = $(Package/hostapd-full/conffiles)
  Package/hostapd-mbedtls/conffiles = $(Package/hostapd-full/conffiles)
  endif
  
@@ -50,7 +50,7 @@ index ea78cb7a322f..3184af9b4b3e 100644
 +endif
  
  define Package/hostapd-common/install
- 	$(INSTALL_DIR) $(1)/etc/capabilities $(1)/etc/rc.button $(1)/etc/hotplug.d/ieee80211 $(1)/etc/init.d $(1)/lib/netifd  $(1)/usr/share/acl.d $(1)/usr/share/hostap
+ 	$(INSTALL_DIR) \
 -- 
 2.34.1
 

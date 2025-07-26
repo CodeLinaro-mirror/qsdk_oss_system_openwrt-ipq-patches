@@ -1,0 +1,1778 @@
+From 8568c5ad1934b7a2ef0e914c95c81c86295d1639 Mon Sep 17 00:00:00 2001
+From: Vijay Balaji <quic_vijbal@quicinc.com>
+Date: Thu, 31 Jul 2025 12:15:48 +0530
+Subject: [PATCH] QSDK:CP: Add mac80211 patch fixes in 24.10
+
+Patches which contains fixes for mac80211 are added in openwrt
+version 24.10.
+
+Signed-off-by: Vijay Balaji <quic_vijbal@quicinc.com>
+---
+ ...LED-and-GPIO-controlling-support-for.patch | 626 ++++++++++++++++++
+ ...-add-support-DT-ieee80211-freq-limit.patch |  24 +
+ .../patches/ath5k/432-ath5k_add_pciids.patch  |  11 +
+ .../patches/build/060-no_local_ssb_bcma.patch | 314 +++++++++
+ .../build/070-remove-broken-wext-select.patch |  10 +
+ .../mac80211/patches/build/090-bcma-otp.patch |  13 +
+ .../build/110-backport_namepace_const.patch   |  14 +
+ .../build/120-headers_version_fix.patch       |  25 +
+ .../patches/build/130-iommu_backport.patch    |  26 +
+ ...list-don-t-backport-list_count_nodes.patch |  26 +
+ ...race-period-for-DFS-available-after-.patch | 149 +++++
+ ...dd-AQL-support-for-broadcast-packets.patch | 302 +++++++++
+ .../patches/subsys/400-allow-ibss-mixed.patch |  40 ++
+ .../780-avoid-crashing-missing-band.patch     |  34 +
+ ...the-dst-buffer-to-of_get_mac_address.patch |  29 +
+ 15 files changed, 1643 insertions(+)
+ create mode 100644 package/kernel/mac80211/patches/ath10k/974-wifi-ath10k-add-LED-and-GPIO-controlling-support-for.patch
+ create mode 100644 package/kernel/mac80211/patches/ath11k/101-wifi-ath11k-add-support-DT-ieee80211-freq-limit.patch
+ create mode 100644 package/kernel/mac80211/patches/ath5k/432-ath5k_add_pciids.patch
+ create mode 100644 package/kernel/mac80211/patches/build/060-no_local_ssb_bcma.patch
+ create mode 100644 package/kernel/mac80211/patches/build/070-remove-broken-wext-select.patch
+ create mode 100644 package/kernel/mac80211/patches/build/090-bcma-otp.patch
+ create mode 100644 package/kernel/mac80211/patches/build/110-backport_namepace_const.patch
+ create mode 100644 package/kernel/mac80211/patches/build/120-headers_version_fix.patch
+ create mode 100644 package/kernel/mac80211/patches/build/130-iommu_backport.patch
+ create mode 100644 package/kernel/mac80211/patches/build/220-list-don-t-backport-list_count_nodes.patch
+ create mode 100644 package/kernel/mac80211/patches/subsys/320-cfg80211-allow-grace-period-for-DFS-available-after-.patch
+ create mode 100644 package/kernel/mac80211/patches/subsys/330-mac80211-add-AQL-support-for-broadcast-packets.patch
+ create mode 100644 package/kernel/mac80211/patches/subsys/400-allow-ibss-mixed.patch
+ create mode 100644 package/kernel/mac80211/patches/subsys/780-avoid-crashing-missing-band.patch
+ create mode 100644 package/kernel/mac80211/patches/subsys/782-net-next-1-of-net-pass-the-dst-buffer-to-of_get_mac_address.patch
+
+diff --git a/package/kernel/mac80211/patches/ath10k/974-wifi-ath10k-add-LED-and-GPIO-controlling-support-for.patch b/package/kernel/mac80211/patches/ath10k/974-wifi-ath10k-add-LED-and-GPIO-controlling-support-for.patch
+new file mode 100644
+index 000000000000..05e3b2a28d66
+--- /dev/null
++++ b/package/kernel/mac80211/patches/ath10k/974-wifi-ath10k-add-LED-and-GPIO-controlling-support-for.patch
+@@ -0,0 +1,626 @@
++From 8e1debd82466a3fe711784ab37e6b54e56011267 Mon Sep 17 00:00:00 2001
++From: Sebastian Gottschall <s.gottschall@dd-wrt.com>
++Date: Mon, 13 May 2024 17:22:25 +0300
++Subject: [PATCH] wifi: ath10k: add LED and GPIO controlling support for
++ various chipsets
++
++Adds LED and GPIO Control support for 988x, 9887, 9888, 99x0, 9984
++based chipsets with on chipset connected led's using WMI Firmware API.
++The LED device will get available named as "ath10k-phyX" at sysfs and
++can be controlled with various triggers.
++Adds also debugfs interface for gpio control.
++
++Signed-off-by: Sebastian Gottschall <s.gottschall@dd-wrt.com>
++Reviewed-by: Steve deRosier <derosier@cal-sierra.com>
++[kvalo: major reorg and cleanup]
++Signed-off-by: Kalle Valo <kvalo@codeaurora.org>
++[ansuel: rebase and small cleanup]
++Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
++Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
++Signed-off-by: Kalle Valo <quic_kvalo@quicinc.com>
++Link: https://msgid.link/20230611080505.17393-1-ansuelsmth@gmail.com
++---
++ drivers/net/wireless/ath/ath10k/Kconfig   |  6 ++
++ drivers/net/wireless/ath/ath10k/Makefile  |  1 +
++ drivers/net/wireless/ath/ath10k/core.c    | 32 ++++++++
++ drivers/net/wireless/ath/ath10k/core.h    |  8 ++
++ drivers/net/wireless/ath/ath10k/hw.h      |  1 +
++ drivers/net/wireless/ath/ath10k/leds.c    | 90 +++++++++++++++++++++++
++ drivers/net/wireless/ath/ath10k/leds.h    | 34 +++++++++
++ drivers/net/wireless/ath/ath10k/mac.c     |  1 +
++ drivers/net/wireless/ath/ath10k/wmi-ops.h | 32 ++++++++
++ drivers/net/wireless/ath/ath10k/wmi-tlv.c |  2 +
++ drivers/net/wireless/ath/ath10k/wmi.c     | 54 ++++++++++++++
++ drivers/net/wireless/ath/ath10k/wmi.h     | 35 +++++++++
++ 12 files changed, 296 insertions(+)
++ create mode 100644 drivers/net/wireless/ath/ath10k/leds.c
++ create mode 100644 drivers/net/wireless/ath/ath10k/leds.h
++
++--- a/drivers/net/wireless/ath/ath10k/Kconfig
+++++ b/drivers/net/wireless/ath/ath10k/Kconfig
++@@ -72,6 +72,12 @@ config ATH10K_DEBUGFS
++ 
++ 	  If unsure, say Y to make it easier to debug problems.
++ 
+++config ATH10K_LEDS
+++	bool
+++	depends on ATH10K
+++	depends on LEDS_CLASS=y || LEDS_CLASS=MAC80211
+++	default y
+++
++ config ATH10K_SPECTRAL
++ 	bool "Atheros ath10k spectral scan support"
++ 	depends on ATH10K_DEBUGFS
++--- a/drivers/net/wireless/ath/ath10k/Makefile
+++++ b/drivers/net/wireless/ath/ath10k/Makefile
++@@ -19,6 +19,7 @@ ath10k_core-$(CPTCFG_ATH10K_SPECTRAL) +=
++ ath10k_core-$(CPTCFG_NL80211_TESTMODE) += testmode.o
++ ath10k_core-$(CPTCFG_ATH10K_TRACING) += trace.o
++ ath10k_core-$(CPTCFG_ATH10K_THERMAL) += thermal.o
+++ath10k_core-$(CPTCFG_ATH10K_LEDS) += leds.o
++ ath10k_core-$(CPTCFG_MAC80211_DEBUGFS) += debugfs_sta.o
++ ath10k_core-$(CONFIG_PM) += wow.o
++ ath10k_core-$(CONFIG_DEV_COREDUMP) += coredump.o
++--- a/local-symbols
+++++ b/local-symbols
++@@ -161,6 +161,7 @@ ATH10K_DEBUG=
++ ATH10K_DEBUGFS=
++ ATH10K_SPECTRAL=
++ ATH10K_THERMAL=
+++ATH10K_LEDS=
++ ATH10K_TRACING=
++ ATH10K_DFS_CERTIFIED=
++ WCN36XX=
++--- a/drivers/net/wireless/ath/ath10k/core.c
+++++ b/drivers/net/wireless/ath/ath10k/core.c
++@@ -26,6 +26,7 @@
++ #include "testmode.h"
++ #include "wmi-ops.h"
++ #include "coredump.h"
+++#include "leds.h"
++ 
++ unsigned int ath10k_debug_mask;
++ EXPORT_SYMBOL(ath10k_debug_mask);
++@@ -67,6 +68,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca988x hw2.0",
++ 		.patch_load_addr = QCA988X_HW_2_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 7,
+++		.led_pin = 1,
++ 		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_ALL,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++@@ -107,6 +109,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca988x hw2.0 ubiquiti",
++ 		.patch_load_addr = QCA988X_HW_2_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 7,
+++		.led_pin = 0,
++ 		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_ALL,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++@@ -148,6 +151,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca9887 hw1.0",
++ 		.patch_load_addr = QCA9887_HW_1_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 7,
+++		.led_pin = 1,
++ 		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_ALL,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++@@ -189,6 +193,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca6174 hw3.2 sdio",
++ 		.patch_load_addr = QCA6174_HW_3_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 19,
+++		.led_pin = 0,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++ 		.max_probe_resp_desc_thres = 0,
++@@ -225,6 +230,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca6164 hw2.1",
++ 		.patch_load_addr = QCA6174_HW_2_1_PATCH_LOAD_ADDR,
++ 		.uart_pin = 6,
+++		.led_pin = 0,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++ 		.max_probe_resp_desc_thres = 0,
++@@ -265,6 +271,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca6174 hw2.1",
++ 		.patch_load_addr = QCA6174_HW_2_1_PATCH_LOAD_ADDR,
++ 		.uart_pin = 6,
+++		.led_pin = 0,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++ 		.max_probe_resp_desc_thres = 0,
++@@ -305,6 +312,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca6174 hw3.0",
++ 		.patch_load_addr = QCA6174_HW_3_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 6,
+++		.led_pin = 0,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++ 		.max_probe_resp_desc_thres = 0,
++@@ -345,6 +353,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca6174 hw3.2",
++ 		.patch_load_addr = QCA6174_HW_3_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 6,
+++		.led_pin = 0,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++ 		.max_probe_resp_desc_thres = 0,
++@@ -389,6 +398,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca99x0 hw2.0",
++ 		.patch_load_addr = QCA99X0_HW_2_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 7,
+++		.led_pin = 17,
++ 		.otp_exe_param = 0x00000700,
++ 		.continuous_frag_desc = true,
++ 		.cck_rate_map_rev2 = true,
++@@ -435,6 +445,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca9984/qca9994 hw1.0",
++ 		.patch_load_addr = QCA9984_HW_1_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 7,
+++		.led_pin = 17,
++ 		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_EACH,
++ 		.otp_exe_param = 0x00000700,
++ 		.continuous_frag_desc = true,
++@@ -488,6 +499,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca9888 hw2.0",
++ 		.patch_load_addr = QCA9888_HW_2_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 7,
+++		.led_pin = 17,
++ 		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_EACH,
++ 		.otp_exe_param = 0x00000700,
++ 		.continuous_frag_desc = true,
++@@ -538,6 +550,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca9377 hw1.0",
++ 		.patch_load_addr = QCA9377_HW_1_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 6,
+++		.led_pin = 0,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++ 		.max_probe_resp_desc_thres = 0,
++@@ -578,6 +591,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca9377 hw1.1",
++ 		.patch_load_addr = QCA9377_HW_1_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 6,
+++		.led_pin = 0,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++ 		.max_probe_resp_desc_thres = 0,
++@@ -620,6 +634,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca9377 hw1.1 sdio",
++ 		.patch_load_addr = QCA9377_HW_1_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 19,
+++		.led_pin = 0,
++ 		.otp_exe_param = 0,
++ 		.channel_counters_freq_hz = 88000,
++ 		.max_probe_resp_desc_thres = 0,
++@@ -653,6 +668,7 @@ static const struct ath10k_hw_params ath
++ 		.name = "qca4019 hw1.0",
++ 		.patch_load_addr = QCA4019_HW_1_0_PATCH_LOAD_ADDR,
++ 		.uart_pin = 7,
+++		.led_pin = 0,
++ 		.cc_wraparound_type = ATH10K_HW_CC_WRAP_SHIFTED_EACH,
++ 		.otp_exe_param = 0x0010000,
++ 		.continuous_frag_desc = true,
++@@ -698,6 +714,7 @@ static const struct ath10k_hw_params ath
++ 		.dev_id = 0,
++ 		.bus = ATH10K_BUS_SNOC,
++ 		.name = "wcn3990 hw1.0",
+++		.led_pin = 0,
++ 		.continuous_frag_desc = true,
++ 		.tx_chain_mask = 0x7,
++ 		.rx_chain_mask = 0x7,
++@@ -3222,6 +3239,10 @@ int ath10k_core_start(struct ath10k *ar,
++ 		goto err_hif_stop;
++ 	}
++ 
+++	status = ath10k_leds_start(ar);
+++	if (status)
+++		goto err_hif_stop;
+++
++ 	return 0;
++ 
++ err_hif_stop:
++@@ -3480,9 +3501,18 @@ static void ath10k_core_register_work(st
++ 		goto err_spectral_destroy;
++ 	}
++ 
+++	status = ath10k_leds_register(ar);
+++	if (status) {
+++		ath10k_err(ar, "could not register leds: %d\n",
+++			   status);
+++		goto err_thermal_unregister;
+++	}
+++
++ 	set_bit(ATH10K_FLAG_CORE_REGISTERED, &ar->dev_flags);
++ 	return;
++ 
+++err_thermal_unregister:
+++	ath10k_thermal_unregister(ar);
++ err_spectral_destroy:
++ 	ath10k_spectral_destroy(ar);
++ err_debug_destroy:
++@@ -3528,6 +3558,8 @@ void ath10k_core_unregister(struct ath10
++ 	if (!test_bit(ATH10K_FLAG_CORE_REGISTERED, &ar->dev_flags))
++ 		return;
++ 
+++	ath10k_leds_unregister(ar);
+++
++ 	ath10k_thermal_unregister(ar);
++ 	/* Stop spectral before unregistering from mac80211 to remove the
++ 	 * relayfs debugfs file cleanly. Otherwise the parent debugfs tree
++--- a/drivers/net/wireless/ath/ath10k/core.h
+++++ b/drivers/net/wireless/ath/ath10k/core.h
++@@ -14,6 +14,7 @@
++ #include <linux/pci.h>
++ #include <linux/uuid.h>
++ #include <linux/time.h>
+++#include <linux/leds.h>
++ 
++ #include "htt.h"
++ #include "htc.h"
++@@ -1256,6 +1257,13 @@ struct ath10k {
++ 	} testmode;
++ 
++ 	struct {
+++		struct gpio_led wifi_led;
+++		struct led_classdev cdev;
+++		char label[48];
+++		u32 gpio_state_pin;
+++	} leds;
+++
+++	struct {
++ 		/* protected by data_lock */
++ 		u32 rx_crc_err_drop;
++ 		u32 fw_crash_counter;
++--- a/drivers/net/wireless/ath/ath10k/hw.h
+++++ b/drivers/net/wireless/ath/ath10k/hw.h
++@@ -519,6 +519,7 @@ struct ath10k_hw_params {
++ 	const char *name;
++ 	u32 patch_load_addr;
++ 	int uart_pin;
+++	int led_pin;
++ 	u32 otp_exe_param;
++ 
++ 	/* Type of hw cycle counter wraparound logic, for more info
++--- /dev/null
+++++ b/drivers/net/wireless/ath/ath10k/leds.c
++@@ -0,0 +1,90 @@
+++// SPDX-License-Identifier: ISC
+++/*
+++ * Copyright (c) 2005-2011 Atheros Communications Inc.
+++ * Copyright (c) 2011-2017 Qualcomm Atheros, Inc.
+++ * Copyright (c) 2018 Sebastian Gottschall <s.gottschall@dd-wrt.com>
+++ * Copyright (c) 2018 The Linux Foundation. All rights reserved.
+++ */
+++
+++#include <linux/leds.h>
+++
+++#include "core.h"
+++#include "wmi.h"
+++#include "wmi-ops.h"
+++
+++#include "leds.h"
+++
+++static int ath10k_leds_set_brightness_blocking(struct led_classdev *led_cdev,
+++					       enum led_brightness brightness)
+++{
+++	struct ath10k *ar = container_of(led_cdev, struct ath10k,
+++					 leds.cdev);
+++	struct gpio_led *led = &ar->leds.wifi_led;
+++
+++	mutex_lock(&ar->conf_mutex);
+++
+++	if (ar->state != ATH10K_STATE_ON)
+++		goto out;
+++
+++	ar->leds.gpio_state_pin = (brightness != LED_OFF) ^ led->active_low;
+++	ath10k_wmi_gpio_output(ar, led->gpio, ar->leds.gpio_state_pin);
+++
+++out:
+++	mutex_unlock(&ar->conf_mutex);
+++
+++	return 0;
+++}
+++
+++int ath10k_leds_start(struct ath10k *ar)
+++{
+++	if (ar->hw_params.led_pin == 0)
+++		/* leds not supported */
+++		return 0;
+++
+++	/* under some circumstances, the gpio pin gets reconfigured
+++	 * to default state by the firmware, so we need to
+++	 * reconfigure it this behaviour has only ben seen on
+++	 * QCA9984 and QCA99XX devices so far
+++	 */
+++	ath10k_wmi_gpio_config(ar, ar->hw_params.led_pin, 0,
+++			       WMI_GPIO_PULL_NONE, WMI_GPIO_INTTYPE_DISABLE);
+++	ath10k_wmi_gpio_output(ar, ar->hw_params.led_pin, 1);
+++
+++	return 0;
+++}
+++
+++int ath10k_leds_register(struct ath10k *ar)
+++{
+++	int ret;
+++
+++	if (ar->hw_params.led_pin == 0)
+++		/* leds not supported */
+++		return 0;
+++
+++	snprintf(ar->leds.label, sizeof(ar->leds.label), "ath10k-%s",
+++		 wiphy_name(ar->hw->wiphy));
+++	ar->leds.wifi_led.active_low = 1;
+++	ar->leds.wifi_led.gpio = ar->hw_params.led_pin;
+++	ar->leds.wifi_led.name = ar->leds.label;
+++	ar->leds.wifi_led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
+++
+++	ar->leds.cdev.name = ar->leds.label;
+++	ar->leds.cdev.brightness_set_blocking = ath10k_leds_set_brightness_blocking;
+++	ar->leds.cdev.default_trigger = ar->leds.wifi_led.default_trigger;
+++
+++	ret = led_classdev_register(wiphy_dev(ar->hw->wiphy), &ar->leds.cdev);
+++	if (ret)
+++		return ret;
+++
+++	return 0;
+++}
+++
+++void ath10k_leds_unregister(struct ath10k *ar)
+++{
+++	if (ar->hw_params.led_pin == 0)
+++		/* leds not supported */
+++		return;
+++
+++	led_classdev_unregister(&ar->leds.cdev);
+++}
+++
++--- /dev/null
+++++ b/drivers/net/wireless/ath/ath10k/leds.h
++@@ -0,0 +1,34 @@
+++/* SPDX-License-Identifier: ISC */
+++/*
+++ * Copyright (c) 2005-2011 Atheros Communications Inc.
+++ * Copyright (c) 2011-2017 Qualcomm Atheros, Inc.
+++ * Copyright (c) 2018 Sebastian Gottschall <s.gottschall@dd-wrt.com>
+++ * Copyright (c) 2018 The Linux Foundation. All rights reserved.
+++ */
+++
+++#ifndef _LEDS_H_
+++#define _LEDS_H_
+++
+++#include "core.h"
+++
+++#ifdef CPTCFG_ATH10K_LEDS
+++void ath10k_leds_unregister(struct ath10k *ar);
+++int ath10k_leds_start(struct ath10k *ar);
+++int ath10k_leds_register(struct ath10k *ar);
+++#else
+++static inline void ath10k_leds_unregister(struct ath10k *ar)
+++{
+++}
+++
+++static inline int ath10k_leds_start(struct ath10k *ar)
+++{
+++	return 0;
+++}
+++
+++static inline int ath10k_leds_register(struct ath10k *ar)
+++{
+++	return 0;
+++}
+++
+++#endif
+++#endif /* _LEDS_H_ */
++--- a/drivers/net/wireless/ath/ath10k/mac.c
+++++ b/drivers/net/wireless/ath/ath10k/mac.c
++@@ -24,6 +24,7 @@
++ #include "wmi-tlv.h"
++ #include "wmi-ops.h"
++ #include "wow.h"
+++#include "leds.h"
++ 
++ /*********/
++ /* Rates */
++--- a/drivers/net/wireless/ath/ath10k/wmi-ops.h
+++++ b/drivers/net/wireless/ath/ath10k/wmi-ops.h
++@@ -226,7 +226,10 @@ struct wmi_ops {
++ 			 const struct wmi_bb_timing_cfg_arg *arg);
++ 	struct sk_buff *(*gen_per_peer_per_tid_cfg)(struct ath10k *ar,
++ 						    const struct wmi_per_peer_per_tid_cfg_arg *arg);
+++	struct sk_buff *(*gen_gpio_config)(struct ath10k *ar, u32 gpio_num,
+++					   u32 input, u32 pull_type, u32 intr_mode);
++ 
+++	struct sk_buff *(*gen_gpio_output)(struct ath10k *ar, u32 gpio_num, u32 set);
++ };
++ 
++ int ath10k_wmi_cmd_send(struct ath10k *ar, struct sk_buff *skb, u32 cmd_id);
++@@ -1122,6 +1125,35 @@ ath10k_wmi_force_fw_hang(struct ath10k *
++ 	return ath10k_wmi_cmd_send(ar, skb, ar->wmi.cmd->force_fw_hang_cmdid);
++ }
++ 
+++static inline int ath10k_wmi_gpio_config(struct ath10k *ar, u32 gpio_num,
+++					 u32 input, u32 pull_type, u32 intr_mode)
+++{
+++	struct sk_buff *skb;
+++
+++	if (!ar->wmi.ops->gen_gpio_config)
+++		return -EOPNOTSUPP;
+++
+++	skb = ar->wmi.ops->gen_gpio_config(ar, gpio_num, input, pull_type, intr_mode);
+++	if (IS_ERR(skb))
+++		return PTR_ERR(skb);
+++
+++	return ath10k_wmi_cmd_send(ar, skb, ar->wmi.cmd->gpio_config_cmdid);
+++}
+++
+++static inline int ath10k_wmi_gpio_output(struct ath10k *ar, u32 gpio_num, u32 set)
+++{
+++	struct sk_buff *skb;
+++
+++	if (!ar->wmi.ops->gen_gpio_config)
+++		return -EOPNOTSUPP;
+++
+++	skb = ar->wmi.ops->gen_gpio_output(ar, gpio_num, set);
+++	if (IS_ERR(skb))
+++		return PTR_ERR(skb);
+++
+++	return ath10k_wmi_cmd_send(ar, skb, ar->wmi.cmd->gpio_output_cmdid);
+++}
+++
++ static inline int
++ ath10k_wmi_dbglog_cfg(struct ath10k *ar, u64 module_enable, u32 log_level)
++ {
++--- a/drivers/net/wireless/ath/ath10k/wmi-tlv.c
+++++ b/drivers/net/wireless/ath/ath10k/wmi-tlv.c
++@@ -4601,6 +4601,8 @@ static const struct wmi_ops wmi_tlv_ops
++ 	.gen_echo = ath10k_wmi_tlv_op_gen_echo,
++ 	.gen_vdev_spectral_conf = ath10k_wmi_tlv_op_gen_vdev_spectral_conf,
++ 	.gen_vdev_spectral_enable = ath10k_wmi_tlv_op_gen_vdev_spectral_enable,
+++	/* .gen_gpio_config not implemented */
+++	/* .gen_gpio_output not implemented */
++ };
++ 
++ static const struct wmi_peer_flags_map wmi_tlv_peer_flags_map = {
++--- a/drivers/net/wireless/ath/ath10k/wmi.c
+++++ b/drivers/net/wireless/ath/ath10k/wmi.c
++@@ -7472,6 +7472,49 @@ ath10k_wmi_op_gen_peer_set_param(struct
++ 	return skb;
++ }
++ 
+++static struct sk_buff *ath10k_wmi_op_gen_gpio_config(struct ath10k *ar,
+++						     u32 gpio_num, u32 input,
+++						     u32 pull_type, u32 intr_mode)
+++{
+++	struct wmi_gpio_config_cmd *cmd;
+++	struct sk_buff *skb;
+++
+++	skb = ath10k_wmi_alloc_skb(ar, sizeof(*cmd));
+++	if (!skb)
+++		return ERR_PTR(-ENOMEM);
+++
+++	cmd = (struct wmi_gpio_config_cmd *)skb->data;
+++	cmd->pull_type = __cpu_to_le32(pull_type);
+++	cmd->gpio_num = __cpu_to_le32(gpio_num);
+++	cmd->input = __cpu_to_le32(input);
+++	cmd->intr_mode = __cpu_to_le32(intr_mode);
+++
+++	ath10k_dbg(ar, ATH10K_DBG_WMI, "wmi gpio_config gpio_num 0x%08x input 0x%08x pull_type 0x%08x intr_mode 0x%08x\n",
+++		   gpio_num, input, pull_type, intr_mode);
+++
+++	return skb;
+++}
+++
+++static struct sk_buff *ath10k_wmi_op_gen_gpio_output(struct ath10k *ar,
+++						     u32 gpio_num, u32 set)
+++{
+++	struct wmi_gpio_output_cmd *cmd;
+++	struct sk_buff *skb;
+++
+++	skb = ath10k_wmi_alloc_skb(ar, sizeof(*cmd));
+++	if (!skb)
+++		return ERR_PTR(-ENOMEM);
+++
+++	cmd = (struct wmi_gpio_output_cmd *)skb->data;
+++	cmd->gpio_num = __cpu_to_le32(gpio_num);
+++	cmd->set = __cpu_to_le32(set);
+++
+++	ath10k_dbg(ar, ATH10K_DBG_WMI, "wmi gpio_output gpio_num 0x%08x set 0x%08x\n",
+++		   gpio_num, set);
+++
+++	return skb;
+++}
+++
++ static struct sk_buff *
++ ath10k_wmi_op_gen_set_psmode(struct ath10k *ar, u32 vdev_id,
++ 			     enum wmi_sta_ps_mode psmode)
++@@ -9138,6 +9181,9 @@ static const struct wmi_ops wmi_ops = {
++ 	.fw_stats_fill = ath10k_wmi_main_op_fw_stats_fill,
++ 	.get_vdev_subtype = ath10k_wmi_op_get_vdev_subtype,
++ 	.gen_echo = ath10k_wmi_op_gen_echo,
+++	.gen_gpio_config = ath10k_wmi_op_gen_gpio_config,
+++	.gen_gpio_output = ath10k_wmi_op_gen_gpio_output,
+++
++ 	/* .gen_bcn_tmpl not implemented */
++ 	/* .gen_prb_tmpl not implemented */
++ 	/* .gen_p2p_go_bcn_ie not implemented */
++@@ -9208,6 +9254,8 @@ static const struct wmi_ops wmi_10_1_ops
++ 	.fw_stats_fill = ath10k_wmi_10x_op_fw_stats_fill,
++ 	.get_vdev_subtype = ath10k_wmi_op_get_vdev_subtype,
++ 	.gen_echo = ath10k_wmi_op_gen_echo,
+++	.gen_gpio_config = ath10k_wmi_op_gen_gpio_config,
+++	.gen_gpio_output = ath10k_wmi_op_gen_gpio_output,
++ 	/* .gen_bcn_tmpl not implemented */
++ 	/* .gen_prb_tmpl not implemented */
++ 	/* .gen_p2p_go_bcn_ie not implemented */
++@@ -9280,6 +9328,8 @@ static const struct wmi_ops wmi_10_2_ops
++ 	.gen_delba_send = ath10k_wmi_op_gen_delba_send,
++ 	.fw_stats_fill = ath10k_wmi_10x_op_fw_stats_fill,
++ 	.get_vdev_subtype = ath10k_wmi_op_get_vdev_subtype,
+++	.gen_gpio_config = ath10k_wmi_op_gen_gpio_config,
+++	.gen_gpio_output = ath10k_wmi_op_gen_gpio_output,
++ 	/* .gen_pdev_enable_adaptive_cca not implemented */
++ };
++ 
++@@ -9351,6 +9401,8 @@ static const struct wmi_ops wmi_10_2_4_o
++ 		ath10k_wmi_op_gen_pdev_enable_adaptive_cca,
++ 	.get_vdev_subtype = ath10k_wmi_10_2_4_op_get_vdev_subtype,
++ 	.gen_bb_timing = ath10k_wmi_10_2_4_op_gen_bb_timing,
+++	.gen_gpio_config = ath10k_wmi_op_gen_gpio_config,
+++	.gen_gpio_output = ath10k_wmi_op_gen_gpio_output,
++ 	/* .gen_bcn_tmpl not implemented */
++ 	/* .gen_prb_tmpl not implemented */
++ 	/* .gen_p2p_go_bcn_ie not implemented */
++@@ -9432,6 +9484,8 @@ static const struct wmi_ops wmi_10_4_ops
++ 	.gen_pdev_bss_chan_info_req = ath10k_wmi_10_2_op_gen_pdev_bss_chan_info,
++ 	.gen_echo = ath10k_wmi_op_gen_echo,
++ 	.gen_pdev_get_tpc_config = ath10k_wmi_10_2_4_op_gen_pdev_get_tpc_config,
+++	.gen_gpio_config = ath10k_wmi_op_gen_gpio_config,
+++	.gen_gpio_output = ath10k_wmi_op_gen_gpio_output,
++ };
++ 
++ int ath10k_wmi_attach(struct ath10k *ar)
++--- a/drivers/net/wireless/ath/ath10k/wmi.h
+++++ b/drivers/net/wireless/ath/ath10k/wmi.h
++@@ -3030,6 +3030,41 @@ enum wmi_10_4_feature_mask {
++ 
++ };
++ 
+++/* WMI_GPIO_CPTCFG_CMDID */
+++enum {
+++	WMI_GPIO_PULL_NONE,
+++	WMI_GPIO_PULL_UP,
+++	WMI_GPIO_PULL_DOWN,
+++};
+++
+++enum {
+++	WMI_GPIO_INTTYPE_DISABLE,
+++	WMI_GPIO_INTTYPE_RISING_EDGE,
+++	WMI_GPIO_INTTYPE_FALLING_EDGE,
+++	WMI_GPIO_INTTYPE_BOTH_EDGE,
+++	WMI_GPIO_INTTYPE_LEVEL_LOW,
+++	WMI_GPIO_INTTYPE_LEVEL_HIGH
+++};
+++
+++/* WMI_GPIO_CPTCFG_CMDID */
+++struct wmi_gpio_config_cmd {
+++	__le32 gpio_num;             /* GPIO number to be setup */
+++	__le32 input;                /* 0 - Output/ 1 - Input */
+++	__le32 pull_type;            /* Pull type defined above */
+++	__le32 intr_mode;            /* Interrupt mode defined above (Input) */
+++} __packed;
+++
+++/* WMI_GPIO_OUTPUT_CMDID */
+++struct wmi_gpio_output_cmd {
+++	__le32 gpio_num;    /* GPIO number to be setup */
+++	__le32 set;         /* Set the GPIO pin*/
+++} __packed;
+++
+++/* WMI_GPIO_INPUT_EVENTID */
+++struct wmi_gpio_input_event {
+++	__le32 gpio_num;    /* GPIO number which changed state */
+++} __packed;
+++
++ struct wmi_ext_resource_config_10_4_cmd {
++ 	/* contains enum wmi_host_platform_type */
++ 	__le32 host_platform_config;
+diff --git a/package/kernel/mac80211/patches/ath11k/101-wifi-ath11k-add-support-DT-ieee80211-freq-limit.patch b/package/kernel/mac80211/patches/ath11k/101-wifi-ath11k-add-support-DT-ieee80211-freq-limit.patch
+new file mode 100644
+index 000000000000..9571f7f20750
+--- /dev/null
++++ b/package/kernel/mac80211/patches/ath11k/101-wifi-ath11k-add-support-DT-ieee80211-freq-limit.patch
+@@ -0,0 +1,24 @@
++From 1338da257f299d35b4d954b9fda2cc7e0a54a69d Mon Sep 17 00:00:00 2001
++From: Christian Lamparter <chunkeey@gmail.com>
++Date: Sun, 11 Jun 2023 14:37:32 +0200
++Subject: [PATCH] wifi: ath11k: add support DT ieee80211-freq-limit
++
++The common DT property can be used to limit the available
++channels/frequencies. But ath11k has to manually call
++wiphy_read_of_freq_limits().
++
++Signed-off-by: Christian Lamparter <chunkeey@gmail.com>
++---
++ drivers/net/wireless/ath/ath11k/mac.c | 1 +
++ 1 file changed, 1 insertion(+)
++
++--- a/drivers/net/wireless/ath/ath11k/mac.c
+++++ b/drivers/net/wireless/ath/ath11k/mac.c
++@@ -9455,6 +9455,7 @@ static int __ath11k_mac_register(struct
++ 	if (ret)
++ 		goto err;
++ 
+++	wiphy_read_of_freq_limits(ar->hw->wiphy);
++ 	ath11k_mac_setup_ht_vht_cap(ar, cap, &ht_cap);
++ 	ath11k_mac_setup_he_cap(ar, cap);
++ 
+diff --git a/package/kernel/mac80211/patches/ath5k/432-ath5k_add_pciids.patch b/package/kernel/mac80211/patches/ath5k/432-ath5k_add_pciids.patch
+new file mode 100644
+index 000000000000..bd0e6707a551
+--- /dev/null
++++ b/package/kernel/mac80211/patches/ath5k/432-ath5k_add_pciids.patch
+@@ -0,0 +1,11 @@
++--- a/drivers/net/wireless/ath/ath5k/pci.c
+++++ b/drivers/net/wireless/ath/ath5k/pci.c
++@@ -47,6 +47,8 @@ static const struct pci_device_id ath5k_
++ 	{ PCI_VDEVICE(ATHEROS, 0x001b) }, /* 5413 Eagle */
++ 	{ PCI_VDEVICE(ATHEROS, 0x001c) }, /* PCI-E cards */
++ 	{ PCI_VDEVICE(ATHEROS, 0x001d) }, /* 2417 Nala */
+++	{ PCI_VDEVICE(ATHEROS, 0xff16) }, /* 2413,2414 sx76x on lantiq_danube */
+++	{ PCI_VDEVICE(ATHEROS, 0xff1a) }, /* 2417 arv45xx on lantiq_danube */
++ 	{ PCI_VDEVICE(ATHEROS, 0xff1b) }, /* AR5BXB63 */
++ 	{ 0 }
++ };
+diff --git a/package/kernel/mac80211/patches/build/060-no_local_ssb_bcma.patch b/package/kernel/mac80211/patches/build/060-no_local_ssb_bcma.patch
+new file mode 100644
+index 000000000000..2a0f9ede420c
+--- /dev/null
++++ b/package/kernel/mac80211/patches/build/060-no_local_ssb_bcma.patch
+@@ -0,0 +1,314 @@
++--- a/local-symbols
+++++ b/local-symbols
++@@ -493,43 +493,6 @@ USB_VL600=
++ USB_NET_CH9200=
++ USB_NET_AQC111=
++ USB_RTL8153_ECM=
++-SSB_POSSIBLE=
++-SSB=
++-SSB_SPROM=
++-SSB_BLOCKIO=
++-SSB_PCIHOST_POSSIBLE=
++-SSB_PCIHOST=
++-SSB_B43_PCI_BRIDGE=
++-SSB_PCMCIAHOST_POSSIBLE=
++-SSB_PCMCIAHOST=
++-SSB_SDIOHOST_POSSIBLE=
++-SSB_SDIOHOST=
++-SSB_HOST_SOC=
++-SSB_SERIAL=
++-SSB_DRIVER_PCICORE_POSSIBLE=
++-SSB_DRIVER_PCICORE=
++-SSB_PCICORE_HOSTMODE=
++-SSB_DRIVER_MIPS=
++-SSB_SFLASH=
++-SSB_EMBEDDED=
++-SSB_DRIVER_EXTIF=
++-SSB_DRIVER_GIGE=
++-SSB_DRIVER_GPIO=
++-BCMA_POSSIBLE=
++-BCMA=
++-BCMA_BLOCKIO=
++-BCMA_HOST_PCI_POSSIBLE=
++-BCMA_HOST_PCI=
++-BCMA_HOST_SOC=
++-BCMA_DRIVER_PCI=
++-BCMA_DRIVER_PCI_HOSTMODE=
++-BCMA_DRIVER_MIPS=
++-BCMA_PFLASH=
++-BCMA_SFLASH=
++-BCMA_NFLASH=
++-BCMA_DRIVER_GMAC_CMN=
++-BCMA_DRIVER_GPIO=
++-BCMA_DEBUG=
++ USB_ACM=
++ USB_PRINTER=
++ USB_WDM=
++--- a/drivers/net/wireless/broadcom/b43/Kconfig
+++++ b/drivers/net/wireless/broadcom/b43/Kconfig
++@@ -63,21 +63,21 @@ endchoice
++ config B43_PCI_AUTOSELECT
++ 	bool
++ 	depends on B43 && SSB_PCIHOST_POSSIBLE
++-	select SSB_PCIHOST
++-	select SSB_B43_PCI_BRIDGE
+++	depends on SSB_PCIHOST
+++	depends on SSB_B43_PCI_BRIDGE
++ 	default y
++ 
++ # Auto-select SSB PCICORE driver, if possible
++ config B43_PCICORE_AUTOSELECT
++ 	bool
++ 	depends on B43 && SSB_DRIVER_PCICORE_POSSIBLE
++-	select SSB_DRIVER_PCICORE
+++	depends on SSB_DRIVER_PCICORE
++ 	default y
++ 
++ config B43_SDIO
++ 	bool "Broadcom 43xx SDIO device support"
++ 	depends on B43 && B43_SSB && SSB_SDIOHOST_POSSIBLE
++-	select SSB_SDIOHOST
+++	depends on SSB_SDIOHOST
++ 	help
++ 	  Broadcom 43xx device support for Soft-MAC SDIO devices.
++ 
++@@ -96,13 +96,13 @@ config B43_SDIO
++ config B43_BCMA_PIO
++ 	bool
++ 	depends on B43 && B43_BCMA
++-	select BCMA_BLOCKIO
+++	depends on BCMA_BLOCKIO
++ 	default y
++ 
++ config B43_PIO
++ 	bool
++ 	depends on B43 && B43_SSB
++-	select SSB_BLOCKIO
+++	depends on SSB_BLOCKIO
++ 	default y
++ 
++ config B43_PHY_G
++--- a/drivers/net/wireless/broadcom/b43/main.c
+++++ b/drivers/net/wireless/broadcom/b43/main.c
++@@ -2853,7 +2853,7 @@ static struct ssb_device *b43_ssb_gpio_d
++ {
++ 	struct ssb_bus *bus = dev->dev->sdev->bus;
++ 
++-#ifdef CPTCFG_SSB_DRIVER_PCICORE
+++#ifdef CONFIG_SSB_DRIVER_PCICORE
++ 	return (bus->chipco.dev ? bus->chipco.dev : bus->pcicore.dev);
++ #else
++ 	return bus->chipco.dev;
++@@ -4871,7 +4871,7 @@ static int b43_wireless_core_init(struct
++ 	}
++ 	if (sprom->boardflags_lo & B43_BFL_XTAL_NOSLOW)
++ 		hf |= B43_HF_DSCRQ; /* Disable slowclock requests from ucode. */
++-#if defined(CPTCFG_B43_SSB) && defined(CPTCFG_SSB_DRIVER_PCICORE)
+++#if defined(CPTCFG_B43_SSB) && defined(CONFIG_SSB_DRIVER_PCICORE)
++ 	if (dev->dev->bus_type == B43_BUS_SSB &&
++ 	    dev->dev->sdev->bus->bustype == SSB_BUSTYPE_PCI &&
++ 	    dev->dev->sdev->bus->pcicore.dev->id.revision <= 10)
++--- a/drivers/net/wireless/broadcom/b43legacy/Kconfig
+++++ b/drivers/net/wireless/broadcom/b43legacy/Kconfig
++@@ -3,7 +3,7 @@ config B43LEGACY
++ 	tristate "Broadcom 43xx-legacy wireless support (mac80211 stack)"
++ 	depends on m
++ 	depends on SSB_POSSIBLE && MAC80211 && HAS_DMA
++-	select SSB
+++	depends on SSB
++ 	depends on FW_LOADER
++ 	help
++ 	  b43legacy is a driver for 802.11b devices from Broadcom (BCM4301 and
++@@ -25,15 +25,15 @@ config B43LEGACY
++ config B43LEGACY_PCI_AUTOSELECT
++ 	bool
++ 	depends on B43LEGACY && SSB_PCIHOST_POSSIBLE
++-	select SSB_PCIHOST
++-	select SSB_B43_PCI_BRIDGE
+++	depends on SSB_PCIHOST
+++	depends on SSB_B43_PCI_BRIDGE
++ 	default y
++ 
++ # Auto-select SSB PCICORE driver, if possible
++ config B43LEGACY_PCICORE_AUTOSELECT
++ 	bool
++ 	depends on B43LEGACY && SSB_DRIVER_PCICORE_POSSIBLE
++-	select SSB_DRIVER_PCICORE
+++	depends on SSB_DRIVER_PCICORE
++ 	default y
++ 
++ # LED support
++--- a/drivers/net/wireless/broadcom/b43legacy/main.c
+++++ b/drivers/net/wireless/broadcom/b43legacy/main.c
++@@ -1907,7 +1907,7 @@ static int b43legacy_gpio_init(struct b4
++ 	if (dev->dev->id.revision >= 2)
++ 		mask  |= 0x0010; /* FIXME: This is redundant. */
++ 
++-#ifdef CPTCFG_SSB_DRIVER_PCICORE
+++#ifdef CONFIG_SSB_DRIVER_PCICORE
++ 	pcidev = bus->pcicore.dev;
++ #endif
++ 	gpiodev = bus->chipco.dev ? : pcidev;
++@@ -1926,7 +1926,7 @@ static void b43legacy_gpio_cleanup(struc
++ 	struct ssb_bus *bus = dev->dev->bus;
++ 	struct ssb_device *gpiodev, *pcidev = NULL;
++ 
++-#ifdef CPTCFG_SSB_DRIVER_PCICORE
+++#ifdef CONFIG_SSB_DRIVER_PCICORE
++ 	pcidev = bus->pcicore.dev;
++ #endif
++ 	gpiodev = bus->chipco.dev ? : pcidev;
++--- a/drivers/net/wireless/broadcom/brcm80211/Kconfig
+++++ b/drivers/net/wireless/broadcom/brcm80211/Kconfig
++@@ -8,7 +8,7 @@ config BRCMSMAC
++ 	depends on m
++ 	depends on MAC80211
++ 	depends on BCMA_POSSIBLE
++-	select BCMA
+++	depends on BCMA
++ 	select BRCMUTIL
++ 	depends on FW_LOADER
++ 	depends on CORDIC
++--- a/Kconfig.local
+++++ b/Kconfig.local
++@@ -1483,117 +1483,6 @@ config BACKPORTED_USB_NET_AQC111
++ config BACKPORTED_USB_RTL8153_ECM
++ 	tristate
++ 	default USB_RTL8153_ECM
++-config BACKPORTED_SSB_POSSIBLE
++-	tristate
++-	default SSB_POSSIBLE
++-config BACKPORTED_SSB
++-	tristate
++-	default SSB
++-config BACKPORTED_SSB_SPROM
++-	tristate
++-	default SSB_SPROM
++-config BACKPORTED_SSB_BLOCKIO
++-	tristate
++-	default SSB_BLOCKIO
++-config BACKPORTED_SSB_PCIHOST_POSSIBLE
++-	tristate
++-	default SSB_PCIHOST_POSSIBLE
++-config BACKPORTED_SSB_PCIHOST
++-	tristate
++-	default SSB_PCIHOST
++-config BACKPORTED_SSB_B43_PCI_BRIDGE
++-	tristate
++-	default SSB_B43_PCI_BRIDGE
++-config BACKPORTED_SSB_PCMCIAHOST_POSSIBLE
++-	tristate
++-	default SSB_PCMCIAHOST_POSSIBLE
++-config BACKPORTED_SSB_PCMCIAHOST
++-	tristate
++-	default SSB_PCMCIAHOST
++-config BACKPORTED_SSB_SDIOHOST_POSSIBLE
++-	tristate
++-	default SSB_SDIOHOST_POSSIBLE
++-config BACKPORTED_SSB_SDIOHOST
++-	tristate
++-	default SSB_SDIOHOST
++-config BACKPORTED_SSB_HOST_SOC
++-	tristate
++-	default SSB_HOST_SOC
++-config BACKPORTED_SSB_SERIAL
++-	tristate
++-	default SSB_SERIAL
++-config BACKPORTED_SSB_DRIVER_PCICORE_POSSIBLE
++-	tristate
++-	default SSB_DRIVER_PCICORE_POSSIBLE
++-config BACKPORTED_SSB_DRIVER_PCICORE
++-	tristate
++-	default SSB_DRIVER_PCICORE
++-config BACKPORTED_SSB_PCICORE_HOSTMODE
++-	tristate
++-	default SSB_PCICORE_HOSTMODE
++-config BACKPORTED_SSB_DRIVER_MIPS
++-	tristate
++-	default SSB_DRIVER_MIPS
++-config BACKPORTED_SSB_SFLASH
++-	tristate
++-	default SSB_SFLASH
++-config BACKPORTED_SSB_EMBEDDED
++-	tristate
++-	default SSB_EMBEDDED
++-config BACKPORTED_SSB_DRIVER_EXTIF
++-	tristate
++-	default SSB_DRIVER_EXTIF
++-config BACKPORTED_SSB_DRIVER_GIGE
++-	tristate
++-	default SSB_DRIVER_GIGE
++-config BACKPORTED_SSB_DRIVER_GPIO
++-	tristate
++-	default SSB_DRIVER_GPIO
++-config BACKPORTED_BCMA_POSSIBLE
++-	tristate
++-	default BCMA_POSSIBLE
++-config BACKPORTED_BCMA
++-	tristate
++-	default BCMA
++-config BACKPORTED_BCMA_BLOCKIO
++-	tristate
++-	default BCMA_BLOCKIO
++-config BACKPORTED_BCMA_HOST_PCI_POSSIBLE
++-	tristate
++-	default BCMA_HOST_PCI_POSSIBLE
++-config BACKPORTED_BCMA_HOST_PCI
++-	tristate
++-	default BCMA_HOST_PCI
++-config BACKPORTED_BCMA_HOST_SOC
++-	tristate
++-	default BCMA_HOST_SOC
++-config BACKPORTED_BCMA_DRIVER_PCI
++-	tristate
++-	default BCMA_DRIVER_PCI
++-config BACKPORTED_BCMA_DRIVER_PCI_HOSTMODE
++-	tristate
++-	default BCMA_DRIVER_PCI_HOSTMODE
++-config BACKPORTED_BCMA_DRIVER_MIPS
++-	tristate
++-	default BCMA_DRIVER_MIPS
++-config BACKPORTED_BCMA_PFLASH
++-	tristate
++-	default BCMA_PFLASH
++-config BACKPORTED_BCMA_SFLASH
++-	tristate
++-	default BCMA_SFLASH
++-config BACKPORTED_BCMA_NFLASH
++-	tristate
++-	default BCMA_NFLASH
++-config BACKPORTED_BCMA_DRIVER_GMAC_CMN
++-	tristate
++-	default BCMA_DRIVER_GMAC_CMN
++-config BACKPORTED_BCMA_DRIVER_GPIO
++-	tristate
++-	default BCMA_DRIVER_GPIO
++-config BACKPORTED_BCMA_DEBUG
++-	tristate
++-	default BCMA_DEBUG
++ config BACKPORTED_USB_ACM
++ 	tristate
++ 	default USB_ACM
++--- a/Kconfig.sources
+++++ b/Kconfig.sources
++@@ -10,9 +10,6 @@ source "$BACKPORT_DIR/drivers/soc/qcom/K
++ source "$BACKPORT_DIR/drivers/net/wireless/Kconfig"
++ source "$BACKPORT_DIR/drivers/net/usb/Kconfig"
++ 
++-source "$BACKPORT_DIR/drivers/ssb/Kconfig"
++-source "$BACKPORT_DIR/drivers/bcma/Kconfig"
++-
++ source "$BACKPORT_DIR/drivers/usb/class/Kconfig"
++ 
++ source "$BACKPORT_DIR/drivers/staging/Kconfig"
++--- a/Makefile.kernel
+++++ b/Makefile.kernel
++@@ -43,8 +43,6 @@ obj-$(CPTCFG_QRTR) += net/qrtr/
++ obj-$(CPTCFG_QCOM_QMI_HELPERS) += drivers/soc/qcom/
++ obj-$(CPTCFG_MHI_BUS) += drivers/bus/mhi/
++ obj-$(CPTCFG_WLAN) += drivers/net/wireless/
++-obj-$(CPTCFG_SSB) += drivers/ssb/
++-obj-$(CPTCFG_BCMA) += drivers/bcma/
++ obj-$(CPTCFG_USB_NET_RNDIS_WLAN) += drivers/net/usb/
++ 
++ obj-$(CPTCFG_USB_WDM) += drivers/usb/class/
+diff --git a/package/kernel/mac80211/patches/build/070-remove-broken-wext-select.patch b/package/kernel/mac80211/patches/build/070-remove-broken-wext-select.patch
+new file mode 100644
+index 000000000000..121b7faad937
+--- /dev/null
++++ b/package/kernel/mac80211/patches/build/070-remove-broken-wext-select.patch
+@@ -0,0 +1,10 @@
++--- a/drivers/staging/rtl8723bs/Kconfig
+++++ b/drivers/staging/rtl8723bs/Kconfig
++@@ -5,7 +5,6 @@ config RTL8723BS
++ 	depends on m
++ 	depends on WLAN && MMC && CFG80211
++ 	depends on m
++-	select CFG80211_WEXT
++ 	depends on CRYPTO
++ 	select BPAUTO_CRYPTO_LIB_ARC4
++ 	help
+diff --git a/package/kernel/mac80211/patches/build/090-bcma-otp.patch b/package/kernel/mac80211/patches/build/090-bcma-otp.patch
+new file mode 100644
+index 000000000000..39747761246f
+--- /dev/null
++++ b/package/kernel/mac80211/patches/build/090-bcma-otp.patch
+@@ -0,0 +1,13 @@
++--- /dev/null
+++++ b/backport-include/linux/bcma/bcma_driver_chipcommon.h
++@@ -0,0 +1,10 @@
+++#ifndef __BACKPORT_BCMA_DRIVER_CHIPCOMMON_H
+++#define __BACKPORT_BCMA_DRIVER_CHIPCOMMON_H
+++
+++#include_next <linux/bcma/bcma_driver_chipcommon.h>
+++
+++#ifndef BCMA_CC_SROM_CONTROL_OTP_PRESENT
+++#define BCMA_CC_SROM_CONTROL_OTP_PRESENT 0x00000020
+++#endif
+++
+++#endif
+diff --git a/package/kernel/mac80211/patches/build/110-backport_namepace_const.patch b/package/kernel/mac80211/patches/build/110-backport_namepace_const.patch
+new file mode 100644
+index 000000000000..6dca708edf77
+--- /dev/null
++++ b/package/kernel/mac80211/patches/build/110-backport_namepace_const.patch
+@@ -0,0 +1,14 @@
++--- a/net/wireless/sysfs.c
+++++ b/net/wireless/sysfs.c
++@@ -154,7 +154,11 @@ static SIMPLE_DEV_PM_OPS(wiphy_pm_ops, w
++ #define WIPHY_PM_OPS NULL
++ #endif
++ 
+++#if LINUX_VERSION_IS_GEQ(6,2,0)
++ static const void *wiphy_namespace(const struct device *d)
+++#else
+++static const void *wiphy_namespace(struct device *d)
+++#endif
++ {
++ 	struct wiphy *wiphy = container_of(d, struct wiphy, dev);
++ 
+diff --git a/package/kernel/mac80211/patches/build/120-headers_version_fix.patch b/package/kernel/mac80211/patches/build/120-headers_version_fix.patch
+new file mode 100644
+index 000000000000..9a8c4749b2f0
+--- /dev/null
++++ b/package/kernel/mac80211/patches/build/120-headers_version_fix.patch
+@@ -0,0 +1,25 @@
++--- a/backport-include/linux/random.h
+++++ b/backport-include/linux/random.h
++@@ -23,7 +23,7 @@ static inline u16 get_random_u16(void)
++ }
++ #endif
++ 
++-#if LINUX_VERSION_IS_LESS(6,2,0)
+++#if LINUX_VERSION_IS_LESS(6,1,4)
++ static inline u32 __get_random_u32_below(u32 ceil)
++ {
++ 	/*
++--- a/backport-include/net/dropreason.h
+++++ b/backport-include/net/dropreason.h
++@@ -3,10 +3,9 @@
++ 
++ #include <linux/version.h>
++ 
+++#include <net/dropreason-core.h>
++ #if LINUX_VERSION_IS_GEQ(6,0,0)
++ #include_next <net/dropreason.h>
++-#else
++-#include <net/dropreason-core.h>
++ #endif
++ 
++ #if LINUX_VERSION_IS_LESS(6,4,0)
+diff --git a/package/kernel/mac80211/patches/build/130-iommu_backport.patch b/package/kernel/mac80211/patches/build/130-iommu_backport.patch
+new file mode 100644
+index 000000000000..2d3ef88d6455
+--- /dev/null
++++ b/package/kernel/mac80211/patches/build/130-iommu_backport.patch
+@@ -0,0 +1,26 @@
++--- /dev/null
+++++ b/backport-include/linux/iommu.h
++@@ -0,0 +1,23 @@
+++#ifndef __BACKPORT_LINUX_IOMMU_H
+++#define __BACKPORT_LINUX_IOMMU_H
+++
+++#include_next <linux/iommu.h>
+++#include <linux/version.h>
+++
+++#if LINUX_VERSION_IS_LESS(6,3,0)
+++
+++static inline int LINUX_BACKPORT(iommu_map)(struct iommu_domain *domain,
+++					    unsigned long iova,
+++					    phys_addr_t paddr, size_t size,
+++					    int prot, gfp_t gfp)
+++{
+++	if (gfp == GFP_ATOMIC)
+++		return iommu_map_atomic(domain, iova, paddr, size, prot);
+++
+++	return iommu_map(domain, iova, paddr, size, prot);
+++}
+++#define iommu_map LINUX_BACKPORT(iommu_map)
+++
+++#endif /* < 6.3 */
+++
+++#endif
+diff --git a/package/kernel/mac80211/patches/build/220-list-don-t-backport-list_count_nodes.patch b/package/kernel/mac80211/patches/build/220-list-don-t-backport-list_count_nodes.patch
+new file mode 100644
+index 000000000000..6d3000278b13
+--- /dev/null
++++ b/package/kernel/mac80211/patches/build/220-list-don-t-backport-list_count_nodes.patch
+@@ -0,0 +1,26 @@
++From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <rafal@milecki.pl>
++Date: Fri, 15 Dec 2023 10:17:21 +0100
++Subject: [PATCH] list: don't backport list_count_nodes()
++MIME-Version: 1.0
++Content-Type: text/plain; charset=UTF-8
++Content-Transfer-Encoding: 8bit
++
++It's redundant in OpenWrt as it backports it on its own. This fixes:
++backport-include/linux/list.h:11:22: error: redefinition of 'list_count_nodes'
++
++Signed-off-by: Rafał Miłecki <rafal@milecki.pl>
++---
++ backport-include/linux/list.h | 2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++--- a/backport-include/linux/list.h
+++++ b/backport-include/linux/list.h
++@@ -3,7 +3,7 @@
++ #include_next <linux/list.h>
++ #include <linux/version.h>
++ 
++-#if LINUX_VERSION_IS_LESS(6,3,0)
+++#if 0 /* OpenWrt backports list_count_nodes() on its own */
++ /**
++  * list_count_nodes - count nodes in the list
++  * @head:	the head for your list.
+diff --git a/package/kernel/mac80211/patches/subsys/320-cfg80211-allow-grace-period-for-DFS-available-after-.patch b/package/kernel/mac80211/patches/subsys/320-cfg80211-allow-grace-period-for-DFS-available-after-.patch
+new file mode 100644
+index 000000000000..ec381303cebe
+--- /dev/null
++++ b/package/kernel/mac80211/patches/subsys/320-cfg80211-allow-grace-period-for-DFS-available-after-.patch
+@@ -0,0 +1,149 @@
++From: Felix Fietkau <nbd@nbd.name>
++Date: Thu, 14 Sep 2023 13:17:16 +0200
++Subject: [PATCH] cfg80211: allow grace period for DFS available after beacon
++ shutdown
++
++Fixes reconfiguring an AP on a DFS channel in non-ETSI regdomain
++
++Fixes: b35a51c7dd25 ("cfg80211: Make pre-CAC results valid only for ETSI domain")
++Signed-off-by: Felix Fietkau <nbd@nbd.name>
++---
++
++--- a/include/net/cfg80211.h
+++++ b/include/net/cfg80211.h
++@@ -175,6 +175,8 @@ enum ieee80211_channel_flags {
++  * @dfs_state: current state of this channel. Only relevant if radar is required
++  *	on this channel.
++  * @dfs_state_entered: timestamp (jiffies) when the dfs state was entered.
+++ * @dfs_state_last_available: timestamp (jiffies) of the last time when the
+++ *	channel was available.
++  * @dfs_cac_ms: DFS CAC time in milliseconds, this is valid for DFS channels.
++  */
++ struct ieee80211_channel {
++@@ -191,6 +193,7 @@ struct ieee80211_channel {
++ 	int orig_mag, orig_mpwr;
++ 	enum nl80211_dfs_state dfs_state;
++ 	unsigned long dfs_state_entered;
+++	unsigned long dfs_state_last_available;
++ 	unsigned int dfs_cac_ms;
++ };
++ 
++--- a/net/wireless/ap.c
+++++ b/net/wireless/ap.c
++@@ -30,6 +30,9 @@ static int ___cfg80211_stop_ap(struct cf
++ 	if (!wdev->links[link_id].ap.beacon_interval)
++ 		return -ENOENT;
++ 
+++	cfg80211_update_last_available(wdev->wiphy,
+++				       &wdev->links[link_id].ap.chandef);
+++
++ 	err = rdev_stop_ap(rdev, dev, link_id);
++ 	if (!err) {
++ 		wdev->conn_owner_nlportid = 0;
++@@ -41,9 +44,6 @@ static int ___cfg80211_stop_ap(struct cf
++ 		if (notify)
++ 			nl80211_send_ap_stopped(wdev, link_id);
++ 
++-		/* Should we apply the grace period during beaconing interface
++-		 * shutdown also?
++-		 */
++ 		cfg80211_sched_dfs_chan_update(rdev);
++ 	}
++ 
++--- a/net/wireless/chan.c
+++++ b/net/wireless/chan.c
++@@ -461,6 +461,8 @@ static void cfg80211_set_chans_dfs_state
++ 
++ 		c->dfs_state = dfs_state;
++ 		c->dfs_state_entered = jiffies;
+++		if (dfs_state == NL80211_DFS_AVAILABLE)
+++			c->dfs_state_last_available = jiffies;
++ 	}
++ }
++ 
++@@ -874,6 +876,49 @@ static bool cfg80211_get_chans_dfs_avail
++ 	return true;
++ }
++ 
+++static void
+++__cfg80211_update_last_available(struct wiphy *wiphy,
+++					 u32 center_freq,
+++					 u32 bandwidth)
+++{
+++	struct ieee80211_channel *c;
+++	u32 freq, start_freq, end_freq;
+++
+++	start_freq = cfg80211_get_start_freq(center_freq, bandwidth);
+++	end_freq = cfg80211_get_end_freq(center_freq, bandwidth);
+++
+++	/*
+++	 * Check entire range of channels for the bandwidth.
+++	 * If any channel in between is disabled or has not
+++	 * had gone through CAC return false
+++	 */
+++	for (freq = start_freq; freq <= end_freq; freq += MHZ_TO_KHZ(20)) {
+++		c = ieee80211_get_channel_khz(wiphy, freq);
+++		if (!c)
+++			return;
+++
+++		c->dfs_state_last_available = jiffies;
+++	}
+++}
+++
+++void cfg80211_update_last_available(struct wiphy *wiphy,
+++				    const struct cfg80211_chan_def *chandef)
+++{
+++	int width;
+++
+++	width = cfg80211_chandef_get_width(chandef);
+++	if (width < 0)
+++		return;
+++
+++	__cfg80211_update_last_available(wiphy, MHZ_TO_KHZ(chandef->center_freq1),
+++						 width);
+++	if (chandef->width != NL80211_CHAN_WIDTH_80P80)
+++	    return;
+++
+++	__cfg80211_update_last_available(wiphy, MHZ_TO_KHZ(chandef->center_freq2),
+++						 width);
+++}
+++
++ static bool cfg80211_chandef_dfs_available(struct wiphy *wiphy,
++ 				const struct cfg80211_chan_def *chandef)
++ {
++--- a/net/wireless/core.h
+++++ b/net/wireless/core.h
++@@ -481,6 +481,8 @@ void cfg80211_set_dfs_state(struct wiphy
++ 			    enum nl80211_dfs_state dfs_state);
++ 
++ void cfg80211_dfs_channels_update_work(struct work_struct *work);
+++void cfg80211_update_last_available(struct wiphy *wiphy,
+++				    const struct cfg80211_chan_def *chandef);
++ 
++ void cfg80211_sched_dfs_chan_update(struct cfg80211_registered_device *rdev);
++ 
++--- a/net/wireless/mlme.c
+++++ b/net/wireless/mlme.c
++@@ -930,6 +930,8 @@ void cfg80211_dfs_channels_update_work(s
++ 			if (c->dfs_state == NL80211_DFS_UNAVAILABLE) {
++ 				time_dfs_update = IEEE80211_DFS_MIN_NOP_TIME_MS;
++ 				radar_event = NL80211_RADAR_NOP_FINISHED;
+++				timeout = c->dfs_state_entered +
+++					  msecs_to_jiffies(time_dfs_update);
++ 			} else {
++ 				if (regulatory_pre_cac_allowed(wiphy) ||
++ 				    cfg80211_any_wiphy_oper_chan(wiphy, c))
++@@ -937,11 +939,10 @@ void cfg80211_dfs_channels_update_work(s
++ 
++ 				time_dfs_update = REG_PRE_CAC_EXPIRY_GRACE_MS;
++ 				radar_event = NL80211_RADAR_PRE_CAC_EXPIRED;
+++				timeout = c->dfs_state_last_available +
+++					  msecs_to_jiffies(time_dfs_update);
++ 			}
++ 
++-			timeout = c->dfs_state_entered +
++-				  msecs_to_jiffies(time_dfs_update);
++-
++ 			if (time_after_eq(jiffies, timeout)) {
++ 				c->dfs_state = NL80211_DFS_USABLE;
++ 				c->dfs_state_entered = jiffies;
+diff --git a/package/kernel/mac80211/patches/subsys/330-mac80211-add-AQL-support-for-broadcast-packets.patch b/package/kernel/mac80211/patches/subsys/330-mac80211-add-AQL-support-for-broadcast-packets.patch
+new file mode 100644
+index 000000000000..d53afcf5919c
+--- /dev/null
++++ b/package/kernel/mac80211/patches/subsys/330-mac80211-add-AQL-support-for-broadcast-packets.patch
+@@ -0,0 +1,302 @@
++From: Felix Fietkau <nbd@nbd.name>
++Date: Fri, 9 Feb 2024 19:43:40 +0100
++Subject: [PATCH] mac80211: add AQL support for broadcast packets
++
++Excessive broadcast traffic with little competing unicast traffic can easily
++flood hardware queues, leading to throughput issues. Additionally, filling
++the hardware queues with too many packets breaks FQ for broadcast data.
++Fix this by enabling AQL for broadcast packets.
++
++Signed-off-by: Felix Fietkau <nbd@nbd.name>
++---
++
++--- a/include/net/cfg80211.h
+++++ b/include/net/cfg80211.h
++@@ -3324,6 +3324,7 @@ enum wiphy_params_flags {
++ /* The per TXQ device queue limit in airtime */
++ #define IEEE80211_DEFAULT_AQL_TXQ_LIMIT_L	5000
++ #define IEEE80211_DEFAULT_AQL_TXQ_LIMIT_H	12000
+++#define IEEE80211_DEFAULT_AQL_TXQ_LIMIT_BC	50000
++ 
++ /* The per interface airtime threshold to switch to lower queue limit */
++ #define IEEE80211_AQL_THRESHOLD			24000
++--- a/net/mac80211/debugfs.c
+++++ b/net/mac80211/debugfs.c
++@@ -215,11 +215,13 @@ static ssize_t aql_pending_read(struct f
++ 			"VI     %u us\n"
++ 			"BE     %u us\n"
++ 			"BK     %u us\n"
+++			"BC/MC  %u us\n"
++ 			"total  %u us\n",
++ 			atomic_read(&local->aql_ac_pending_airtime[IEEE80211_AC_VO]),
++ 			atomic_read(&local->aql_ac_pending_airtime[IEEE80211_AC_VI]),
++ 			atomic_read(&local->aql_ac_pending_airtime[IEEE80211_AC_BE]),
++ 			atomic_read(&local->aql_ac_pending_airtime[IEEE80211_AC_BK]),
+++			atomic_read(&local->aql_bc_pending_airtime),
++ 			atomic_read(&local->aql_total_pending_airtime));
++ 	return simple_read_from_buffer(user_buf, count, ppos,
++ 				       buf, len);
++@@ -245,7 +247,8 @@ static ssize_t aql_txq_limit_read(struct
++ 			"VO	%u		%u\n"
++ 			"VI	%u		%u\n"
++ 			"BE	%u		%u\n"
++-			"BK	%u		%u\n",
+++			"BK	%u		%u\n"
+++			"BC/MC	%u\n",
++ 			local->aql_txq_limit_low[IEEE80211_AC_VO],
++ 			local->aql_txq_limit_high[IEEE80211_AC_VO],
++ 			local->aql_txq_limit_low[IEEE80211_AC_VI],
++@@ -253,7 +256,8 @@ static ssize_t aql_txq_limit_read(struct
++ 			local->aql_txq_limit_low[IEEE80211_AC_BE],
++ 			local->aql_txq_limit_high[IEEE80211_AC_BE],
++ 			local->aql_txq_limit_low[IEEE80211_AC_BK],
++-			local->aql_txq_limit_high[IEEE80211_AC_BK]);
+++			local->aql_txq_limit_high[IEEE80211_AC_BK],
+++			local->aql_txq_limit_bc);
++ 	return simple_read_from_buffer(user_buf, count, ppos,
++ 				       buf, len);
++ }
++@@ -279,6 +283,11 @@ static ssize_t aql_txq_limit_write(struc
++ 	else
++ 		buf[count] = '\0';
++ 
+++	if (sscanf(buf, "mcast %u", &q_limit_low) == 1) {
+++		local->aql_txq_limit_bc = q_limit_low;
+++		return count;
+++	}
+++
++ 	if (sscanf(buf, "%u %u %u", &ac, &q_limit_low, &q_limit_high) != 3)
++ 		return -EINVAL;
++ 
++--- a/net/mac80211/ieee80211_i.h
+++++ b/net/mac80211/ieee80211_i.h
++@@ -1328,10 +1328,12 @@ struct ieee80211_local {
++ 	spinlock_t handle_wake_tx_queue_lock;
++ 
++ 	u16 airtime_flags;
+++	u32 aql_txq_limit_bc;
++ 	u32 aql_txq_limit_low[IEEE80211_NUM_ACS];
++ 	u32 aql_txq_limit_high[IEEE80211_NUM_ACS];
++ 	u32 aql_threshold;
++ 	atomic_t aql_total_pending_airtime;
+++	atomic_t aql_bc_pending_airtime;
++ 	atomic_t aql_ac_pending_airtime[IEEE80211_NUM_ACS];
++ 
++ 	const struct ieee80211_ops *ops;
++--- a/net/mac80211/main.c
+++++ b/net/mac80211/main.c
++@@ -788,6 +788,7 @@ struct ieee80211_hw *ieee80211_alloc_hw_
++ 	spin_lock_init(&local->rx_path_lock);
++ 	spin_lock_init(&local->queue_stop_reason_lock);
++ 
+++	local->aql_txq_limit_bc = IEEE80211_DEFAULT_AQL_TXQ_LIMIT_BC;
++ 	for (i = 0; i < IEEE80211_NUM_ACS; i++) {
++ 		INIT_LIST_HEAD(&local->active_txqs[i]);
++ 		spin_lock_init(&local->active_txq_lock[i]);
++--- a/net/mac80211/sta_info.c
+++++ b/net/mac80211/sta_info.c
++@@ -2343,13 +2343,28 @@ EXPORT_SYMBOL(ieee80211_sta_recalc_aggre
++ 
++ void ieee80211_sta_update_pending_airtime(struct ieee80211_local *local,
++ 					  struct sta_info *sta, u8 ac,
++-					  u16 tx_airtime, bool tx_completed)
+++					  u16 tx_airtime, bool tx_completed,
+++					  bool mcast)
++ {
++ 	int tx_pending;
++ 
++ 	if (!wiphy_ext_feature_isset(local->hw.wiphy, NL80211_EXT_FEATURE_AQL))
++ 		return;
++ 
+++	if (mcast) {
+++		if (!tx_completed) {
+++			atomic_add(tx_airtime, &local->aql_bc_pending_airtime);
+++			return;
+++		}
+++
+++		tx_pending = atomic_sub_return(tx_airtime,
+++					       &local->aql_bc_pending_airtime);
+++		if (tx_pending < 0)
+++			atomic_cmpxchg(&local->aql_bc_pending_airtime,
+++				       tx_pending, 0);
+++		return;
+++	}
+++
++ 	if (!tx_completed) {
++ 		if (sta)
++ 			atomic_add(tx_airtime,
++--- a/net/mac80211/tx.c
+++++ b/net/mac80211/tx.c
++@@ -2536,7 +2536,7 @@ static u16 ieee80211_store_ack_skb(struc
++ 
++ 		spin_lock_irqsave(&local->ack_status_lock, flags);
++ 		id = idr_alloc(&local->ack_status_frames, ack_skb,
++-			       1, 0x2000, GFP_ATOMIC);
+++			       1, 0x1000, GFP_ATOMIC);
++ 		spin_unlock_irqrestore(&local->ack_status_lock, flags);
++ 
++ 		if (id >= 0) {
++@@ -3958,20 +3958,20 @@ begin:
++ encap_out:
++ 	IEEE80211_SKB_CB(skb)->control.vif = vif;
++ 
++-	if (tx.sta &&
++-	    wiphy_ext_feature_isset(local->hw.wiphy, NL80211_EXT_FEATURE_AQL)) {
++-		bool ampdu = txq->ac != IEEE80211_AC_VO;
+++	if (wiphy_ext_feature_isset(local->hw.wiphy, NL80211_EXT_FEATURE_AQL)) {
+++		bool ampdu = txq->sta && txq->ac != IEEE80211_AC_VO;
++ 		u32 airtime;
++ 
++ 		airtime = ieee80211_calc_expected_tx_airtime(hw, vif, txq->sta,
++ 							     skb->len, ampdu);
++-		if (airtime) {
++-			airtime = ieee80211_info_set_tx_time_est(info, airtime);
++-			ieee80211_sta_update_pending_airtime(local, tx.sta,
++-							     txq->ac,
++-							     airtime,
++-							     false);
++-		}
+++		if (!airtime)
+++			return skb;
+++
+++		airtime = ieee80211_info_set_tx_time_est(info, airtime);
+++		info->tx_time_mc = !tx.sta;
+++		ieee80211_sta_update_pending_airtime(local, tx.sta, txq->ac,
+++						     airtime, false,
+++						     info->tx_time_mc);
++ 	}
++ 
++ 	return skb;
++@@ -4026,6 +4026,7 @@ struct ieee80211_txq *ieee80211_next_txq
++ 	struct ieee80211_txq *ret = NULL;
++ 	struct txq_info *txqi = NULL, *head = NULL;
++ 	bool found_eligible_txq = false;
+++	bool aql_check;
++ 
++ 	spin_lock_bh(&local->active_txq_lock[ac]);
++ 
++@@ -4049,26 +4050,26 @@ struct ieee80211_txq *ieee80211_next_txq
++ 	if (!head)
++ 		head = txqi;
++ 
+++	aql_check = ieee80211_txq_airtime_check(hw, &txqi->txq);
+++	if (aql_check)
+++		found_eligible_txq = true;
+++
++ 	if (txqi->txq.sta) {
++ 		struct sta_info *sta = container_of(txqi->txq.sta,
++ 						    struct sta_info, sta);
++-		bool aql_check = ieee80211_txq_airtime_check(hw, &txqi->txq);
++-		s32 deficit = ieee80211_sta_deficit(sta, txqi->txq.ac);
++-
++-		if (aql_check)
++-			found_eligible_txq = true;
++-
++-		if (deficit < 0)
+++		if (ieee80211_sta_deficit(sta, txqi->txq.ac) < 0) {
++ 			sta->airtime[txqi->txq.ac].deficit +=
++ 				sta->airtime_weight << AIRTIME_QUANTUM_SHIFT;
++-
++-		if (deficit < 0 || !aql_check) {
++-			list_move_tail(&txqi->schedule_order,
++-				       &local->active_txqs[txqi->txq.ac]);
++-			goto begin;
+++			aql_check = false;
++ 		}
++ 	}
++ 
+++	if (!aql_check) {
+++		list_move_tail(&txqi->schedule_order,
+++				   &local->active_txqs[txqi->txq.ac]);
+++		goto begin;
+++	}
+++
++ 	if (txqi->schedule_round == local->schedule_round[ac])
++ 		goto out;
++ 
++@@ -4133,7 +4134,8 @@ bool ieee80211_txq_airtime_check(struct
++ 		return true;
++ 
++ 	if (!txq->sta)
++-		return true;
+++		return atomic_read(&local->aql_bc_pending_airtime) <
+++		       local->aql_txq_limit_bc;
++ 
++ 	if (unlikely(txq->tid == IEEE80211_NUM_TIDS))
++ 		return true;
++@@ -4182,15 +4184,15 @@ bool ieee80211_txq_may_transmit(struct i
++ 
++ 	spin_lock_bh(&local->active_txq_lock[ac]);
++ 
++-	if (!txqi->txq.sta)
++-		goto out;
++-
++ 	if (list_empty(&txqi->schedule_order))
++ 		goto out;
++ 
++ 	if (!ieee80211_txq_schedule_airtime_check(local, ac))
++ 		goto out;
++ 
+++	if (!txqi->txq.sta)
+++		goto out;
+++
++ 	list_for_each_entry_safe(iter, tmp, &local->active_txqs[ac],
++ 				 schedule_order) {
++ 		if (iter == txqi)
++--- a/include/net/mac80211.h
+++++ b/include/net/mac80211.h
++@@ -1116,6 +1116,7 @@ ieee80211_rate_get_vht_nss(const struct
++  *	link the frame will be transmitted on
++  * @hw_queue: HW queue to put the frame on, skb_get_queue_mapping() gives the AC
++  * @ack_frame_id: internal frame ID for TX status, used internally
+++ * @tx_time_mc: TX time is for a multicast packet
++  * @tx_time_est: TX time estimate in units of 4us, used internally
++  * @control: union part for control data
++  * @control.rates: TX rates array to try
++@@ -1155,8 +1156,9 @@ struct ieee80211_tx_info {
++ 	/* common information */
++ 	u32 flags;
++ 	u32 band:3,
++-	    ack_frame_id:13,
+++	    ack_frame_id:12,
++ 	    hw_queue:4,
+++	    tx_time_mc:1,
++ 	    tx_time_est:10;
++ 	/* 2 free bits */
++ 
++--- a/net/mac80211/sta_info.h
+++++ b/net/mac80211/sta_info.h
++@@ -147,7 +147,8 @@ struct airtime_info {
++ 
++ void ieee80211_sta_update_pending_airtime(struct ieee80211_local *local,
++ 					  struct sta_info *sta, u8 ac,
++-					  u16 tx_airtime, bool tx_completed);
+++					  u16 tx_airtime, bool tx_completed,
+++					  bool mcast);
++ 
++ struct sta_info;
++ 
++--- a/net/mac80211/status.c
+++++ b/net/mac80211/status.c
++@@ -716,7 +716,7 @@ static void ieee80211_report_used_skb(st
++ 		ieee80211_sta_update_pending_airtime(local, sta,
++ 						     skb_get_queue_mapping(skb),
++ 						     tx_time_est,
++-						     true);
+++						     true, info->tx_time_mc);
++ 		rcu_read_unlock();
++ 	}
++ 
++@@ -1127,10 +1127,11 @@ void ieee80211_tx_status_ext(struct ieee
++ 		/* Do this here to avoid the expensive lookup of the sta
++ 		 * in ieee80211_report_used_skb().
++ 		 */
+++		bool mcast = IEEE80211_SKB_CB(skb)->tx_time_mc;
++ 		ieee80211_sta_update_pending_airtime(local, sta,
++ 						     skb_get_queue_mapping(skb),
++ 						     tx_time_est,
++-						     true);
+++						     true, mcast);
++ 		ieee80211_info_set_tx_time_est(IEEE80211_SKB_CB(skb), 0);
++ 	}
++ 
+diff --git a/package/kernel/mac80211/patches/subsys/400-allow-ibss-mixed.patch b/package/kernel/mac80211/patches/subsys/400-allow-ibss-mixed.patch
+new file mode 100644
+index 000000000000..7a96f9f2bec5
+--- /dev/null
++++ b/package/kernel/mac80211/patches/subsys/400-allow-ibss-mixed.patch
+@@ -0,0 +1,40 @@
++From: Hauke Mehrtens <hauke@hauke-m.de>
++Date: Mon, 24 Feb 2020 00:00:00 +0100
++Subject: [PATCH] mac80211: Allow IBSS mode and different beacon intervals
++
++ath10k-ct supports the combination to select IBSS (ADHOC) mode and
++different beacon intervals together. mac80211 does not like this
++combination, but Ben says this is ok, so remove this check.
++
++ath10k-ct starting with version 5.2 allows the combination of
++NL80211_IFTYPE_ADHOC and beacon_int_min_gcd in ath10k_10x_ct_if_comb
++which triggers this warning. Ben told me that this is not a big problem
++and we should ignore this.
++---
++ net/wireless/core.c | 15 ---------------
++ 1 file changed, 15 deletions(-)
++
++--- a/net/wireless/core.c
+++++ b/net/wireless/core.c
++@@ -651,21 +651,6 @@ static int wiphy_verify_combinations(str
++ 				    c->limits[j].max > 1))
++ 				return -EINVAL;
++ 
++-			/*
++-			 * This isn't well-defined right now. If you have an
++-			 * IBSS interface, then its beacon interval may change
++-			 * by joining other networks, and nothing prevents it
++-			 * from doing that.
++-			 * So technically we probably shouldn't even allow AP
++-			 * and IBSS in the same interface, but it seems that
++-			 * some drivers support that, possibly only with fixed
++-			 * beacon intervals for IBSS.
++-			 */
++-			if (WARN_ON(types & BIT(NL80211_IFTYPE_ADHOC) &&
++-				    c->beacon_int_min_gcd)) {
++-				return -EINVAL;
++-			}
++-
++ 			cnt += c->limits[j].max;
++ 			/*
++ 			 * Don't advertise an unsupported type
+diff --git a/package/kernel/mac80211/patches/subsys/780-avoid-crashing-missing-band.patch b/package/kernel/mac80211/patches/subsys/780-avoid-crashing-missing-band.patch
+new file mode 100644
+index 000000000000..35fa961d21a7
+--- /dev/null
++++ b/package/kernel/mac80211/patches/subsys/780-avoid-crashing-missing-band.patch
+@@ -0,0 +1,34 @@
++From: David Bauer <mail@david-bauer.net>
++Date: Thu, 30 Nov 2023 07:32:52 +0100
++Subject: [PATCH] mac80211: avoid crashing on invalid band info
++
++Frequent crashes have been observed on MT7916 based platforms. While the
++root of these crashes are currently unknown, they happen when decoding
++rate information of connected STAs in AP mode. The rate-information is
++associated with a band which is not available on the PHY.
++
++Check for this condition in order to avoid crashing the whole system.
++This patch should be removed once the roout cause has been found and
++fixed.
++
++Link: https://github.com/freifunk-gluon/gluon/issues/2980
++
++Signed-off-by: David Bauer <mail@david-bauer.net>
++---
++
++--- a/net/mac80211/sta_info.c
+++++ b/net/mac80211/sta_info.c
++@@ -2445,6 +2445,13 @@ static void sta_stats_decode_rate(struct
++ 
++ 		sband = local->hw.wiphy->bands[band];
++ 
+++		if (!sband) {
+++			wiphy_warn(local->hw.wiphy,
+++				    "Invalid band %d\n",
+++				    band);
+++			break;
+++		}
+++
++ 		if (WARN_ON_ONCE(!sband->bitrates))
++ 			break;
++ 
+diff --git a/package/kernel/mac80211/patches/subsys/782-net-next-1-of-net-pass-the-dst-buffer-to-of_get_mac_address.patch b/package/kernel/mac80211/patches/subsys/782-net-next-1-of-net-pass-the-dst-buffer-to-of_get_mac_address.patch
+new file mode 100644
+index 000000000000..26af6a2fb986
+--- /dev/null
++++ b/package/kernel/mac80211/patches/subsys/782-net-next-1-of-net-pass-the-dst-buffer-to-of_get_mac_address.patch
+@@ -0,0 +1,29 @@
++--- a/backport-include/linux/of_net.h
+++++ /dev/null
++@@ -1,26 +0,0 @@
++-#ifndef _BP_OF_NET_H
++-#define _BP_OF_NET_H
++-#include_next <linux/of_net.h>
++-#include <linux/version.h>
++-#include <linux/etherdevice.h>
++-
++-/* The behavior of of_get_mac_address() changed in kernel 5.2, it now
++- * returns an error code and not NULL in case of an error.
++- */
++-#if LINUX_VERSION_IS_LESS(5,13,0)
++-static inline int backport_of_get_mac_address(struct device_node *np, u8 *mac_out)
++-{
++-	const void *mac = of_get_mac_address(np);
++-
++-	if (!mac)
++-		return -ENODEV;
++-	if (IS_ERR(mac))
++-		return PTR_ERR(mac);
++-	ether_addr_copy(mac_out, mac);
++-	
++-	return 0;
++-}
++-#define of_get_mac_address LINUX_BACKPORT(of_get_mac_address)
++-#endif /* < 5.2 */
++-
++-#endif /* _BP_OF_NET_H */
+-- 
+2.34.1
+

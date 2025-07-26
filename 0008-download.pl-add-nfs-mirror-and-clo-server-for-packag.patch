@@ -13,10 +13,10 @@ Signed-off-by: Atchaya R <quic_ratchaya@quicinc.com>
  1 file changed, 32 insertions(+), 4 deletions(-)
 
 diff --git a/scripts/download.pl b/scripts/download.pl
-index 5449a3406aa9..82e0e37f3fe4 100755
+index c6c9b8e56cd4..0391cf803a38 100755
 --- a/scripts/download.pl
 +++ b/scripts/download.pl
-@@ -24,6 +24,8 @@ $url_filename = shift @ARGV unless $ARGV[0] =~ /:\/\//;
+@@ -25,6 +25,8 @@ $url_filename = shift @ARGV unless $ARGV[0] =~ /:\/\//;
  my $scriptdir = dirname($0);
  my @mirrors;
  my $ok;
@@ -25,8 +25,8 @@ index 5449a3406aa9..82e0e37f3fe4 100755
  
  my $check_certificate = $ENV{DOWNLOAD_CHECK_CERTIFICATE} eq "y";
  my $custom_tool = $ENV{DOWNLOAD_TOOL_CUSTOM};
-@@ -176,7 +178,7 @@ sub download
- 			system("mkdir", "-p", "$target/");
+@@ -177,7 +179,7 @@ sub download
+ 			make_path($target);
  		}
  
 -		if (! open TMPDLS, "find $mirror -follow -name $filename 2>/dev/null |") {
@@ -34,7 +34,7 @@ index 5449a3406aa9..82e0e37f3fe4 100755
  			print("Failed to search for $filename in $mirror\n");
  			return;
  		}
-@@ -254,7 +256,9 @@ sub cleanup
+@@ -255,7 +257,9 @@ sub cleanup
  	unlink "$target/$filename.hash";
  }
  
@@ -45,7 +45,7 @@ index 5449a3406aa9..82e0e37f3fe4 100755
  
  foreach my $mirror (@ARGV) {
  	if ($mirror =~ /^\@SF\/(.+)$/) {
-@@ -296,6 +300,32 @@ foreach my $mirror (@ARGV) {
+@@ -297,6 +301,32 @@ foreach my $mirror (@ARGV) {
  
  projectsmirrors '@OPENWRT';
  
@@ -78,7 +78,7 @@ index 5449a3406aa9..82e0e37f3fe4 100755
  if (-f "$target/$filename") {
  	$hash_cmd and do {
  		if (system("cat '$target/$filename' | $hash_cmd > '$target/$filename.hash'")) {
-@@ -314,8 +344,6 @@ if (-f "$target/$filename") {
+@@ -315,8 +345,6 @@ if (-f "$target/$filename") {
  	};
  }
  
