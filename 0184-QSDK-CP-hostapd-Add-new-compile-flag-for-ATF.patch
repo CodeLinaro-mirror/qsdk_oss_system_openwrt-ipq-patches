@@ -1,0 +1,31 @@
+From c035744e8dc1a0d5d9aa4fd7656182c27d425558 Mon Sep 17 00:00:00 2001
+From: Harshitha Prem <hprem@qti.qualcomm.com>
+Date: Tue, 22 Jul 2025 16:56:52 +0530
+Subject: [PATCH] QSDK:CP: hostapd: Add new compile flag for ATF
+
+Inorder to compile ATF specific code in hostapd, add
+a new compilation flag "CONFIG_ATF_OFFLOAD".
+
+Change-Id: I2ddc1fa54a5ea222d05d7a7f5c01ef868c63d7fd
+Signed-off-by: Harshitha Prem <hprem@qti.qualcomm.com>
+---
+ package/network/services/hostapd/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index ea78cb7a322f..b74af4483c12 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -92,7 +92,8 @@ DRIVER_MAKEOPTS= \
+ 	CONFIG_IEEE80211AC=$(HOSTAPD_IEEE80211AC) \
+ 	CONFIG_IEEE80211AX=$(HOSTAPD_IEEE80211AX) \
+ 	CONFIG_MBO=$(CONFIG_WPA_MBO_SUPPORT) \
+-	CONFIG_UCODE=y
++	CONFIG_UCODE=y \
++	CONFIG_ATF_OFFLOAD=y
+ 
+ ifeq ($(SSL_VARIANT),openssl)
+   DRIVER_MAKEOPTS += CONFIG_TLS=openssl CONFIG_SAE=y
+-- 
+2.34.1
+
