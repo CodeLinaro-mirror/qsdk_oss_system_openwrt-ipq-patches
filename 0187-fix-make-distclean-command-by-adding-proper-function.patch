@@ -1,0 +1,28 @@
+From 9c5b4401648935c38052f69682ab6f302280ea81 Mon Sep 17 00:00:00 2001
+From: Deepak Kumar <deepaku@qti.qualcomm.com>
+Date: Tue, 29 Jul 2025 10:44:45 +0530
+Subject: [PATCH] fix make distclean command by adding proper function name
+ clean_kernel in toplevel.mk
+
+Change-Id: Ie9c5c17eca16fa0f9aa5fe62a0c0c5cb7b8bb09a
+Signed-off-by: Deepak Kumar <deepaku@qti.qualcomm.com>
+---
+ include/toplevel.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/toplevel.mk b/include/toplevel.mk
+index c63190c0e5f7..1c0b55016bab 100644
+--- a/include/toplevel.mk
++++ b/include/toplevel.mk
+@@ -263,7 +263,7 @@ package/symlinks-clean:
+ help:
+ 	cat README.md
+ 
+-distclean: clean kernel
++distclean: clean_kernel
+ 	rm -rf bin build_dir .ccache .config* dl feeds key-build* logs package/feeds target/linux/feeds staging_dir tmp
+ 	@$(_SINGLE)$(SUBMAKE) -C scripts/config clean
+ 
+-- 
+2.34.1
+
