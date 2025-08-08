@@ -1,0 +1,97 @@
+From a0133dcb9dc5815d4b42ee6df09478809b089851 Mon Sep 17 00:00:00 2001
+From: Sri Vidya Gunturi <sgunturi@qti.qualcomm.com>
+Date: Mon, 21 Jul 2025 18:19:25 +0530
+Subject: [PATCH] hostapd: makefile: Add support to build minimal patches and
+ extension files
+
+Add support to migrate code from qsdk/src/qca/qca-app-extns folder to
+hostapd build folder.
+Add support to apply the minimal patches from qsdk/src/qca/qca-app-extns
+folder onto the hostapd build folder.
+Add support to compile this extension code in the hostapd build directory.
+
+Change-Id: I819f3c6184750d005d62b642ad144b31e6f0b07b
+Signed-off-by: Sri Vidya Gunturi <sgunturi@qti.qualcomm.com>
+Signed-off-by: Venkateswara Swamy Bandaru <vbandaru@qti.qualcomm.com>
+---
+ package/network/services/hostapd/Makefile           | 13 +++++++++++++
+ .../services/hostapd/files/hostapd-full.config      |  2 ++
+ .../services/hostapd/files/hostapd-macsec.config    |  2 ++
+ .../hostapd/files/wpa_supplicant-full.config        |  2 ++
+ .../hostapd/files/wpa_supplicant-macsec.config      |  2 ++
+ 5 files changed, 21 insertions(+)
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index d923c0428915..819bf55138a5 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -20,6 +20,9 @@ PKG_SOURCE_SUBMODULES:=skip
+ PKG_BUILD_PARALLEL:=1
+ PKG_ASLR_PIE_REGULAR:=1
+ 
++HOSTAPD_PATCH_DIR:=$(TOPDIR)/package/network/services/hostapd/patches
++EXTENSIONS_DIR:=$(TOPDIR)/qca/src/wlan-app-extns/hostapd
++
+ PKG_CONFIG_DEPENDS:= \
+ 	CONFIG_PACKAGE_hostapd \
+ 	CONFIG_PACKAGE_hostapd-basic \
+@@ -598,6 +601,16 @@ ifneq ($(wildcard $(PKG_BUILD_DIR)/.config_*),$(subst .configured_,.config_,$(ST
+   endef
+ endif
+ 
++
++define Build/Patch
++	$(call PatchDir,$(PKG_BUILD_DIR),$(HOSTAPD_PATCH_DIR),patches/)
++	$(call PatchDir,$(PKG_BUILD_DIR),$(FILE_DIR_HOSTAPD)/patches,patches/)
++ifdef CONFIG_PACKAGE_QCN_EXTN
++	$(call PatchDir,$(PKG_BUILD_DIR),$(EXTENSIONS_DIR)/patches,patches/)
++	$(CP) $(EXTENSIONS_DIR)/src $(PKG_BUILD_DIR)/qcn_extns
++endif
++endef
++
+ define Build/Configure
+ 	$(Build/Configure/rebuild)
+ 	# Revert specific patch for wpa-supplicant-macsec
+diff --git a/package/network/services/hostapd/files/hostapd-full.config b/package/network/services/hostapd/files/hostapd-full.config
+index f4afd10efc24..22e4a57e19a8 100644
+--- a/package/network/services/hostapd/files/hostapd-full.config
++++ b/package/network/services/hostapd/files/hostapd-full.config
+@@ -427,3 +427,5 @@ NEED_DH_GROUPS_ALL=y
+ CONFIG_DPP=y
+ CONFIG_DPP2=y
+ CONFIG_DPP3=y
++#Enable Extensions
++CONFIG_QCN_EXTN=y
+diff --git a/package/network/services/hostapd/files/hostapd-macsec.config b/package/network/services/hostapd/files/hostapd-macsec.config
+index 6434d1121e15..325e1afc72c0 100644
+--- a/package/network/services/hostapd/files/hostapd-macsec.config
++++ b/package/network/services/hostapd/files/hostapd-macsec.config
+@@ -102,3 +102,5 @@ CONFIG_SUITEB=y
+ CONFIG_SUITEB192=y
+ CONFIG_ERP=y
+ CONFIG_TESTING_OPTIONS=y
++#Enable Extensions
++CONFIG_QCN_EXTN=y
+diff --git a/package/network/services/hostapd/files/wpa_supplicant-full.config b/package/network/services/hostapd/files/wpa_supplicant-full.config
+index 86bc109f4c47..e2df466123af 100644
+--- a/package/network/services/hostapd/files/wpa_supplicant-full.config
++++ b/package/network/services/hostapd/files/wpa_supplicant-full.config
+@@ -643,3 +643,5 @@ NEED_DH_GROUPS_ALL=y
+ CONFIG_DPP=y
+ CONFIG_DPP2=y
+ CONFIG_DPP3=y
++#Enable Extensions
++CONFIG_QCN_EXTN=y
+diff --git a/package/network/services/hostapd/files/wpa_supplicant-macsec.config b/package/network/services/hostapd/files/wpa_supplicant-macsec.config
+index 85b355af1107..45817e12ccdb 100644
+--- a/package/network/services/hostapd/files/wpa_supplicant-macsec.config
++++ b/package/network/services/hostapd/files/wpa_supplicant-macsec.config
+@@ -100,3 +100,5 @@ CONFIG_SAE=y
+ CONFIG_DPP=y
+ CONFIG_SUITEB=y
+ CONFIG_SUITEB192=y
++#Enable Extensions
++CONFIG_QCN_EXTN=y
+-- 
+2.34.1
+
