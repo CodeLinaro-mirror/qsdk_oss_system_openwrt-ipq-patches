@@ -40,7 +40,7 @@ Signed-off-by: Harshitha Prem <quic_hprem@quicinc.com>
  1 file changed, 695 insertions(+), 93 deletions(-)
 
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-index 6a8d7ca32569..643c23760abf 100755
+index 6912a3ca0ea4..293113e4a03a 100755
 --- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 @@ -3,7 +3,11 @@
@@ -57,7 +57,7 @@ index 6a8d7ca32569..643c23760abf 100755
  MP_CONFIG_INT="mesh_retry_timeout mesh_confirm_timeout mesh_holding_timeout mesh_max_peer_links
  	       mesh_max_retries mesh_ttl mesh_element_ttl mesh_hwmp_max_preq_retries
 @@ -15,6 +19,67 @@ MP_CONFIG_INT="mesh_retry_timeout mesh_confirm_timeout mesh_holding_timeout mesh
- MP_CONFIG_BOOL="mesh_auto_open_plinks mesh_fwding"
+ MP_CONFIG_BOOL="mesh_auto_open_plinks mesh_fwding mesh_nolearn"
  MP_CONFIG_STRING="mesh_power_mode"
  
 +is_wiphy_multi_radio=0
@@ -836,7 +836,7 @@ index 6a8d7ca32569..643c23760abf 100755
  
  	json_select config
  
-@@ -880,6 +1284,7 @@ mac80211_setup_mesh() {
+@@ -885,6 +1289,7 @@ mac80211_setup_mesh() {
  	[ -n "$mcval" ] && json_add_string mcast-rate "$mcval"
  	[ -n "$brstr" ] && json_add_string basic-rates "$brstr"
  	json_add_int beacon-interval "$beacon_int"
@@ -844,7 +844,7 @@ index 6a8d7ca32569..643c23760abf 100755
  	mac80211_add_mesh_params
  
  	json_close_object
-@@ -905,6 +1310,7 @@ mac80211_set_vif_txpower() {
+@@ -910,6 +1315,7 @@ mac80211_set_vif_txpower() {
  
  	json_select config
  	json_get_var ifname _ifname
@@ -852,7 +852,7 @@ index 6a8d7ca32569..643c23760abf 100755
  	json_get_vars vif_txpower
  	json_select ..
  
-@@ -914,6 +1320,25 @@ mac80211_set_vif_txpower() {
+@@ -919,6 +1325,25 @@ mac80211_set_vif_txpower() {
  	else
  		iw dev "$ifname" set txpower auto
  	fi
@@ -878,7 +878,7 @@ index 6a8d7ca32569..643c23760abf 100755
  }
  
  wpa_supplicant_init_config() {
-@@ -938,6 +1363,13 @@ wpa_supplicant_add_interface() {
+@@ -943,6 +1368,13 @@ wpa_supplicant_add_interface() {
  	json_add_string ctrl "$_rpath"
  	json_add_string iface "$ifname"
  	json_add_string mode "$mode"
@@ -892,7 +892,7 @@ index 6a8d7ca32569..643c23760abf 100755
  	json_add_string config "$_config"
  	[ -n "$default_macaddr" ] || json_add_string macaddr "$macaddr"
  	[ -n "$network_bridge" ] && json_add_string bridge "$network_bridge"
-@@ -963,6 +1395,7 @@ wpa_supplicant_set_config() {
+@@ -968,6 +1400,7 @@ wpa_supplicant_set_config() {
  	json_add_int num_global_macaddr "$num_global_macaddr"
  	json_add_string macaddr_base "$macaddr_base"
  	json_add_boolean defer 1
@@ -900,7 +900,7 @@ index 6a8d7ca32569..643c23760abf 100755
  	local data="$(json_dump)"
  
  	json_cleanup
-@@ -979,7 +1412,7 @@ wpa_supplicant_set_config() {
+@@ -984,7 +1417,7 @@ wpa_supplicant_set_config() {
  	[ "$ret" != 0 -o -z "$supplicant_res" ] && wireless_setup_vif_failed WPA_SUPPLICANT_FAILED
  
  	wireless_add_process "$(jsonfilter -s "$supplicant_res" -l 1 -e @.pid)" "/usr/sbin/wpa_supplicant" 1 1
@@ -909,7 +909,7 @@ index 6a8d7ca32569..643c23760abf 100755
  }
  
  hostapd_set_config() {
-@@ -1005,10 +1438,12 @@ hostapd_set_config() {
+@@ -1010,10 +1443,12 @@ hostapd_set_config() {
  wpa_supplicant_start() {
  	local phy="$1"
  	local radio="$2"
@@ -923,7 +923,7 @@ index 6a8d7ca32569..643c23760abf 100755
  }
  
  mac80211_setup_supplicant() {
-@@ -1020,7 +1455,7 @@ mac80211_setup_supplicant() {
+@@ -1025,7 +1460,7 @@ mac80211_setup_supplicant() {
  	if [ "$mode" = "sta" ]; then
  		wpa_supplicant_add_network "$ifname"
  	else
@@ -932,7 +932,7 @@ index 6a8d7ca32569..643c23760abf 100755
  	fi
  
  	wpa_supplicant_add_interface "$ifname" "$mode"
-@@ -1036,13 +1471,14 @@ mac80211_setup_vif() {
+@@ -1041,13 +1476,14 @@ mac80211_setup_vif() {
  	json_get_var ifname _ifname
  	json_get_var macaddr _macaddr
  	json_get_var default_macaddr _default_macaddr
@@ -948,7 +948,7 @@ index 6a8d7ca32569..643c23760abf 100755
  			json_get_vars $MP_CONFIG_INT $MP_CONFIG_BOOL $MP_CONFIG_STRING
  			wireless_vif_parse_encryption
  			[ -z "$htmode" ] && htmode="NOHT";
-@@ -1061,6 +1497,17 @@ mac80211_setup_vif() {
+@@ -1066,6 +1502,17 @@ mac80211_setup_vif() {
  			fi
  		;;
  		sta)
@@ -966,7 +966,7 @@ index 6a8d7ca32569..643c23760abf 100755
  			mac80211_setup_supplicant || failed=1
  		;;
  		monitor)
-@@ -1120,6 +1567,9 @@ mac80211_reset_config() {
+@@ -1125,6 +1572,9 @@ mac80211_reset_config() {
  }
  
  mac80211_set_suffix() {
@@ -976,7 +976,7 @@ index 6a8d7ca32569..643c23760abf 100755
  	[ "$radio" = "-1" ] && radio=
  	phy_suffix="${radio:+:$radio}"
  	vif_phy_suffix="${radio:+.$radio}"
-@@ -1127,20 +1577,34 @@ mac80211_set_suffix() {
+@@ -1132,20 +1582,34 @@ mac80211_set_suffix() {
  }
  
  drv_mac80211_setup() {
@@ -1014,7 +1014,7 @@ index 6a8d7ca32569..643c23760abf 100755
  
  	mac80211_set_suffix
  
-@@ -1152,52 +1616,83 @@ drv_mac80211_setup() {
+@@ -1157,52 +1621,83 @@ drv_mac80211_setup() {
  
  	find_phy || {
  		echo "Could not find PHY for device '$1'"
@@ -1121,7 +1121,7 @@ index 6a8d7ca32569..643c23760abf 100755
  
  	has_ap=
  	hostapd_ctrl=
-@@ -1211,6 +1706,11 @@ drv_mac80211_setup() {
+@@ -1216,6 +1711,11 @@ drv_mac80211_setup() {
  	for_each_interface "sta adhoc mesh" mac80211_set_noscan
  	[ -n "$has_ap" ] && mac80211_hostapd_setup_base "$phy"
  
@@ -1133,7 +1133,7 @@ index 6a8d7ca32569..643c23760abf 100755
  	local prev
  	json_set_namespace wdev_uc prev
  	json_init
-@@ -1241,6 +1741,24 @@ drv_mac80211_setup() {
+@@ -1246,6 +1746,24 @@ drv_mac80211_setup() {
  	}
  
  	for_each_interface "ap sta adhoc mesh monitor" mac80211_set_vif_txpower
@@ -1158,7 +1158,7 @@ index 6a8d7ca32569..643c23760abf 100755
  	wireless_set_up
  }
  
-@@ -1275,4 +1793,80 @@ drv_mac80211_teardown() {
+@@ -1280,4 +1798,80 @@ drv_mac80211_teardown() {
  	mac80211_reset_config "$phy"
  }
  
@@ -1239,6 +1239,3 @@ index 6a8d7ca32569..643c23760abf 100755
 +
 +
  add_driver mac80211
--- 
-2.34.1
-

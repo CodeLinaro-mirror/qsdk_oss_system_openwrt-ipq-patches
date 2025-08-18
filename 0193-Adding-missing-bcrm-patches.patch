@@ -1,0 +1,249 @@
+From ad9d5d7e0db8266b8e6ed73fe9558d126e046b21 Mon Sep 17 00:00:00 2001
+From: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+Date: Mon, 18 Aug 2025 17:45:17 +0530
+Subject: [PATCH] Adding-missing-bcrm-patches
+
+Signed-off-by: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+---
+ ...und-bug-with-some-inconsistent-BSSes.patch | 49 +++++++++++++++
+ ...62-brcmfmac-Disable-power-management.patch | 27 +++++++++
+ ...-in-driver-tables-with-country-codes.patch | 60 +++++++++++++++++++
+ ...e-internal-roaming-engine-by-default.patch | 23 +++++++
+ ...mfmac-disable-dump_survey-on-bcm2835.patch | 38 ++++++++++++
+ 5 files changed, 197 insertions(+)
+ create mode 100644 package/kernel/mac80211/patches/brcm/861-brcmfmac-workaround-bug-with-some-inconsistent-BSSes.patch
+ create mode 100644 package/kernel/mac80211/patches/brcm/862-brcmfmac-Disable-power-management.patch
+ create mode 100644 package/kernel/mac80211/patches/brcm/863-brcmfmac-add-in-driver-tables-with-country-codes.patch
+ create mode 100644 package/kernel/mac80211/patches/brcm/864-brcmfmac-do-not-use-internal-roaming-engine-by-default.patch
+ create mode 100644 package/kernel/mac80211/patches/brcm/865-brcmfmac-disable-dump_survey-on-bcm2835.patch
+
+diff --git a/package/kernel/mac80211/patches/brcm/861-brcmfmac-workaround-bug-with-some-inconsistent-BSSes.patch b/package/kernel/mac80211/patches/brcm/861-brcmfmac-workaround-bug-with-some-inconsistent-BSSes.patch
+new file mode 100644
+index 000000000000..b06172ec0ef3
+--- /dev/null
++++ b/package/kernel/mac80211/patches/brcm/861-brcmfmac-workaround-bug-with-some-inconsistent-BSSes.patch
+@@ -0,0 +1,49 @@
++From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
++Date: Thu, 9 Jul 2015 00:07:59 +0200
++Subject: [PATCH] brcmfmac: workaround bug with some inconsistent BSSes state
++MIME-Version: 1.0
++Content-Type: text/plain; charset=UTF-8
++Content-Transfer-Encoding: 8bit
++
++Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
++---
++
++--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
+++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
++@@ -979,8 +979,36 @@ static struct wireless_dev *brcmf_cfg802
++ 	struct brcmf_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
++ 	struct brcmf_pub *drvr = cfg->pub;
++ 	struct wireless_dev *wdev;
+++	struct net_device *dev;
++ 	int err;
++ 
+++	/*
+++	 * There is a bug with in-firmware BSS management. When adding virtual
+++	 * interface brcmfmac first tells firmware to create new BSS and then
+++	 * it creates new struct net_device.
+++	 *
+++	 * If creating/registering netdev(ice) fails, BSS remains in some bugged
+++	 * state. It conflicts with existing BSSes by overtaking their auth
+++	 * requests.
+++	 *
+++	 * It results in one BSS (addresss X) sending beacons and another BSS
+++	 * (address Y) replying to authentication requests. This makes interface
+++	 * unusable as AP.
+++	 *
+++	 * To workaround this bug we may try to guess if register_netdev(ice)
+++	 * will fail. The most obvious case is using interface name that already
+++	 * exists. This is actually quite likely with brcmfmac & some user space
+++	 * scripts as brcmfmac doesn't allow deleting virtual interfaces.
+++	 * So this bug can be triggered even by something trivial like:
+++	 * iw dev wlan0 delete
+++	 * iw phy phy0 interface add wlan0 type __ap
+++	 */
+++	dev = dev_get_by_name(&init_net, name);
+++	if (dev) {
+++		dev_put(dev);
+++		return ERR_PTR(-ENFILE);
+++	}
+++
++ 	brcmf_dbg(TRACE, "enter: %s type %d\n", name, type);
++ 	err = brcmf_vif_add_validate(wiphy_to_cfg(wiphy), type);
++ 	if (err) {
+diff --git a/package/kernel/mac80211/patches/brcm/862-brcmfmac-Disable-power-management.patch b/package/kernel/mac80211/patches/brcm/862-brcmfmac-Disable-power-management.patch
+new file mode 100644
+index 000000000000..92e647816b49
+--- /dev/null
++++ b/package/kernel/mac80211/patches/brcm/862-brcmfmac-Disable-power-management.patch
+@@ -0,0 +1,27 @@
++From 66ae1b1750720a33e29792a177b1e696f4f005fb Mon Sep 17 00:00:00 2001
++From: Phil Elwell <phil@raspberrypi.org>
++Date: Wed, 9 Mar 2016 17:25:59 +0000
++Subject: [PATCH] brcmfmac: Disable power management
++
++Disable wireless power saving in the brcmfmac WLAN driver. This is a
++temporary measure until the connectivity loss resulting from power
++saving is resolved.
++
++Signed-off-by: Phil Elwell <phil@raspberrypi.org>
++---
++ drivers/net/wireless/brcm80211/brcmfmac/cfg80211.c | 2 ++
++ 1 file changed, 2 insertions(+)
++
++--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
+++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
++@@ -3327,6 +3327,10 @@ brcmf_cfg80211_set_power_mgmt(struct wip
++ 	 * preference in cfg struct to apply this to
++ 	 * FW later while initializing the dongle
++ 	 */
+++#if defined(CONFIG_ARCH_BCM2835)
+++	brcmf_dbg(INFO, "power management disabled\n");
+++	enabled = false;
+++#endif
++ 	cfg->pwr_save = enabled;
++ 	if (!check_vif_up(ifp->vif)) {
++ 
+diff --git a/package/kernel/mac80211/patches/brcm/863-brcmfmac-add-in-driver-tables-with-country-codes.patch b/package/kernel/mac80211/patches/brcm/863-brcmfmac-add-in-driver-tables-with-country-codes.patch
+new file mode 100644
+index 000000000000..f873528e2632
+--- /dev/null
++++ b/package/kernel/mac80211/patches/brcm/863-brcmfmac-add-in-driver-tables-with-country-codes.patch
+@@ -0,0 +1,60 @@
++From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <rafal@milecki.pl>
++Subject: [PATCH] brcmfmac: add in-driver tables with country codes
++MIME-Version: 1.0
++Content-Type: text/plain; charset=UTF-8
++Content-Transfer-Encoding: 8bit
++
++This adds early support for changing region. Ideally this data should
++be stored in DT as all these mappings are devices specific.
++
++Signed-off-by: Rafał Miłecki <rafal@milecki.pl>
++---
++
++--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/of.c
+++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/of.c
++@@ -65,6 +65,36 @@ static int brcmf_of_get_country_codes(st
++ 	return 0;
++ }
++ 
+++/* TODO: FIXME: Use DT */
+++static void brcmf_of_probe_cc(struct device *dev,
+++			      struct brcmf_mp_device *settings)
+++{
+++	static struct brcmfmac_pd_cc_entry netgear_r8000_cc_ent[] = {
+++		{ "JP", "JP", 78 },
+++		{ "US", "Q2", 86 },
+++	};
+++	struct brcmfmac_pd_cc_entry *cc_ent = NULL;
+++	int table_size = 0;
+++
+++	if (of_machine_is_compatible("netgear,r8000")) {
+++		cc_ent = netgear_r8000_cc_ent;
+++		table_size = ARRAY_SIZE(netgear_r8000_cc_ent);
+++	}
+++
+++	if (cc_ent && table_size) {
+++		struct brcmfmac_pd_cc *cc;
+++		size_t memsize;
+++
+++		memsize = table_size * sizeof(struct brcmfmac_pd_cc_entry);
+++		cc = devm_kzalloc(dev, sizeof(*cc) + memsize, GFP_KERNEL);
+++		if (!cc)
+++			return;
+++		cc->table_size = table_size;
+++		memcpy(cc->table, cc_ent, memsize);
+++		settings->country_codes = cc;
+++	}
+++}
+++
++ void brcmf_of_probe(struct device *dev, enum brcmf_bus_type bus_type,
++ 		    struct brcmf_mp_device *settings)
++ {
++@@ -113,6 +143,8 @@ void brcmf_of_probe(struct device *dev,
++ 		of_node_put(root);
++ 	}
++ 
+++	brcmf_of_probe_cc(dev, settings);
+++
++ 	if (!np || !of_device_is_compatible(np, "brcm,bcm4329-fmac"))
++ 		return;
++ 
+diff --git a/package/kernel/mac80211/patches/brcm/864-brcmfmac-do-not-use-internal-roaming-engine-by-default.patch b/package/kernel/mac80211/patches/brcm/864-brcmfmac-do-not-use-internal-roaming-engine-by-default.patch
+new file mode 100644
+index 000000000000..fe79c40c11cb
+--- /dev/null
++++ b/package/kernel/mac80211/patches/brcm/864-brcmfmac-do-not-use-internal-roaming-engine-by-default.patch
+@@ -0,0 +1,23 @@
++brcmfmac: do not use internal roaming engine by default
++
++Some evidence of curing disconnects with this disabled, so make it a default.
++Can be overridden with module parameter roamoff=0
++See: http://projectable.me/optimize-my-pi-wi-fi/
++
++Signed-off-by: Phil Elwell <phil@raspberrypi.org>
++---
++
++--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/common.c
+++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/common.c
++@@ -59,7 +59,11 @@ static int brcmf_fcmode;
++ module_param_named(fcmode, brcmf_fcmode, int, 0);
++ MODULE_PARM_DESC(fcmode, "Mode of firmware signalled flow control");
++ 
+++#if defined(CONFIG_ARCH_BCM2835)
+++static int brcmf_roamoff = 1;
+++#else
++ static int brcmf_roamoff;
+++#endif
++ module_param_named(roamoff, brcmf_roamoff, int, 0400);
++ MODULE_PARM_DESC(roamoff, "Do not use internal roaming engine");
++ 
+diff --git a/package/kernel/mac80211/patches/brcm/865-brcmfmac-disable-dump_survey-on-bcm2835.patch b/package/kernel/mac80211/patches/brcm/865-brcmfmac-disable-dump_survey-on-bcm2835.patch
+new file mode 100644
+index 000000000000..bb87c69ff383
+--- /dev/null
++++ b/package/kernel/mac80211/patches/brcm/865-brcmfmac-disable-dump_survey-on-bcm2835.patch
+@@ -0,0 +1,38 @@
++brcmfmac: disable dump_survey on Raspberry Pi
++
++Enabling this causes slow iwinfo calls on Raspberry Pi and LuCI slows down
++when wireless is enabled.
++https://github.com/openwrt/openwrt/issues/14013
++
++Signed-off-by: Álvaro Fernández Rojas <noltari@gmail.com>
++---
++
++--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
+++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
++@@ -7987,6 +7987,7 @@ static s32 brcmf_translate_country_code(
++ 	return 0;
++ }
++ 
+++#if !defined(CONFIG_ARCH_BCM2835)
++ static int
++ brcmf_parse_dump_obss(char *buf, struct brcmf_dump_survey *survey)
++ {
++@@ -8209,6 +8210,7 @@ exit:
++ 		brcmf_set_mpc(ifp, 1);
++ 	return err;
++ }
+++#endif /* CONFIG_ARCH_BCM2835 */
++ 
++ static void brcmf_cfg80211_reg_notifier(struct wiphy *wiphy,
++ 					struct regulatory_request *req)
++@@ -8361,8 +8363,10 @@ struct brcmf_cfg80211_info *brcmf_cfg802
++ 	if (brcmf_feat_is_enabled(ifp, BRCMF_FEAT_WOWL_GTK))
++ 		ops->set_rekey_data = brcmf_cfg80211_set_rekey_data;
++ #endif
+++#if !defined(CONFIG_ARCH_BCM2835)
++ 	if (brcmf_feat_is_enabled(ifp, BRCMF_FEAT_DUMP_OBSS))
++ 		ops->dump_survey = brcmf_cfg80211_dump_survey;
+++#endif /* CONFIG_ARCH_BCM2835 */
++ 
++ 	err = wiphy_register(wiphy);
++ 	if (err < 0) {
+-- 
+2.34.1
+

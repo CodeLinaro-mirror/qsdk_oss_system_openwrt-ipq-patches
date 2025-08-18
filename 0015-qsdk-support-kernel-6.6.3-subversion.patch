@@ -10,16 +10,16 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  2 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/include/kernel-6.6 b/include/kernel-6.6
-index 5fbb10e0524f..3f93ad37f99e 100644
+index 4a55a573ae39..0e8e3f35df5f 100644
 --- a/include/kernel-6.6
 +++ b/include/kernel-6.6
 @@ -1,2 +1,2 @@
--LINUX_VERSION-6.6 = .83
--LINUX_KERNEL_HASH-6.6.83 = 894bbbe63b7484a0bc576a1e11a8dbc090fbd476d6424431bdc8435e03c2c208
+-LINUX_VERSION-6.6 = .100
+-LINUX_KERNEL_HASH-6.6.100 = d6c0ec4d55b14814f55b62a0b23a2d95faf66877e48fbfb4b83523e4afdf97ba
 +LINUX_VERSION-6.6 = .47
-+LINUX_KERNEL_HASH-6.6.47 = d43376c9e9eaa92bb1b926054bd160d329c58a62d64bd65fe1222c11c6564f50
++LINUX_KERNEL_HASH-6.6.47 = d43376c9e9eaa92bb1b926054bd160d329c58a62d64bd65fe1222c11c6564f5
 diff --git a/package/kernel/linux/modules/netfilter.mk b/package/kernel/linux/modules/netfilter.mk
-index 3cf63982ba44..41cc7cb773fa 100644
+index 96531b1e0803..9aa3e876daf1 100644
 --- a/package/kernel/linux/modules/netfilter.mk
 +++ b/package/kernel/linux/modules/netfilter.mk
 @@ -110,6 +110,7 @@ define KernelPackage/nf-conntrack
@@ -38,6 +38,3 @@ index 3cf63982ba44..41cc7cb773fa 100644
    KCONFIG:=$(KCONFIG_IPT_IPOPT)
    FILES:=$(foreach mod,$(IPT_IPOPT-m),$(LINUX_DIR)/net/$(mod).ko)
    AUTOLOAD:=$(call AutoProbe,$(notdir $(IPT_IPOPT-m)))
--- 
-2.34.1
-

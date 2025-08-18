@@ -12,7 +12,7 @@ Change-Id: I796db9a3efdae7809be8d6d12b3f1c983d3183d6
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/package/devel/perf/Makefile b/package/devel/perf/Makefile
-index 20be59516dad..2881312ed327 100644
+index 0129dc61186d..df69d50a0673 100644
 --- a/package/devel/perf/Makefile
 +++ b/package/devel/perf/Makefile
 @@ -28,7 +28,7 @@ define Package/perf
@@ -30,9 +30,6 @@ index 20be59516dad..2881312ed327 100644
  	NO_LIBNUMA=1 \
 +	NO_LIBTRACEEVENT=1 \
 +	NO_JEVENTS=1 \
+ 	NO_SLANG=1 \
  	NO_GTK2=1 \
  	NO_LIBAUDIT=1 \
- 	NO_LIBCRYPTO=1 \
--- 
-2.34.1
-
