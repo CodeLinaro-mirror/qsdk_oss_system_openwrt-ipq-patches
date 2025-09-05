@@ -27,13 +27,13 @@ index f924d3468476..2019f170ca9e 100644
 --- a/package/kernel/mac80211/Makefile
 +++ b/package/kernel/mac80211/Makefile
 @@ -10,6 +10,8 @@ include $(INCLUDE_DIR)/kernel.mk
- 
+
  PKG_NAME:=mac80211
- 
+
 +EXTERNAL_MAKEFILE:=$(TOPDIR)/openwrt-patches/package/kernel/mac80211
 +
  PKG_VERSION:=6.12.6
- PKG_RELEASE:=1
+ PKG_RELEASE:=2
  PKG_LICENSE:=GPL-2.0-only
 @@ -18,10 +20,16 @@ PKG_LICENSE_FILES:=COPYING
  PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources/

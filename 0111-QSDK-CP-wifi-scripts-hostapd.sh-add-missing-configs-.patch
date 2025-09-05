@@ -13,7 +13,7 @@ Signed-off-by: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
  1 file changed, 217 insertions(+), 186 deletions(-)
 
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
-index 233951603add..b3a8c093c849 100644
+index 395947708c96..92a992e4d97c 100644
 --- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
 @@ -5,14 +5,14 @@ wpa_supplicant_add_rate() {
@@ -573,14 +573,16 @@ index 233951603add..b3a8c093c849 100644
  
  	_wpa_supplicant_common "$1"
  	wireless_vif_parse_encryption
-@@ -1451,12 +1476,12 @@ wpa_supplicant_add_network() {
- 		basic_rate mcast_rate \
+@@ -1451,14 +1476,14 @@ wpa_supplicant_add_network() {
+ 		mcast_rate \
  		ieee80211w ieee80211r fils ocv \
  		multi_ap \
--		default_disabled \
+-                default_disabled \
 +		default_disabled dpp \
- 		ppe_vp \
- 		ssid_protection
+                 ppe_vp \
+                 ssid_protection
+ 
+ 	json_get_values basic_rate_list basic_rate
  
  	case "$auth_type" in
 -		sae|owe|eap2|eap192|eap-eap192)
@@ -588,7 +590,7 @@ index 233951603add..b3a8c093c849 100644
  			set_default ieee80211w 2
  		;;
  		psk-sae)
-@@ -1469,9 +1494,9 @@ wpa_supplicant_add_network() {
+@@ -1471,9 +1496,9 @@ wpa_supplicant_add_network() {
  	set_default default_disabled 0
  
  	local key_mgmt='NONE'
@@ -599,7 +601,7 @@ index 233951603add..b3a8c093c849 100644
  
  	local scan_ssid="scan_ssid=1"
  	local freq wpa_key_mgmt
-@@ -1486,40 +1511,43 @@ wpa_supplicant_add_network() {
+@@ -1488,40 +1513,43 @@ wpa_supplicant_add_network() {
  		[ "$_w_driver" = "nl80211" ] ||	append wpa_key_mgmt "WPA-NONE"
  	}
  
@@ -656,7 +658,7 @@ index 233951603add..b3a8c093c849 100644
  	}
  
  	[ -n "$ocv" ] && append network_data "ocv=$ocv" "$N$T"
-@@ -1538,7 +1566,7 @@ wpa_supplicant_add_network() {
+@@ -1540,7 +1568,7 @@ wpa_supplicant_add_network() {
  		wps)
  			key_mgmt='WPS'
  		;;
@@ -665,7 +667,7 @@ index 233951603add..b3a8c093c849 100644
  			local passphrase
  
  			if [ "$_w_mode" != "mesh" ]; then
-@@ -1565,7 +1593,7 @@ wpa_supplicant_add_network() {
+@@ -1567,7 +1595,7 @@ wpa_supplicant_add_network() {
  			json_get_vars eap_type identity anonymous_identity ca_cert ca_cert_usesystem
  
  			[ "$fils" -gt 0 ] && append network_data "erp=1" "$N$T"
@@ -674,7 +676,7 @@ index 233951603add..b3a8c093c849 100644
  				append network_data "ca_cert=\"/etc/ssl/certs/ca-certificates.crt\"" "$N$T"
  			else
  				[ -n "$ca_cert" ] && append network_data "ca_cert=\"$ca_cert\"" "$N$T"
-@@ -1614,7 +1642,7 @@ wpa_supplicant_add_network() {
+@@ -1616,7 +1644,7 @@ wpa_supplicant_add_network() {
  					set_default auth MSCHAPV2
  
  					if [ "$auth" = "EAP-TLS" ]; then
@@ -683,7 +685,7 @@ index 233951603add..b3a8c093c849 100644
  							append network_data "ca_cert2=\"/etc/ssl/certs/ca-certificates.crt\"" "$N$T"
  						else
  							[ -n "$ca_cert2" ] && append network_data "ca_cert2=\"$ca_cert2\"" "$N$T"
-@@ -1703,9 +1731,9 @@ wpa_supplicant_add_network() {
+@@ -1705,9 +1733,9 @@ wpa_supplicant_add_network() {
  		;;
  	esac
  
@@ -696,7 +698,7 @@ index 233951603add..b3a8c093c849 100644
  	}
  
  	[ "$mode" = mesh ] || {
-@@ -1731,10 +1759,13 @@ wpa_supplicant_add_network() {
+@@ -1733,10 +1761,13 @@ wpa_supplicant_add_network() {
  	json_get_values bssid_blacklist bssid_blacklist
  	json_get_values bssid_whitelist bssid_whitelist
  	json_get_var sae_pwe sae_pwe
@@ -708,9 +710,9 @@ index 233951603add..b3a8c093c849 100644
  	[ -n "$sae_pwe" ] && append saepwe "sae_pwe=$sae_pwe" "$N$T"
 +	[ -n "$rsn_overriding" ] && append rsn_override "rsn_overriding=$rsn_overriding" "$N$T"
  
- 	[ -n "$basic_rate" ] && {
- 		local br rate_list=
-@@ -1750,40 +1781,39 @@ wpa_supplicant_add_network() {
+ 	[ -n "$basic_rate_list" ] && {
+ 		local br rate rate_list=
+@@ -1761,40 +1792,39 @@ wpa_supplicant_add_network() {
  		append network_data "mcast_rate=$mc_rate" "$N$T"
  	}
  
@@ -783,7 +785,7 @@ index 233951603add..b3a8c093c849 100644
  
  	if [ "$key_mgmt" = "WPS" ]; then
  		echo "wps_cred_processing=1" >> "$_config"
-@@ -1793,6 +1823,7 @@ $mesh_ctrl_interface
+@@ -1804,6 +1834,7 @@ $mesh_ctrl_interface
  $user_mpm
  $disable_csa_dfs
  $saepwe
@@ -791,7 +793,7 @@ index 233951603add..b3a8c093c849 100644
  ppe_vp=$ppe_vp_type
  $freq_list
  network={
-@@ -1800,10 +1831,10 @@ network={
+@@ -1811,10 +1842,10 @@ network={
  	ssid="$ssid"
  	key_mgmt=$key_mgmt
  	$network_data
@@ -806,6 +808,3 @@ index 233951603add..b3a8c093c849 100644
  }
  EOF
  	fi
--- 
-2.34.1
-

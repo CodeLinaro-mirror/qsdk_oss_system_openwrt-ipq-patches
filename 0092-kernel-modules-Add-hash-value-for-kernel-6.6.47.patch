@@ -13,15 +13,15 @@ Signed-off-by: Md Sadre Alam <quic_mdalam@quicinc.com>
  2 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/include/kernel-6.6 b/include/kernel-6.6
-index 3f93ad37f99e..c0e8471c8364 100644
+index 0e8e3f35df5f..c0e8471c8364 100644
 --- a/include/kernel-6.6
 +++ b/include/kernel-6.6
 @@ -1,2 +1,2 @@
  LINUX_VERSION-6.6 = .47
--LINUX_KERNEL_HASH-6.6.47 = d43376c9e9eaa92bb1b926054bd160d329c58a62d64bd65fe1222c11c6564f50
+-LINUX_KERNEL_HASH-6.6.47 = d43376c9e9eaa92bb1b926054bd160d329c58a62d64bd65fe1222c11c6564f5
 +LINUX_KERNEL_HASH-6.6.47 = 122ae8f5df5141640a8a2a2068348e81505b932828aeed44330542ac6809940d
 diff --git a/package/kernel/linux/modules/other.mk b/package/kernel/linux/modules/other.mk
-index 4d18c4b888e5..f5913a854600 100644
+index 60f7aae76139..22d367aafdca 100644
 --- a/package/kernel/linux/modules/other.mk
 +++ b/package/kernel/linux/modules/other.mk
 @@ -590,6 +590,7 @@ define KernelPackage/mtdtests
@@ -32,6 +32,3 @@ index 4d18c4b888e5..f5913a854600 100644
  	$(LINUX_DIR)/drivers/mtd/tests/mtd_nandecctest.ko \
  	$(LINUX_DIR)/drivers/mtd/tests/mtd_oobtest.ko \
  	$(LINUX_DIR)/drivers/mtd/tests/mtd_pagetest.ko \
--- 
-2.34.1
-

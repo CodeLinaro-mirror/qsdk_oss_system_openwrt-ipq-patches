@@ -1729,20 +1729,6 @@ index 99a9b9c3df52..29e66c070c30 100644
   	struct ath_hw *sc_ah;
   	void __iomem *mem;
   	int irq;
-diff --git a/package/kernel/mac80211/patches/brcm/863-brcmfmac-add-in-driver-tables-with-country-codes.patch b/package/kernel/mac80211/patches/brcm/863-brcmfmac-add-in-driver-tables-with-country-codes.patch
-index 1f0609e34888..f873528e2632 100644
---- a/package/kernel/mac80211/patches/brcm/863-brcmfmac-add-in-driver-tables-with-country-codes.patch
-+++ b/package/kernel/mac80211/patches/brcm/863-brcmfmac-add-in-driver-tables-with-country-codes.patch
-@@ -50,8 +50,8 @@ Signed-off-by: Rafał Miłecki <rafal@milecki.pl>
-  		    struct brcmf_mp_device *settings)
-  {
- @@ -113,6 +143,8 @@ void brcmf_of_probe(struct device *dev,
-+ 		of_node_put(root);
-  	}
-- 	of_node_put(root);
-  
- +	brcmf_of_probe_cc(dev, settings);
- +
 diff --git a/package/kernel/mac80211/patches/build/100-backports-drop-QRTR-and-MHI.patch b/package/kernel/mac80211/patches/build/100-backports-drop-QRTR-and-MHI.patch
 index 32ad31ac74fa..b017a0ce1460 100644
 --- a/package/kernel/mac80211/patches/build/100-backports-drop-QRTR-and-MHI.patch
@@ -2429,133 +2415,6 @@ index 4b0fe6003f66..000000000000
 - }
 - 
 - static int fill_vq(struct virtqueue *vq)
-diff --git a/package/kernel/mac80211/patches/build/300-backports-handle-genlmsg_multicast_allns-upstream-ba.patch b/package/kernel/mac80211/patches/build/300-backports-handle-genlmsg_multicast_allns-upstream-ba.patch
-deleted file mode 100644
-index 5ab6bb736da1..000000000000
---- a/package/kernel/mac80211/patches/build/300-backports-handle-genlmsg_multicast_allns-upstream-ba.patch
-+++ /dev/null
-@@ -1,121 +0,0 @@
--From 8dc94a59cfad70ec3a808add56718255eee39ab2 Mon Sep 17 00:00:00 2001
--From: Christian Marangi <ansuelsmth@gmail.com>
--Date: Sat, 29 Mar 2025 12:50:55 +0100
--Subject: [PATCH] backports: handle genlmsg_multicast_allns upstream backport
-- changes
--
--Better handle genlmsg_multicast_allns upstream backport changes that
--dropped a flag to the function middle version. Use a backport function
--if backports project is tried to be built on older kernel version.
--
--Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
-----
-- backport-include/net/genetlink.h | 11 +++++
-- compat/Makefile                  |  3 +-
-- compat/backport-genetlink.c      | 60 +++++++++++++++++++++++
-- 3 files changed, 73 insertions(+), 1 deletion(-)
--
----- a/backport-include/net/genetlink.h
--+++ b/backport-include/net/genetlink.h
--@@ -172,4 +172,15 @@ static inline int genlmsg_parse(const st
-- }
-- #endif /* LINUX_VERSION_IS_LESS(5,2,0) */
-- 
--+#if LINUX_VERSION_IN_RANGE(5,15,0,5,15,169) || \
--+    LINUX_VERSION_IN_RANGE(6,1,0,6,1,115) || \
--+    LINUX_VERSION_IN_RANGE(6,6,0,6,6,58)
--+#define genlmsg_multicast_allns LINUX_BACKPORT(genlmsg_multicast_allns)
--+int backport_genlmsg_multicast_allns(const struct genl_family *family,
--+				     struct sk_buff *skb, u32 portid,
--+				     unsigned int group);
--+#endif /* LINUX_VERSION_IN_RANGE(5,15,0,5,15,169) ||
--+	  LINUX_VERSION_IN_RANGE(6,1,0,6,1,115) ||
--+	  LINUX_VERSION_IN_RANGE(6,6,0,6,6,58) */
--+
-- #endif /* __BACKPORT_NET_GENETLINK_H */
----- a/compat/Makefile
--+++ b/compat/Makefile
--@@ -16,7 +16,8 @@ compat-$(CPTCFG_KERNEL_5_9) += backport-
-- compat-$(CPTCFG_KERNEL_5_10) += backport-5.10.o
-- compat-$(CPTCFG_KERNEL_5_11) += backport-5.11.o
-- compat-$(CPTCFG_KERNEL_5_13) += backport-5.13.o
---compat-$(CPTCFG_KERNEL_5_15) += backport-5.15.o
--+compat-$(CPTCFG_KERNEL_5_15) += backport-5.15.o backport-genetlink.o
--+compat-$(CPTCFG_KERNEL_6_1) += backport-genetlink.o
-- compat-$(CPTCFG_KERNEL_6_4) += backport-6.4.o
-- 
-- compat-$(CPTCFG_BPAUTO_BUILD_CRYPTO_LIB_ARC4) += lib-crypto-arc4.o
----- a/compat/backport-genetlink.c
--+++ b/compat/backport-genetlink.c
--@@ -17,6 +17,7 @@
-- #include <net/netlink.h>
-- #include <net/sock.h>
-- 
--+#if LINUX_VERSION_IS_LESS(5,2,0)
-- static const struct genl_family *find_family_real_ops(const struct genl_ops **ops)
-- {
-- 	const struct genl_family *family;
--@@ -249,3 +250,63 @@ int backport_genlmsg_multicast_allns(con
-- 	return genlmsg_mcast(skb, portid, group);
-- }
-- EXPORT_SYMBOL_GPL(backport_genlmsg_multicast_allns);
--+#endif /* LINUX_VERSION_IS_LESS(5,2,0) */
--+
--+#if LINUX_VERSION_IN_RANGE(5,15,0,5,15,169) || \
--+    LINUX_VERSION_IN_RANGE(6,1,0,6,1,115) || \
--+    LINUX_VERSION_IN_RANGE(6,6,0,6,6,58)
--+static int genlmsg_mcast(struct sk_buff *skb, u32 portid, unsigned long group)
--+{
--+	struct sk_buff *tmp;
--+	struct net *net, *prev = NULL;
--+	bool delivered = false;
--+	int err;
--+
--+	rcu_read_lock();
--+	for_each_net_rcu(net) {
--+		if (prev) {
--+			tmp = skb_clone(skb, GFP_ATOMIC);
--+			if (!tmp) {
--+				err = -ENOMEM;
--+				goto error;
--+			}
--+			err = nlmsg_multicast(prev->genl_sock, tmp,
--+					      portid, group, GFP_ATOMIC);
--+			if (!err)
--+				delivered = true;
--+			else if (err != -ESRCH)
--+				goto error;
--+		}
--+
--+		prev = net;
--+	}
--+	err = nlmsg_multicast(prev->genl_sock, skb, portid, group, GFP_ATOMIC);
--+
--+	rcu_read_unlock();
--+
--+	if (!err)
--+		delivered = true;
--+	else if (err != -ESRCH)
--+		return err;
--+	return delivered ? 0 : -ESRCH;
--+ error:
--+	rcu_read_unlock();
--+
--+	kfree_skb(skb);
--+	return err;
--+}
--+
--+int backport_genlmsg_multicast_allns(const struct genl_family *family,
--+				     struct sk_buff *skb, u32 portid,
--+				     unsigned int group)
--+{
--+	if (WARN_ON_ONCE(group >= family->n_mcgrps))
--+		return -EINVAL;
--+
--+	group = family->mcgrp_offset + group;
--+	return genlmsg_mcast(skb, portid, group);
--+}
--+EXPORT_SYMBOL_GPL(backport_genlmsg_multicast_allns);
--+#endif /* LINUX_VERSION_IN_RANGE(5,15,0,5,15,169) ||
--+	  LINUX_VERSION_IN_RANGE(6,1,0,6,1,115) ||
--+	  LINUX_VERSION_IN_RANGE(6,6,0,6,6,58) */
 diff --git a/package/kernel/mac80211/patches/mwl/801-libertas-configure-sysfs-links.patch b/package/kernel/mac80211/patches/mwl/801-libertas-configure-sysfs-links.patch
 index e6111871c047..4d9d3de4655f 100644
 --- a/package/kernel/mac80211/patches/mwl/801-libertas-configure-sysfs-links.patch
@@ -19883,7 +19742,7 @@ index a2c46ccb1469..28ea6a65718b 100644
 -  AUTOLOAD:=$(call AutoProbe,rtw89_8922ae)
 -endef
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
-index f7296153c40f..be99ce84c9ef 100644
+index a404d349aace..25ce7b10c2e4 100644
 --- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
 @@ -139,8 +139,6 @@ hostapd_common_add_device_config() {
@@ -20018,7 +19877,7 @@ index ede40f853eb5..62f652bd8641 100644
  
  _wdev_common_vlan_config() {
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-index 124c5c92e8e4..81eb35dcb935 100755
+index 0e4c5b2a7edf..de36ac33b3b5 100755
 --- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 @@ -96,8 +96,6 @@ drv_mac80211_init_device_config() {
@@ -20156,7 +20015,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  			[ -z "$vlan_file" ] && hostapd_set_vlan "$ifname"
  		}
  	fi
-@@ -1258,22 +1251,11 @@ mac80211_setup_adhoc() {
+@@ -1263,22 +1256,11 @@ mac80211_setup_adhoc() {
  
  mac80211_setup_mesh() {
  	json_get_vars ssid mesh_id mcast_rate
@@ -20179,7 +20038,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  	local prev
  	json_set_namespace wdev_uc prev
  
-@@ -1284,7 +1266,6 @@ mac80211_setup_mesh() {
+@@ -1289,7 +1271,6 @@ mac80211_setup_mesh() {
  	json_add_string freq "$freq"
  	json_add_string htmode "$iw_htmode"
  	[ -n "$mcval" ] && json_add_string mcast-rate "$mcval"
@@ -20187,7 +20046,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  	json_add_int beacon-interval "$beacon_int"
  	json_add_string ru-puncturing-bitmap "$ru_punct_bitmap"
  	mac80211_add_mesh_params
-@@ -1508,7 +1489,6 @@ wpa_supplicant_set_config() {
+@@ -1513,7 +1494,6 @@ wpa_supplicant_set_config() {
  	json_add_string phy "$phy"
  	json_add_int radio "$radio"
  	json_add_int num_global_macaddr "$num_global_macaddr"
@@ -20195,7 +20054,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  	json_add_boolean defer 1
  	[ -n "$mld" ] && json_add_boolean is_ml 1
  	local data="$(json_dump)"
-@@ -1557,7 +1537,7 @@ wpa_supplicant_start() {
+@@ -1562,7 +1542,7 @@ wpa_supplicant_start() {
  	[ -n "$wpa_supp_init" ] || return 0
  	[ -n "$mld" ] && is_mld="true"
  
@@ -20204,7 +20063,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  	if [ "${dpp}" -eq 1 ]; then
  		/usr/sbin/wpa_cli -i $ifname -p /var/run/wpa_supplicant -a /lib/netifd/dpp-supplicant-event-update -B
  	fi
-@@ -1599,7 +1579,7 @@ mac80211_setup_vif() {
+@@ -1604,7 +1584,7 @@ mac80211_setup_vif() {
  			json_get_vars $MP_CONFIG_INT $MP_CONFIG_BOOL $MP_CONFIG_STRING
  			wireless_vif_parse_encryption
  			[ -z "$htmode" ] && htmode="NOHT";
@@ -20213,7 +20072,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  				mac80211_setup_supplicant || failed=1
  			else
  				mac80211_setup_mesh
-@@ -1707,8 +1687,7 @@ drv_mac80211_setup() {
+@@ -1712,8 +1692,7 @@ drv_mac80211_setup() {
  		frag rts beacon_int:100 htmode \
  		num_global_macaddr:1 multiple_bssid \
  		eht_ulmumimo_80mhz eht_ulmumimo_160mhz eht_ulmumimo_320mhz \
@@ -20223,7 +20082,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  	json_get_values basic_rate_list basic_rate
  	json_get_values scan_list scan_list
  	json_select ..
-@@ -1719,11 +1698,9 @@ drv_mac80211_setup() {
+@@ -1724,11 +1703,9 @@ drv_mac80211_setup() {
  
  	if [ "$is_wiphy_multi_radio" -eq 1 ]; then
  		echo [debug] $device - radio as $radio > /tmp/logs
@@ -20238,7 +20097,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  
  	[ -f /tmp/mlo_support.txt ] && mlo_add_flag=$(cat /tmp/mlo_support.txt)
  	if [ $mlo_add_flag -eq 0 ]; then
-@@ -1740,8 +1717,6 @@ drv_mac80211_setup() {
+@@ -1745,8 +1722,6 @@ drv_mac80211_setup() {
  		return 1
  	}
  
@@ -20247,7 +20106,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  	mac80211_set_suffix
  
  	[ -f /tmp/mlo_support.txt ] && mlo_add_flag=$(cat /tmp/mlo_support.txt)
-@@ -1768,7 +1743,6 @@ drv_mac80211_setup() {
+@@ -1773,7 +1748,6 @@ drv_mac80211_setup() {
  		fi
  	fi
  
@@ -20255,7 +20114,7 @@ index 124c5c92e8e4..81eb35dcb935 100755
  	local wdev
  	local cwdev
  	local found
-@@ -1858,14 +1832,6 @@ drv_mac80211_setup() {
+@@ -1863,14 +1837,6 @@ drv_mac80211_setup() {
  	wdev_tool "$phy$phy_suffix" set_config "$(json_dump)" $active_ifnames
  	json_set_namespace "$prev"
  
@@ -21128,7 +20987,7 @@ index 4eba6e0cab30..22767d67ee75 100644
  
  #endif
 diff --git a/package/network/services/hostapd/src/src/ap/ucode.c b/package/network/services/hostapd/src/src/ap/ucode.c
-index 28c8ff487de1..68fb450884e2 100644
+index 31279f4c9c0c..e03025943c08 100644
 --- a/package/network/services/hostapd/src/src/ap/ucode.c
 +++ b/package/network/services/hostapd/src/src/ap/ucode.c
 @@ -9,7 +9,6 @@
@@ -21136,10 +20995,10 @@ index 28c8ff487de1..68fb450884e2 100644
  #include "dfs.h"
  #include "acs.h"
 -#include "ieee802_11_auth.h"
+ #include "neighbor_db.h"
  #include <libubox/uloop.h>
  
- static uc_resource_type_t *global_type, *bss_type, *iface_type;
-@@ -23,7 +22,7 @@ hostapd_ucode_bss_get_uval(struct hostapd_data *hapd)
+@@ -24,7 +23,7 @@ hostapd_ucode_bss_get_uval(struct hostapd_data *hapd)
  	uc_value_t *val;
  
  	if (hapd->ucode.idx)
@@ -21148,7 +21007,7 @@ index 28c8ff487de1..68fb450884e2 100644
  
  	val = uc_resource_new(bss_type, hapd);
  	hapd->ucode.idx = wpa_ucode_registry_add(bss_registry, val);
-@@ -37,7 +36,7 @@ hostapd_ucode_iface_get_uval(struct hostapd_iface *hapd)
+@@ -38,7 +37,7 @@ hostapd_ucode_iface_get_uval(struct hostapd_iface *hapd)
  	uc_value_t *val;
  
  	if (hapd->ucode.idx)
@@ -21157,7 +21016,7 @@ index 28c8ff487de1..68fb450884e2 100644
  
  	val = uc_resource_new(iface_type, hapd);
  	hapd->ucode.idx = wpa_ucode_registry_add(iface_registry, val);
-@@ -54,11 +53,12 @@ hostapd_ucode_update_bss_list(struct hostapd_iface *iface, uc_value_t *if_bss, u
+@@ -55,11 +54,12 @@ hostapd_ucode_update_bss_list(struct hostapd_iface *iface, uc_value_t *if_bss, u
  	list = ucv_array_new(vm);
  	for (i = 0; iface->bss && i < iface->num_bss; i++) {
  		struct hostapd_data *hapd = iface->bss[i];
@@ -21173,7 +21032,7 @@ index 28c8ff487de1..68fb450884e2 100644
  }
  
  static void
-@@ -72,14 +72,13 @@ hostapd_ucode_update_interfaces(void)
+@@ -73,14 +73,13 @@ hostapd_ucode_update_interfaces(void)
  	for (i = 0; i < interfaces->count; i++) {
  		struct hostapd_iface *iface = interfaces->iface[i];
  
@@ -21192,7 +21051,7 @@ index 28c8ff487de1..68fb450884e2 100644
  	ucv_gc(vm);
  }
  
-@@ -361,10 +360,6 @@ uc_hostapd_iface_add_bss(uc_vm_t *vm, size_t nargs)
+@@ -366,10 +365,6 @@ uc_hostapd_iface_add_bss(uc_vm_t *vm, size_t nargs)
  
  	hapd->driver = iface->bss[0]->driver;
  	hapd->drv_priv = iface->bss[0]->drv_priv;
@@ -21203,7 +21062,7 @@ index 28c8ff487de1..68fb450884e2 100644
  	if (interfaces->ctrl_iface_init &&
  	    interfaces->ctrl_iface_init(hapd) < 0)
  		goto free_hapd;
-@@ -710,108 +705,6 @@ out:
+@@ -716,108 +711,6 @@ out:
  	return ret ? NULL : ucv_boolean_new(true);
  }
  
@@ -21312,7 +21171,7 @@ index 28c8ff487de1..68fb450884e2 100644
  
  int hostapd_ucode_init(struct hapd_interfaces *ifaces)
  {
-@@ -874,21 +767,20 @@ void hostapd_ucode_free(void)
+@@ -880,21 +773,20 @@ void hostapd_ucode_free(void)
  
  void hostapd_ucode_free_iface(struct hostapd_iface *iface)
  {
@@ -21337,8 +21196,8 @@ index 28c8ff487de1..68fb450884e2 100644
  	ucv_gc(vm);
  }
  
-@@ -903,8 +795,6 @@ void hostapd_ucode_reload_bss(struct hostapd_data *hapd)
- 	uc_value_push(ucv_get(ucv_string_new(hapd->conf->iface)));
+@@ -909,8 +801,6 @@ void hostapd_ucode_reload_bss(struct hostapd_data *hapd)
+         uc_value_push(ucv_get(ucv_string_new(hapd->conf->iface)));
  	uc_value_push(ucv_get(val));
  	ucv_put(wpa_ucode_call(2));
 -
@@ -21346,8 +21205,8 @@ index 28c8ff487de1..68fb450884e2 100644
  	ucv_gc(vm);
  }
  
-@@ -923,6 +813,5 @@ void hostapd_ucode_free_bss(struct hostapd_data *hapd)
- 	uc_value_push(ucv_string_new(hapd->conf->iface));
+@@ -929,6 +819,5 @@ void hostapd_ucode_free_bss(struct hostapd_data *hapd)
+         uc_value_push(ucv_string_new(hapd->conf->iface));
  	uc_value_push(ucv_get(val));
  	ucv_put(wpa_ucode_call(2));
 -	ucv_put(val);
@@ -22043,6 +21902,3 @@ index 724f71cdad5d..000000000000
 - 
 - 	return NL_SKIP;
 - }
--- 
-2.34.1
-

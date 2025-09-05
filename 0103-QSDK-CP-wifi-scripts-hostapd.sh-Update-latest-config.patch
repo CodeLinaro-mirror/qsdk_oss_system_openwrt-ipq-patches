@@ -16,7 +16,7 @@ Signed-off-by: Harshitha Prem <quic_hprem@quicinc.com>
  1 file changed, 182 insertions(+), 27 deletions(-)
 
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
-index d673f5405bd0..233951603add 100644
+index 6bdd0236cf99..395947708c96 100644
 --- a/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/hostapd.sh
 @@ -50,6 +50,16 @@ hostapd_append_wpa_key_mgmt() {
@@ -292,14 +292,16 @@ index d673f5405bd0..233951603add 100644
  
  	_wpa_supplicant_common "$1"
  	wireless_vif_parse_encryption
-@@ -1364,10 +1451,12 @@ wpa_supplicant_add_network() {
- 		basic_rate mcast_rate \
+@@ -1364,12 +1451,14 @@ wpa_supplicant_add_network() {
+ 		mcast_rate \
  		ieee80211w ieee80211r fils ocv \
  		multi_ap \
 -		default_disabled
-+		default_disabled \
-+		ppe_vp \
-+		ssid_protection
++                default_disabled \
++                ppe_vp \
++                ssid_protection
+ 
+ 	json_get_values basic_rate_list basic_rate
  
  	case "$auth_type" in
 -		sae|owe|eap2|eap192)
@@ -307,7 +309,7 @@ index d673f5405bd0..233951603add 100644
  			set_default ieee80211w 2
  		;;
  		psk-sae)
-@@ -1382,6 +1471,7 @@ wpa_supplicant_add_network() {
+@@ -1384,6 +1473,7 @@ wpa_supplicant_add_network() {
  	local key_mgmt='NONE'
  	local network_data=
  	local T="	"
@@ -315,7 +317,7 @@ index d673f5405bd0..233951603add 100644
  
  	local scan_ssid="scan_ssid=1"
  	local freq wpa_key_mgmt
-@@ -1405,13 +1495,31 @@ wpa_supplicant_add_network() {
+@@ -1407,13 +1497,31 @@ wpa_supplicant_add_network() {
  		[ -n "$mesh_rssi_threshold" ] && append network_data "mesh_rssi_threshold=${mesh_rssi_threshold}" "$N$T"
  		[ -n "$freq" ] && wpa_supplicant_set_fixed_freq "$freq" "$htmode"
  		[ "$noscan" = "1" ] && append network_data "noscan=1" "$N$T"
@@ -347,7 +349,7 @@ index d673f5405bd0..233951603add 100644
  	}
  
  	[ -n "$ocv" ] && append network_data "ocv=$ocv" "$N$T"
-@@ -1450,7 +1558,7 @@ wpa_supplicant_add_network() {
+@@ -1452,7 +1560,7 @@ wpa_supplicant_add_network() {
  			fi
  			append network_data "$passphrase" "$N$T"
  		;;
@@ -356,7 +358,7 @@ index d673f5405bd0..233951603add 100644
  			hostapd_append_wpa_key_mgmt
  			key_mgmt="$wpa_key_mgmt"
  
-@@ -1622,9 +1730,11 @@ wpa_supplicant_add_network() {
+@@ -1624,9 +1732,11 @@ wpa_supplicant_add_network() {
  	local bssid_blacklist bssid_whitelist
  	json_get_values bssid_blacklist bssid_blacklist
  	json_get_values bssid_whitelist bssid_whitelist
@@ -366,9 +368,9 @@ index d673f5405bd0..233951603add 100644
  	[ -n "$bssid_whitelist" ] && append network_data "bssid_whitelist=$bssid_whitelist" "$N$T"
 +	[ -n "$sae_pwe" ] && append saepwe "sae_pwe=$sae_pwe" "$N$T"
  
- 	[ -n "$basic_rate" ] && {
- 		local br rate_list=
-@@ -1640,15 +1750,60 @@ wpa_supplicant_add_network() {
+ 	[ -n "$basic_rate_list" ] && {
+ 		local br rate rate_list=
+@@ -1651,15 +1761,60 @@ wpa_supplicant_add_network() {
  		append network_data "mcast_rate=$mc_rate" "$N$T"
  	}
  
@@ -430,7 +432,7 @@ index d673f5405bd0..233951603add 100644
  EOF
  	fi
 diff --git a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-index b4aa19bf526e..6a8d7ca32569 100755
+index 6c3d3f38b46b..6912a3ca0ea4 100755
 --- a/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 +++ b/package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 @@ -523,6 +523,14 @@ mac80211_hostapd_setup_base() {
@@ -448,7 +450,7 @@ index b4aa19bf526e..6a8d7ca32569 100755
  	hostapd_prepare_device_config "$hostapd_conf_file" nl80211
  	cat >> "$hostapd_conf_file" <<EOF
  ${channel:+channel=$channel}
-@@ -1134,6 +1142,8 @@ drv_mac80211_setup() {
+@@ -1139,6 +1147,8 @@ drv_mac80211_setup() {
  
  	mac80211_set_suffix
  
@@ -457,6 +459,3 @@ index b4aa19bf526e..6a8d7ca32569 100755
  	json_select data && {
  		json_get_var prev_rxantenna rxantenna
  		json_get_var prev_txantenna txantenna
--- 
-2.34.1
-
