@@ -1,0 +1,27 @@
+From 9c75532db003f62b9ff6cbe151d9b3e2d10b80c2 Mon Sep 17 00:00:00 2001
+From: Deepak Kumar <deepaku@qti.qualcomm.com>
+Date: Tue, 26 Aug 2025 12:10:49 +0530
+Subject: [PATCH] fix luci project link in feeds.conf
+
+Change-Id: I0384354d8161a95422b919e8d5faef4d58e2ad01
+Signed-off-by: Deepak Kumar <deepaku@qti.qualcomm.com>
+(cherry picked from commit eff96f515b9b825d3f30dde139c66647b7e7408b)
+(cherry picked from commit 59323fa25f248e316f5d328e050a58b9d5f99334)
+---
+ feeds.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index 5a41d293b2e9..23d2ba3ca49e 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -1,5 +1,5 @@
+ src-link packages ../qca/feeds/packages
+-src-git luci https://git.openwrt.org/project/luci.git^648a09907ec2f3e8046be53519184ed7c5e5bd88 https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^648a09907ec2f3e8046be53519184ed7c5e5bd88
++src-git luci https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^648a09907ec2f3e8046be53519184ed7c5e5bd88 https://github.com/openwrt/luci.git^648a09907ec2f3e8046be53519184ed7c5e5bd88
+ src-link routing ../qca/feeds/routing
+ src-link bootloader ../qca/feeds/bootloader
+ src-link qcom_utils_internal ../qca/feeds/qcom-utils-internal
+-- 
+2.34.1
+
