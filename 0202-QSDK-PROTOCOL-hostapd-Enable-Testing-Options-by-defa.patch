@@ -1,0 +1,31 @@
+From 97807e4033574c2e5b15331690edc91ee331068d Mon Sep 17 00:00:00 2001
+From: Sowmiya Sree Elavalagan <ssreeela@qti.qualcomm.com>
+Date: Mon, 3 Nov 2025 23:11:27 +0530
+Subject: [PATCH] QSDK:PROTOCOL:hostapd: Enable Testing Options by default
+
+Certain test only options for hostapd cli are present under this
+CONFIG_TESTING_OPTION which is required for various testing purposes
+
+Change-Id: I51b22cf3eb4ba6a1e2f201f3a506c2e857a90e8b
+Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@qti.qualcomm.com>
+---
+ package/network/services/hostapd/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/package/network/services/hostapd/Makefile b/package/network/services/hostapd/Makefile
+index 819bf55138a5..76042e8dc7eb 100644
+--- a/package/network/services/hostapd/Makefile
++++ b/package/network/services/hostapd/Makefile
+@@ -96,7 +96,8 @@ DRIVER_MAKEOPTS= \
+ 	CONFIG_IEEE80211AX=$(HOSTAPD_IEEE80211AX) \
+ 	CONFIG_MBO=$(CONFIG_WPA_MBO_SUPPORT) \
+ 	CONFIG_UCODE=y \
+-	CONFIG_ATF_OFFLOAD=y
++	CONFIG_ATF_OFFLOAD=y \
++	CONFIG_TESTING_OPTIONS=y
+ 
+ ifeq ($(SSL_VARIANT),openssl)
+   DRIVER_MAKEOPTS += CONFIG_TLS=openssl CONFIG_SAE=y
+-- 
+2.34.1
+

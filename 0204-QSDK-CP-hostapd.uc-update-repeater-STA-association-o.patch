@@ -1,0 +1,56 @@
+From aeb5847977f52c21f5e254a30922cdb54b2d6f4d Mon Sep 17 00:00:00 2001
+From: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+Date: Wed, 11 Jun 2025 14:49:52 +0530
+Subject: [PATCH] QSDK:CP: hostapd.uc: update repeater STA association on DFS
+ channel
+
+New param 'is_dfs' is updated from uc_wpas_iface_status() callback
+for repeater STA association on DFS channel. We then update hostapd
+via uc_wpa_freq_info() so that hostapd can perform SKIP CAC
+functionality with additional 'skip_cac' hostapd config check on
+repeater AP.
+
+Change-Id: Ifbc1d08b1212d3875f38b423d4ec9a47219e7433
+Signed-off-by: Sathishkumar Muruganandam <quic_murugana@quicinc.com>
+---
+ package/network/services/hostapd/files/hostapd.uc        | 3 ++-
+ package/network/services/hostapd/files/wpa_supplicant.uc | 2 ++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
+index 704c99474873..1e5baf011fc8 100644
+--- a/package/network/services/hostapd/files/hostapd.uc
++++ b/package/network/services/hostapd/files/hostapd.uc
+@@ -162,7 +162,7 @@ function iface_freq_info(iface, config, params)
+ 
+ 	return hostapd.freq_info(freq, sec_offset, width, params.chan_width,
+ 				 params.center_freq1, params.center_freq2,
+-				 params.punct_bitmap);
++				 params.punct_bitmap, params.is_dfs);
+ }
+ 
+ function iface_add(phy, config, phy_status)
+@@ -919,6 +919,7 @@ let main_obj = {
+ 			csa: true,
+ 			csa_count: 0,
+ 			punct_bitmap: 0,
++			is_dfs: false,
+ 		},
+ 		call: ex_wrap(function(req) {
+ 			let phy = phy_name(req.args.phy, req.args.radio);
+diff --git a/package/network/services/hostapd/files/wpa_supplicant.uc b/package/network/services/hostapd/files/wpa_supplicant.uc
+index 6602c8190207..f12ac7af0630 100644
+--- a/package/network/services/hostapd/files/wpa_supplicant.uc
++++ b/package/network/services/hostapd/files/wpa_supplicant.uc
+@@ -385,6 +385,8 @@ function iface_hostapd_notify(phy, radio, ifname, iface, state)
+ 			msg.center_freq2 = status.center_freq2;
+ 		if (status.punct_bitmap != null)
+ 			msg.punct_bitmap = status.punct_bitmap;
++		if (status.is_dfs != null)
++			msg.is_dfs = status.is_dfs;
+ 		break;
+ 	default:
+ 		return;
+-- 
+2.34.1
+
