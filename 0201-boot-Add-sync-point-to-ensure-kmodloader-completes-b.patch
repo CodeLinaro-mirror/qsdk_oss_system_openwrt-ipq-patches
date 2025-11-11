@@ -1,0 +1,36 @@
+From fd1575c8997a59abfed82b58da2aa70df93ba410 Mon Sep 17 00:00:00 2001
+From: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+Date: Tue, 14 Oct 2025 16:42:57 +0530
+Subject: [PATCH] boot: Add sync point to ensure kmodloader completes before
+ driver insmod
+
+Change-Id: Id4ef5acb4e0664c7f40e44bdc5ea27786c8d8a79
+Signed-off-by: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+(cherry picked from commit cd4e63aab2864931cfcb977d3a6a5a7a819617a6)
+---
+ package/base-files/files/etc/init.d/boot | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/package/base-files/files/etc/init.d/boot b/package/base-files/files/etc/init.d/boot
+index a26d4886b287..321d9a67083e 100755
+--- a/package/base-files/files/etc/init.d/boot
++++ b/package/base-files/files/etc/init.d/boot
+@@ -17,6 +17,7 @@ uci_apply_defaults() {
+ }
+ 
+ boot() {
++	touch /tmp/wait
+ 	[ -f /proc/mounts ] || /sbin/mount_root
+ 	[ -f /proc/jffs2_bbc ] && echo "S" > /proc/jffs2_bbc
+ 
+@@ -42,6 +43,7 @@ boot() {
+ 
+ 	touch /tmp/.config_pending
+ 	/sbin/kmodloader
++	rm -f /tmp/wait
+ 
+ 	[ ! -f /etc/config/wireless ] && {
+ 		# compat for bcm47xx and mvebu
+-- 
+2.34.1
+
