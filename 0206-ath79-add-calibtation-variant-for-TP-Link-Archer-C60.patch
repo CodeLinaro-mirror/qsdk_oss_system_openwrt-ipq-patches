@@ -1,0 +1,46 @@
+From 406b980d97b5223e7d1158818d599ae007313280 Mon Sep 17 00:00:00 2001
+From: Christoph Krapp <achterin@gmail.com>
+Date: Mon, 8 Sep 2025 22:18:05 +0200
+Subject: [PATCH] ath79: add calibtation variant for TP-Link Archer C60 v1
+
+Now that we have a board file, add calibration variant for TP-Link
+Archer C60 v1 and add ipq-wifi package for it.
+
+Signed-off-by: Christoph Krapp <achterin@gmail.com>
+Link: https://github.com/openwrt/openwrt/pull/19993
+(cherry picked from commit 9401b8b86d9b3a441555311542fa42fb90e0b170)
+Link: https://github.com/openwrt/openwrt/pull/20157
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ target/linux/ath79/dts/qca9561_tplink_archer-c60-v1.dts | 1 +
+ target/linux/ath79/image/generic-tp-link.mk             | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/target/linux/ath79/dts/qca9561_tplink_archer-c60-v1.dts b/target/linux/ath79/dts/qca9561_tplink_archer-c60-v1.dts
+index b64f8c7cece1..c0fa7eec5c7e 100644
+--- a/target/linux/ath79/dts/qca9561_tplink_archer-c60-v1.dts
++++ b/target/linux/ath79/dts/qca9561_tplink_archer-c60-v1.dts
+@@ -33,6 +33,7 @@
+ 		reg = <0x0000 0 0 0 0>;
+ 		nvmem-cells = <&precal_art_5000>, <&macaddr_info_8 (-1)>;
+ 		nvmem-cell-names = "pre-calibration", "mac-address";
++		qcom,ath10k-calibration-variant = "TP-Link-Archer-c60-v1";
+ 	};
+ };
+ 
+diff --git a/target/linux/ath79/image/generic-tp-link.mk b/target/linux/ath79/image/generic-tp-link.mk
+index 9c1cf90a9196..6055c724d9e3 100644
+--- a/target/linux/ath79/image/generic-tp-link.mk
++++ b/target/linux/ath79/image/generic-tp-link.mk
+@@ -129,7 +129,7 @@ define Device/tplink_archer-c60-v1
+   DEVICE_MODEL := Archer C60
+   DEVICE_VARIANT := v1
+   TPLINK_BOARD_ID := ARCHER-C60-V1
+-  DEVICE_PACKAGES := kmod-ath10k-ct-smallbuffers ath10k-firmware-qca9888-ct
++  DEVICE_PACKAGES := kmod-ath10k-ct-smallbuffers ath10k-firmware-qca9888-ct ipq-wifi-tplink_archer-c60-v1
+   SUPPORTED_DEVICES += archer-c60-v1
+ endef
+ TARGET_DEVICES += tplink_archer-c60-v1
+-- 
+2.34.1
+
