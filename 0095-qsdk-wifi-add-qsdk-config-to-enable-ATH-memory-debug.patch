@@ -36,18 +36,18 @@ Signed-off-by: Raj Kumar Bhagat <quic_rajkbhag@quicinc.com>
  1 file changed, 7 insertions(+)
 
 diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
-index 04bb29b46db0..42f061131c64 100644
+index 9e870b0db911..22dfe9c11e0a 100644
 --- a/package/kernel/mac80211/Makefile
 +++ b/package/kernel/mac80211/Makefile
 @@ -171,6 +171,12 @@ define KernelPackage/mac80211/config
- 		     This option enables support for qca sfe in QCA boards
+                     This option enables support for qca sfe in QCA boards
          endif
  
 +	config PACKAGE_MAC80211_ATHMEMDEBUG
 +		bool "Enable memory debug support"
 +		default n
 +		help
-+		  This option enables ATH memory debug support.
++		This option enables ATH memory debug support.
 +
  	config PACKAGE_MAC80211_DEBUGFS
  		bool "Export mac80211 internals in DebugFS"
@@ -60,6 +60,3 @@ index 04bb29b46db0..42f061131c64 100644
  
  config-$(call config_package,mac80211-hwsim) += MAC80211_HWSIM
  config-$(call config_package,mt7601u) += MT7601U
--- 
-2.34.1
-

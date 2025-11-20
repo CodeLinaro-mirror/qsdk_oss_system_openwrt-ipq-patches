@@ -12,24 +12,24 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  1 file changed, 3 insertions(+), 16 deletions(-)
 
 diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
-index 112e0a3e4f33..f2d28a291292 100644
+index 71149489dda8..7a7d3182dbb2 100644
 --- a/package/kernel/mac80211/Makefile
 +++ b/package/kernel/mac80211/Makefile
 @@ -10,8 +10,6 @@ include $(INCLUDE_DIR)/kernel.mk
-
+ 
  PKG_NAME:=mac80211
-
+ 
 -EXTERNAL_MAKEFILE:=$(TOPDIR)/openwrt-patches/package/kernel/mac80211
 -
- PKG_VERSION:=6.12.6
+ PKG_VERSION:=6.12.44
  PKG_RELEASE:=2
  PKG_LICENSE:=GPL-2.0-only
 @@ -20,10 +18,6 @@ PKG_LICENSE_FILES:=COPYING
  PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources/
- PKG_HASH:=28ec39425a1b3270e1422d92a8131a6a3d8919cc13e8ee250c315e55d922ba68
+ PKG_HASH:=85a9f92ddba3bf2970a089e7af576c1135217c387205f4481ea9131c0c45c509
  
 -ifneq (,$(findstring QSDK_Open,$(CONFIG_TARGET_PROFILE)))
--	include $(EXTERNAL_MAKEFILE)/backports.mk
+-       include $(EXTERNAL_MAKEFILE)/backports.mk
 -endif
 -
  PKG_SOURCE:=backports-$(PKG_VERSION).tar.xz
@@ -40,7 +40,7 @@ index 112e0a3e4f33..f2d28a291292 100644
  	mkdir -p $(PKG_BUILD_DIR)
  	$(PKG_UNPACK)
 -ifneq (,$(findstring QSDK_Open,$(CONFIG_TARGET_PROFILE)))
--	$(Build/Patch_Old)
+-       $(Build/Patch_Old)
 -else
  	$(Build/Patch)
 -endif
@@ -58,7 +58,7 @@ index 112e0a3e4f33..f2d28a291292 100644
  	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/ath12k,ath12k/)
 +	$(call PatchDir,$(PKG_BUILD_DIR),$(EXTERNAL_PATCH_DIR)/subsys,subsys/)
 +	$(call PatchDir,$(PKG_BUILD_DIR),$(EXTERNAL_PATCH_DIR)/ath11k,ath11k/)
-+	$(call PatchDir,$(PKG_BUILD_DIR),$(EXTERNAL_PATCH_DIR)/ath12k,ath12k/)
++	$(call PatchDir,$(PKG_BUILD_DIR),$(EXTERNAL_PATCH_DIR)/ath12k,ath12k/)	
  	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/rt2x00,rt2x00/)
  	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/mt7601u,mt7601u/)
  	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/mwl,mwl/)
@@ -72,6 +72,3 @@ index 112e0a3e4f33..f2d28a291292 100644
  	$(call Quilt/RefreshDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/ath11k,ath11k/)
  	$(call Quilt/RefreshDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/ath12k,ath12k/)
  	$(call Quilt/RefreshDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/rt2x00,rt2x00/)
--- 
-2.34.1
-

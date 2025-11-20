@@ -23,24 +23,24 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  3 files changed, 151 insertions(+), 29 deletions(-)
 
 diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
-index f924d3468476..2019f170ca9e 100644
+index c93f177aecf8..1c36445e7f6a 100644
 --- a/package/kernel/mac80211/Makefile
 +++ b/package/kernel/mac80211/Makefile
 @@ -10,6 +10,8 @@ include $(INCLUDE_DIR)/kernel.mk
-
+ 
  PKG_NAME:=mac80211
-
+ 
 +EXTERNAL_MAKEFILE:=$(TOPDIR)/openwrt-patches/package/kernel/mac80211
 +
- PKG_VERSION:=6.12.6
+ PKG_VERSION:=6.12.44
  PKG_RELEASE:=2
  PKG_LICENSE:=GPL-2.0-only
 @@ -18,10 +20,16 @@ PKG_LICENSE_FILES:=COPYING
  PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources/
- PKG_HASH:=28ec39425a1b3270e1422d92a8131a6a3d8919cc13e8ee250c315e55d922ba68
+ PKG_HASH:=85a9f92ddba3bf2970a089e7af576c1135217c387205f4481ea9131c0c45c509
  
 +ifneq (,$(findstring QSDK_Open,$(CONFIG_TARGET_PROFILE)))
-+	include $(EXTERNAL_MAKEFILE)/backports.mk
++       include $(EXTERNAL_MAKEFILE)/backports.mk
 +endif
 +
  PKG_SOURCE:=backports-$(PKG_VERSION).tar.xz
@@ -64,7 +64,7 @@ index f924d3468476..2019f170ca9e 100644
  
  config-y:= \
  	WLAN \
-+	NL80211_TESTMODE \
++        NL80211_TESTMODE \
  	CFG80211_CERTIFICATION_ONUS \
  	MAC80211_RC_MINSTREL \
  	MAC80211_RC_MINSTREL_HT \
@@ -74,9 +74,9 @@ index f924d3468476..2019f170ca9e 100644
    # +kmod-crypto-cmac is a runtime only dependency of net/mac80211/aes_cmac.c
 -  DEPENDS+= +kmod-cfg80211 +kmod-crypto-cmac +kmod-crypto-ccm +kmod-crypto-gcm +hostapd-common
 +  DEPENDS+= +kmod-cfg80211 +kmod-crypto-cmac +kmod-crypto-ccm +kmod-crypto-gcm +hostapd-common \
-+	+kmod-qca-nss-ppe \
-+	+kmod-qca-nss-ppe-vp \
-+	+kmod-qca-nss-ppe-ds
++        +kmod-qca-nss-ppe \
++        +kmod-qca-nss-ppe-vp \
++        +kmod-qca-nss-ppe-ds
    KCONFIG:=\
  	CONFIG_AVERAGE=y
    FILES:= $(PKG_BUILD_DIR)/net/mac80211/mac80211.ko
@@ -84,28 +84,28 @@ index f924d3468476..2019f170ca9e 100644
  define KernelPackage/mac80211/config
    if PACKAGE_kmod-mac80211
  
-+        if PACKAGE_kmod-qca-nss-ppe-vp
-+	   config PACKAGE_MAC80211_PPE_SUPPORT
-+		   bool "Enable PPE support for IPQ platform"
-+		   default y
-+		   help
-+		     This option enables support for PPE in QCA boards
++	if PACKAGE_kmod-qca-nss-ppe-vp
++          config PACKAGE_MAC80211_PPE_SUPPORT
++                  bool "Enable PPE support for IPQ platform"
++                  default y
++                  help
++                    This option enables support for PPE in QCA boards
 +        endif
 +
 +        if PACKAGE_kmod-qca-nss-ppe-ds
-+	   config PACKAGE_MAC80211_DS_SUPPORT
-+		   bool "Enable DS support for IPQ platform"
-+		   default y
-+		   help
-+		     This option enables support for ds netdev in QCA boards.
++          config PACKAGE_MAC80211_DS_SUPPORT
++                  bool "Enable DS support for IPQ platform"
++                  default y
++                  help
++                    This option enables support for ds netdev in QCA boards.
 +        endif
 +
 +        if PACKAGE_kmod-qca-nss-sfe
-+	   config PACKAGE_MAC80211_SFE_SUPPORT
-+		   bool "Enable sfe support for IPQ platform"
-+		   default y
-+		   help
-+		     This option enables support for qca sfe in QCA boards
++          config PACKAGE_MAC80211_SFE_SUPPORT
++                  bool "Enable sfe support for IPQ platform"
++                  default y
++                  help
++                    This option enables support for qca sfe in QCA boards
 +        endif
 +
  	config PACKAGE_MAC80211_DEBUGFS
@@ -140,7 +140,7 @@ index f924d3468476..2019f170ca9e 100644
  	mkdir -p $(PKG_BUILD_DIR)
  	$(PKG_UNPACK)
 +ifneq (,$(findstring QSDK_Open,$(CONFIG_TARGET_PROFILE)))
-+	$(Build/Patch_Old)
++       $(Build/Patch_Old)
 +else
  	$(Build/Patch)
 +endif
@@ -180,19 +180,18 @@ index f924d3468476..2019f170ca9e 100644
  	$(call Quilt/RefreshDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/ath11k,ath11k/)
  	$(call Quilt/RefreshDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/ath12k,ath12k/)
  	$(call Quilt/RefreshDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/rt2x00,rt2x00/)
-@@ -393,6 +444,12 @@ define Build/InstallDev
+@@ -392,6 +443,11 @@ define Build/InstallDev
+ 	rm -f $(1)/usr/include/mac80211-backport/linux/module.h
  endef
  
- 
 +define KernelPackage/ath/install
-+	$(INSTALL_DIR) $(STAGING_DIR)/usr/include/
-+	$(CP) $(PKG_BUILD_DIR)/include/ath/ath_sawf.h $(STAGING_DIR)/usr/include/
-+	$(CP) $(PKG_BUILD_DIR)/include/ath/ath_fse.h $(STAGING_DIR)/usr/include/
++       $(INSTALL_DIR) $(STAGING_DIR)/usr/include/
++       $(CP) $(PKG_BUILD_DIR)/include/ath/ath_sawf.h $(STAGING_DIR)/usr/include/
++       $(CP) $(PKG_BUILD_DIR)/include/ath/ath_fse.h $(STAGING_DIR)/usr/include/
 +endef
-+
+ 
  $(eval $(foreach drv,$(PKG_DRIVERS),$(call KernelPackage,$(drv))))
  $(eval $(call KernelPackage,cfg80211))
- $(eval $(call KernelPackage,mac80211))
 diff --git a/package/kernel/mac80211/ath.mk b/package/kernel/mac80211/ath.mk
 index 5b13b6aac4ad..362a6b8af858 100644
 --- a/package/kernel/mac80211/ath.mk

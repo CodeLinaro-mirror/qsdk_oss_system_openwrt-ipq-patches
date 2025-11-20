@@ -13,20 +13,16 @@ Signed-off-by: Sowmiya Sree Elavalagan <quic_ssreeela@quicinc.com>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
-index 04bb29b46db0..5a6d4a1e6fbc 100644
+index 22dfe9c11e0a..40f1f4cbedfd 100644
 --- a/package/kernel/mac80211/Makefile
 +++ b/package/kernel/mac80211/Makefile
-@@ -138,7 +138,9 @@ define KernelPackage/mac80211
- 	+kmod-qca-nss-ppe-vp \
- 	+kmod-qca-nss-ppe-ds
+@@ -138,7 +138,8 @@ define KernelPackage/mac80211
+         +kmod-qca-nss-ppe-vp \
+         +kmod-qca-nss-ppe-ds
    KCONFIG:=\
 -	CONFIG_AVERAGE=y
-+	CONFIG_AVERAGE=y \
-+	CONFIG_QCOM_RPROC_DISABLE_MPD_SUPPORT=y
-+
++        CONFIG_AVERAGE=y \
++        CONFIG_QCOM_RPROC_DISABLE_MPD_SUPPORT=y
    FILES:= $(PKG_BUILD_DIR)/net/mac80211/mac80211.ko
    ABI_VERSION:=$(PKG_VERSION)-$(PKG_RELEASE)
    MENU:=1
--- 
-2.34.1
-

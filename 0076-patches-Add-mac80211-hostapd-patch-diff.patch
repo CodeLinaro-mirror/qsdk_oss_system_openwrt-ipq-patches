@@ -114,13 +114,13 @@ index 5f5ac20ddbae..601ebdc7583c 100644
   WLAN_VENDOR_ATH=
   ATH_DEBUG=
 diff --git a/package/kernel/mac80211/patches/ath/404-regd_no_assoc_hints.patch b/package/kernel/mac80211/patches/ath/404-regd_no_assoc_hints.patch
-index 895e2ff8d8de..d0f4b15772fd 100644
+index 8c3d8108aa74..d0f4b15772fd 100644
 --- a/package/kernel/mac80211/patches/ath/404-regd_no_assoc_hints.patch
 +++ b/package/kernel/mac80211/patches/ath/404-regd_no_assoc_hints.patch
 @@ -1,6 +1,6 @@
  --- a/net/wireless/reg.c
  +++ b/net/wireless/reg.c
--@@ -3364,6 +3364,8 @@ void regulatory_hint_country_ie(struct w
+-@@ -3367,6 +3367,8 @@ void regulatory_hint_country_ie(struct w
 +@@ -3340,6 +3340,8 @@ void regulatory_hint_country_ie(struct w
   	enum environment_cap env = ENVIRON_ANY;
   	struct regulatory_request *request = NULL, *lr;
@@ -129,7 +129,7 @@ index 895e2ff8d8de..d0f4b15772fd 100644
   	/* IE len must be evenly divisible by 2 */
   	if (country_ie_len & 0x01)
   		return;
--@@ -3615,6 +3617,7 @@ static bool is_wiphy_all_set_reg_flag(en
+-@@ -3618,6 +3620,7 @@ static bool is_wiphy_all_set_reg_flag(en
 +@@ -3591,6 +3593,7 @@ static bool is_wiphy_all_set_reg_flag(en
   
   void regulatory_hint_disconnect(void)
@@ -169,26 +169,26 @@ index 10d95d36bf8a..67a2f86da4fe 100644
   ATH10K_LEDS=
   ATH10K_SPECTRAL=
 diff --git a/package/kernel/mac80211/patches/ath10k/921-ath10k_init_devices_synchronously.patch b/package/kernel/mac80211/patches/ath10k/921-ath10k_init_devices_synchronously.patch
-index a7e11679a319..adfeb3eaaea7 100644
+index df0a0a028e7f..adfeb3eaaea7 100644
 --- a/package/kernel/mac80211/patches/ath10k/921-ath10k_init_devices_synchronously.patch
 +++ b/package/kernel/mac80211/patches/ath10k/921-ath10k_init_devices_synchronously.patch
 @@ -14,7 +14,7 @@ Signed-off-by: Sven Eckelmann <sven@open-mesh.com>
  
  --- a/drivers/net/wireless/ath/ath10k/core.c
  +++ b/drivers/net/wireless/ath/ath10k/core.c
--@@ -3539,6 +3539,16 @@ int ath10k_core_register(struct ath10k *
+-@@ -3577,6 +3577,16 @@ int ath10k_core_register(struct ath10k *
 +@@ -3507,6 +3507,16 @@ int ath10k_core_register(struct ath10k *
   
   	queue_work(ar->workqueue, &ar->register_work);
   
 diff --git a/package/kernel/mac80211/patches/ath10k/930-ath10k_add_tpt_led_trigger.patch b/package/kernel/mac80211/patches/ath10k/930-ath10k_add_tpt_led_trigger.patch
-index b13bc3349820..1a043f7b15ec 100644
+index c71123a8fee7..1a043f7b15ec 100644
 --- a/package/kernel/mac80211/patches/ath10k/930-ath10k_add_tpt_led_trigger.patch
 +++ b/package/kernel/mac80211/patches/ath10k/930-ath10k_add_tpt_led_trigger.patch
 @@ -1,6 +1,6 @@
  --- a/drivers/net/wireless/ath/ath10k/mac.c
  +++ b/drivers/net/wireless/ath/ath10k/mac.c
--@@ -9919,6 +9919,21 @@ static int ath10k_mac_init_rd(struct ath
+-@@ -9924,6 +9924,21 @@ static int ath10k_mac_init_rd(struct ath
 +@@ -9917,6 +9917,21 @@ static int ath10k_mac_init_rd(struct ath
   	return 0;
   }
@@ -197,20 +197,20 @@ index b13bc3349820..1a043f7b15ec 100644
   int ath10k_mac_register(struct ath10k *ar)
   {
   	static const u32 cipher_suites[] = {
--@@ -10281,6 +10296,12 @@ int ath10k_mac_register(struct ath10k *a
+-@@ -10286,6 +10301,12 @@ int ath10k_mac_register(struct ath10k *a
 +@@ -10275,6 +10290,12 @@ int ath10k_mac_register(struct ath10k *a
   
   	ar->hw->weight_multiplier = ATH10K_AIRTIME_WEIGHT_MULTIPLIER;
   
 diff --git a/package/kernel/mac80211/patches/ath10k/975-ath10k-use-tpt-trigger-by-default.patch b/package/kernel/mac80211/patches/ath10k/975-ath10k-use-tpt-trigger-by-default.patch
-index fc41f5f15116..2e598199c486 100644
+index be2ccfd0bf79..2e598199c486 100644
 --- a/package/kernel/mac80211/patches/ath10k/975-ath10k-use-tpt-trigger-by-default.patch
 +++ b/package/kernel/mac80211/patches/ath10k/975-ath10k-use-tpt-trigger-by-default.patch
 @@ -16,7 +16,7 @@ Signed-off-by: Mathias Kresin <dev@kresin.me>
  
  --- a/drivers/net/wireless/ath/ath10k/core.h
  +++ b/drivers/net/wireless/ath/ath10k/core.h
--@@ -1315,6 +1315,10 @@ struct ath10k {
+-@@ -1320,6 +1320,10 @@ struct ath10k {
 +@@ -1312,6 +1312,10 @@ struct ath10k {
   	s32 tx_power_2g_limit;
   	s32 tx_power_5g_limit;
@@ -219,7 +219,7 @@ index fc41f5f15116..2e598199c486 100644
   	if (ret)
  --- a/drivers/net/wireless/ath/ath10k/mac.c
  +++ b/drivers/net/wireless/ath/ath10k/mac.c
--@@ -10297,7 +10297,7 @@ int ath10k_mac_register(struct ath10k *a
+-@@ -10302,7 +10302,7 @@ int ath10k_mac_register(struct ath10k *a
 +@@ -10292,7 +10292,7 @@ int ath10k_mac_register(struct ath10k *a
   	ar->hw->weight_multiplier = ATH10K_AIRTIME_WEIGHT_MULTIPLIER;
   
@@ -265,7 +265,7 @@ index f1770cfbe024..3626debf1989 100644
   			ch->max_power = channel->max_power * 2;
   			ch->max_reg_power = channel->max_reg_power * 2;
 diff --git a/package/kernel/mac80211/patches/ath10k/984-ath10k-Try-to-get-mac-address-from-dts.patch b/package/kernel/mac80211/patches/ath10k/984-ath10k-Try-to-get-mac-address-from-dts.patch
-index beec6a95eafe..6439ff98038e 100644
+index b62e3c09a0da..6439ff98038e 100644
 --- a/package/kernel/mac80211/patches/ath10k/984-ath10k-Try-to-get-mac-address-from-dts.patch
 +++ b/package/kernel/mac80211/patches/ath10k/984-ath10k-Try-to-get-mac-address-from-dts.patch
 @@ -18,7 +18,7 @@ Signed-off-by: Ansuel Smith <ansuelsmth@gmail.com>
@@ -281,20 +281,20 @@ index beec6a95eafe..6439ff98038e 100644
   #include <linux/property.h>
   #include <linux/dmi.h>
   #include <linux/ctype.h>
--@@ -3411,6 +3412,8 @@ static int ath10k_core_probe_fw(struct a
+-@@ -3449,6 +3450,8 @@ static int ath10k_core_probe_fw(struct a
 +@@ -3409,6 +3410,8 @@ static int ath10k_core_probe_fw(struct a
   
   	device_get_mac_address(ar->dev, ar->mac_addr);
   
 diff --git a/package/kernel/mac80211/patches/ath10k/988-ath10k-always-use-mac80211-loss-detection.patch b/package/kernel/mac80211/patches/ath10k/988-ath10k-always-use-mac80211-loss-detection.patch
-index b9cdae7e1f93..5a62ea3fc22e 100644
+index f7387595a950..5a62ea3fc22e 100644
 --- a/package/kernel/mac80211/patches/ath10k/988-ath10k-always-use-mac80211-loss-detection.patch
 +++ b/package/kernel/mac80211/patches/ath10k/988-ath10k-always-use-mac80211-loss-detection.patch
 @@ -18,7 +18,7 @@ Signed-off-by: David Bauer <mail@david-bauer.net>
  
  --- a/drivers/net/wireless/ath/ath10k/mac.c
  +++ b/drivers/net/wireless/ath/ath10k/mac.c
--@@ -10089,7 +10089,6 @@ int ath10k_mac_register(struct ath10k *a
+-@@ -10094,7 +10094,6 @@ int ath10k_mac_register(struct ath10k *a
 +@@ -10088,7 +10088,6 @@ int ath10k_mac_register(struct ath10k *a
   	ieee80211_hw_set(ar->hw, CHANCTX_STA_CSA);
   	ieee80211_hw_set(ar->hw, QUEUE_CONTROL);
@@ -446,7 +446,7 @@ index 6a0e4ff77ea8..c8191c760c8d 100644
   ATH11K_TRACING=
   ATH11K_SPECTRAL=
 diff --git a/package/kernel/mac80211/patches/ath11k/903-ath11k-support-setting-FW-memory-mode-via-DT.patch b/package/kernel/mac80211/patches/ath11k/903-ath11k-support-setting-FW-memory-mode-via-DT.patch
-index 1250147e2bda..71373b2136f7 100644
+index e747738b818f..71373b2136f7 100644
 --- a/package/kernel/mac80211/patches/ath11k/903-ath11k-support-setting-FW-memory-mode-via-DT.patch
 +++ b/package/kernel/mac80211/patches/ath11k/903-ath11k-support-setting-FW-memory-mode-via-DT.patch
 @@ -22,7 +22,7 @@ Signed-off-by: Robert Marko <robimarko@gmail.com>
@@ -462,7 +462,7 @@ index 1250147e2bda..71373b2136f7 100644
   	{
   		.hw_rev = ATH11K_HW_IPQ8074,
   		.name = "ipq8074 hw2.0",
--@@ -2147,7 +2147,8 @@ static void ath11k_core_reset(struct wor
+-@@ -2200,7 +2200,8 @@ static void ath11k_core_reset(struct wor
 +@@ -2040,7 +2040,8 @@ static void ath11k_core_reset(struct wor
   static int ath11k_init_hw_params(struct ath11k_base *ab)
   {
@@ -471,7 +471,7 @@ index 1250147e2bda..71373b2136f7 100644
   
   	for (i = 0; i < ARRAY_SIZE(ath11k_hw_params); i++) {
   		hw_params = &ath11k_hw_params[i];
--@@ -2163,7 +2164,31 @@ static int ath11k_init_hw_params(struct
+-@@ -2216,7 +2217,31 @@ static int ath11k_init_hw_params(struct
 +@@ -2056,7 +2057,31 @@ static int ath11k_init_hw_params(struct
   
   	ab->hw_params = *hw_params;
@@ -662,7 +662,7 @@ index f30e03475f51..5ef4f9479139 100644
 - 		      enum ieee80211_ap_reg_power power_type);
 - int ath11k_regd_update(struct ath11k *ar);
 diff --git a/package/kernel/mac80211/patches/ath9k/512-ath9k_channelbw_debugfs.patch b/package/kernel/mac80211/patches/ath9k/512-ath9k_channelbw_debugfs.patch
-index 87d18626da37..14371224f754 100644
+index b96f60cde683..1976c0bc1182 100644
 --- a/package/kernel/mac80211/patches/ath9k/512-ath9k_channelbw_debugfs.patch
 +++ b/package/kernel/mac80211/patches/ath9k/512-ath9k_channelbw_debugfs.patch
 @@ -10,7 +10,7 @@
@@ -708,7 +708,7 @@ index f08301c7f4f2..2f943f6189ce 100644
   	}
   
 diff --git a/package/kernel/mac80211/patches/ath9k/543-ath9k_entropy_from_adc.patch b/package/kernel/mac80211/patches/ath9k/543-ath9k_entropy_from_adc.patch
-index 0fedc712701a..8b399f4b4ce4 100644
+index 8967d59a408a..183117152a86 100644
 --- a/package/kernel/mac80211/patches/ath9k/543-ath9k_entropy_from_adc.patch
 +++ b/package/kernel/mac80211/patches/ath9k/543-ath9k_entropy_from_adc.patch
 @@ -18,7 +18,7 @@
@@ -1040,25 +1040,25 @@ index f4dc5508b115..32ad31ac74fa 100644
 - QCOM_GENI_SE=
 + QCOM_CPR=
 diff --git a/package/kernel/mac80211/patches/mwl/700-mwl8k-missing-pci-id-for-WNR854T.patch b/package/kernel/mac80211/patches/mwl/700-mwl8k-missing-pci-id-for-WNR854T.patch
-index cfb7dcf7386b..11536651b5e3 100644
+index 7baab80d2452..11536651b5e3 100644
 --- a/package/kernel/mac80211/patches/mwl/700-mwl8k-missing-pci-id-for-WNR854T.patch
 +++ b/package/kernel/mac80211/patches/mwl/700-mwl8k-missing-pci-id-for-WNR854T.patch
 @@ -1,6 +1,6 @@
  --- a/drivers/net/wireless/marvell/mwl8k.c
  +++ b/drivers/net/wireless/marvell/mwl8k.c
--@@ -5712,6 +5712,7 @@ MODULE_FIRMWARE("mwl8k/fmimage_8366.fw")
+-@@ -5716,6 +5716,7 @@ MODULE_FIRMWARE("mwl8k/fmimage_8366.fw")
 +@@ -5703,6 +5703,7 @@ MODULE_FIRMWARE("mwl8k/fmimage_8366.fw")
   MODULE_FIRMWARE(MWL8K_8366_AP_FW(MWL8K_8366_AP_FW_API));
   
   static const struct pci_device_id mwl8k_pci_id_table[] = {
 diff --git a/package/kernel/mac80211/patches/mwl/940-mwl8k_init_devices_synchronously.patch b/package/kernel/mac80211/patches/mwl/940-mwl8k_init_devices_synchronously.patch
-index d09cfac448cc..c8d24283aad9 100644
+index d021b1e40b9b..c8d24283aad9 100644
 --- a/package/kernel/mac80211/patches/mwl/940-mwl8k_init_devices_synchronously.patch
 +++ b/package/kernel/mac80211/patches/mwl/940-mwl8k_init_devices_synchronously.patch
 @@ -1,6 +1,6 @@
  --- a/drivers/net/wireless/marvell/mwl8k.c
  +++ b/drivers/net/wireless/marvell/mwl8k.c
--@@ -6298,6 +6298,8 @@ static int mwl8k_probe(struct pci_dev *p
+-@@ -6302,6 +6302,8 @@ static int mwl8k_probe(struct pci_dev *p
 +@@ -6289,6 +6289,8 @@ static int mwl8k_probe(struct pci_dev *p
   
   	priv->running_bsses = 0;
@@ -1067,7 +1067,7 @@ index d09cfac448cc..c8d24283aad9 100644
   	return rc;
   
   err_stop_firmware:
--@@ -6331,8 +6333,6 @@ static void mwl8k_remove(struct pci_dev
+-@@ -6335,8 +6337,6 @@ static void mwl8k_remove(struct pci_dev
 +@@ -6322,8 +6324,6 @@ static void mwl8k_remove(struct pci_dev
   		return;
   	priv = hw->priv;
@@ -1326,21 +1326,23 @@ index 68534f4e7b40..c79952771ccf 100644
   	sdata->beacon_rate_set = false;
 - 	sdata->vif.cfg.ssid_len = 0;
 diff --git a/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch b/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch
-index c9496b5e709c..79d11062fe35 100644
+index b56531435c67..6dd3cbf608b2 100644
 --- a/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch
 +++ b/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch
-@@ -1,8 +1,8 @@
+@@ -1,9 +1,9 @@
  --- a/net/mac80211/main.c
  +++ b/net/mac80211/main.c
--@@ -1583,24 +1583,6 @@ int ieee80211_register_hw(struct ieee802
+-@@ -1585,24 +1585,6 @@ int ieee80211_register_hw(struct ieee802
 - 
 - 	ieee80211_check_wbrf_support(local);
+- 
 +@@ -1393,24 +1393,6 @@ int ieee80211_register_hw(struct ieee802
-+	debugfs_hw_add(local);
-+	rate_control_add_debugfs(local);
-  
++        debugfs_hw_add(local);
++        rate_control_add_debugfs(local);
++
  -	rtnl_lock();
  -	wiphy_lock(hw->wiphy);
+ -
 diff --git a/package/kernel/mac80211/patches/subsys/210-ap_scan.patch b/package/kernel/mac80211/patches/subsys/210-ap_scan.patch
 index ca4ac8adb626..1e9676fd0b69 100644
 --- a/package/kernel/mac80211/patches/subsys/210-ap_scan.patch
@@ -1355,38 +1357,38 @@ index ca4ac8adb626..1e9676fd0b69 100644
   		fallthrough;
   	case NL80211_IFTYPE_AP:
 diff --git a/package/kernel/mac80211/patches/subsys/230-avoid-crashing-missing-band.patch b/package/kernel/mac80211/patches/subsys/230-avoid-crashing-missing-band.patch
-index 9e9e3844b7ac..35fa961d21a7 100644
+index b6b3f6af8f17..35fa961d21a7 100644
 --- a/package/kernel/mac80211/patches/subsys/230-avoid-crashing-missing-band.patch
 +++ b/package/kernel/mac80211/patches/subsys/230-avoid-crashing-missing-band.patch
 @@ -18,7 +18,7 @@ Signed-off-by: David Bauer <mail@david-bauer.net>
  
  --- a/net/mac80211/sta_info.c
  +++ b/net/mac80211/sta_info.c
--@@ -2439,6 +2439,13 @@ static void sta_stats_decode_rate(struct
+-@@ -2446,6 +2446,13 @@ static void sta_stats_decode_rate(struct
 +@@ -2445,6 +2445,13 @@ static void sta_stats_decode_rate(struct
   
   		sband = local->hw.wiphy->bands[band];
   
 diff --git a/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch b/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch
-index edec97cce940..9868d204bc31 100644
+index 77bc2c0df238..a442f006d9eb 100644
 --- a/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch
 +++ b/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch
 @@ -28,10 +28,10 @@ Signed-off-by: Johannes Berg <johannes.berg@intel.com>
  
  --- a/net/mac80211/sta_info.c
  +++ b/net/mac80211/sta_info.c
--@@ -565,6 +565,7 @@ __sta_info_alloc(struct ieee80211_sub_if
+-@@ -564,6 +564,7 @@ __sta_info_alloc(struct ieee80211_sub_if
 - 	spin_lock_init(&sta->ps_lock);
 +@@ -561,6 +561,7 @@ __sta_info_alloc(struct ieee80211_sub_if
   	INIT_WORK(&sta->drv_deliver_wk, sta_deliver_ps_frames);
 - 	wiphy_work_init(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
-+	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
-+	mutex_init(&sta->ampdu_mlme.mtx);
++        INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
++        mutex_init(&sta->ampdu_mlme.mtx);
  +	sta->ampdu_mlme.dialog_token_allocator = get_random_u32_below(U8_MAX);
   #ifdef CPTCFG_MAC80211_MESH
   	if (ieee80211_vif_is_mesh(&sdata->vif)) {
 diff --git a/package/kernel/mac80211/patches/subsys/305-mac80211-increase-quantum-for-airtime-scheduler.patch b/package/kernel/mac80211/patches/subsys/305-mac80211-increase-quantum-for-airtime-scheduler.patch
-index 6cf46ce7e514..e4575ca7ba74 100644
+index a99298750147..a699f78ed285 100644
 --- a/package/kernel/mac80211/patches/subsys/305-mac80211-increase-quantum-for-airtime-scheduler.patch
 +++ b/package/kernel/mac80211/patches/subsys/305-mac80211-increase-quantum-for-airtime-scheduler.patch
 @@ -12,9 +12,9 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
@@ -1402,42 +1404,43 @@ index 6cf46ce7e514..e4575ca7ba74 100644
   
  +#define AIRTIME_QUANTUM_SHIFT	3
  +
-@@ -23,7 +23,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -23,8 +23,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   
  --- a/net/mac80211/tx.c
  +++ b/net/mac80211/tx.c
--@@ -4081,7 +4081,7 @@ struct ieee80211_txq *ieee80211_next_txq
-+@@ -4060,7 +4060,7 @@ struct ieee80211_txq *ieee80211_next_txq
-  
+-@@ -4082,7 +4082,7 @@ struct ieee80211_txq *ieee80211_next_txq
+- 
++@@ -4060,7 +4060,7 @@ struct ieee80211_txq *ieee80211_next_txq 
   		if (deficit < 0)
   			sta->airtime[txqi->txq.ac].deficit +=
-@@ -32,7 +32,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+ -				sta->airtime_weight;
+@@ -32,7 +31,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   
   		if (deficit < 0 || !aql_check) {
   			list_move_tail(&txqi->schedule_order,
--@@ -4224,7 +4224,8 @@ bool ieee80211_txq_may_transmit(struct i
+-@@ -4227,7 +4227,8 @@ bool ieee80211_txq_may_transmit(struct i
 +@@ -4203,7 +4203,8 @@ bool ieee80211_txq_may_transmit(struct i
   		}
   		sta = container_of(iter->txq.sta, struct sta_info, sta);
   		if (ieee80211_sta_deficit(sta, ac) < 0)
-@@ -42,7 +42,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -42,7 +41,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   		list_move_tail(&iter->schedule_order, &local->active_txqs[ac]);
   	}
   
--@@ -4232,7 +4233,7 @@ bool ieee80211_txq_may_transmit(struct i
+-@@ -4235,7 +4236,7 @@ bool ieee80211_txq_may_transmit(struct i
 +@@ -4211,7 +4212,7 @@ bool ieee80211_txq_may_transmit(struct i
   	if (sta->airtime[ac].deficit >= 0)
   		goto out;
   
 diff --git a/package/kernel/mac80211/patches/subsys/310-cfg80211-allow-grace-period-for-DFS-available-after-.patch b/package/kernel/mac80211/patches/subsys/310-cfg80211-allow-grace-period-for-DFS-available-after-.patch
-index c86b836f2f56..6f8149db02ee 100644
+index ae65ff082fa3..3fb9688e3e6b 100644
 --- a/package/kernel/mac80211/patches/subsys/310-cfg80211-allow-grace-period-for-DFS-available-after-.patch
 +++ b/package/kernel/mac80211/patches/subsys/310-cfg80211-allow-grace-period-for-DFS-available-after-.patch
-@@ -11,23 +11,23 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -11,22 +11,21 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
  
  --- a/include/net/cfg80211.h
  +++ b/include/net/cfg80211.h
--@@ -187,6 +187,8 @@ enum ieee80211_channel_flags {
+-@@ -190,6 +190,8 @@ enum ieee80211_channel_flags {
 +@@ -175,6 +175,8 @@ enum ieee80211_channel_flags {
    * @dfs_state: current state of this channel. Only relevant if radar is required
    *	on this channel.
@@ -1447,8 +1450,8 @@ index c86b836f2f56..6f8149db02ee 100644
    * @dfs_cac_ms: DFS CAC time in milliseconds, this is valid for DFS channels.
 -  * @psd: power spectral density (in dBm)
    */
--@@ -204,6 +206,7 @@ struct ieee80211_channel {
-+ struct ieee80211_channel {
+-@@ -207,6 +209,7 @@ struct ieee80211_channel {
++  struct ieee80211_channel {
 +@@ -191,6 +193,7 @@ struct ieee80211_channel {
   	int orig_mag, orig_mpwr;
   	enum nl80211_dfs_state dfs_state;
@@ -1457,11 +1460,9 @@ index c86b836f2f56..6f8149db02ee 100644
   	unsigned int dfs_cac_ms;
 - 	s8 psd;
   };
-+
  --- a/net/wireless/ap.c
  +++ b/net/wireless/ap.c
- @@ -30,6 +30,9 @@ static int ___cfg80211_stop_ap(struct cf
-@@ -52,7 +52,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -52,7 +51,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   
  --- a/net/wireless/chan.c
  +++ b/net/wireless/chan.c
@@ -1470,7 +1471,7 @@ index c86b836f2f56..6f8149db02ee 100644
   
   		c->dfs_state = dfs_state;
   		c->dfs_state_entered = jiffies;
-@@ -61,7 +61,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -61,7 +60,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   	}
   }
   
@@ -1479,7 +1480,7 @@ index c86b836f2f56..6f8149db02ee 100644
   	return true;
   }
   
-@@ -113,7 +113,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -113,7 +112,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   {
  --- a/net/wireless/core.h
  +++ b/net/wireless/core.h
@@ -1488,33 +1489,33 @@ index c86b836f2f56..6f8149db02ee 100644
   			    enum nl80211_dfs_state dfs_state);
   
   void cfg80211_dfs_channels_update_work(struct work_struct *work);
-@@ -124,7 +124,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -124,7 +123,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   
  --- a/net/wireless/mlme.c
  +++ b/net/wireless/mlme.c
--@@ -1031,6 +1031,8 @@ void cfg80211_dfs_channels_update_work(s
+-@@ -1032,6 +1032,8 @@ void cfg80211_dfs_channels_update_work(s
 +@@ -930,6 +930,8 @@ void cfg80211_dfs_channels_update_work(s
   			if (c->dfs_state == NL80211_DFS_UNAVAILABLE) {
   				time_dfs_update = IEEE80211_DFS_MIN_NOP_TIME_MS;
   				radar_event = NL80211_RADAR_NOP_FINISHED;
-@@ -133,7 +133,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -133,7 +132,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   			} else {
   				if (regulatory_pre_cac_allowed(wiphy) ||
   				    cfg80211_any_wiphy_oper_chan(wiphy, c))
--@@ -1038,11 +1040,10 @@ void cfg80211_dfs_channels_update_work(s
+-@@ -1039,11 +1041,10 @@ void cfg80211_dfs_channels_update_work(s
 +@@ -937,11 +939,10 @@ void cfg80211_dfs_channels_update_work(s
   
   				time_dfs_update = REG_PRE_CAC_EXPIRY_GRACE_MS;
   				radar_event = NL80211_RADAR_PRE_CAC_EXPIRED;
 diff --git a/package/kernel/mac80211/patches/subsys/320-mac80211-add-AQL-support-for-broadcast-packets.patch b/package/kernel/mac80211/patches/subsys/320-mac80211-add-AQL-support-for-broadcast-packets.patch
-index 9513dc14bc34..481b18cdf4c0 100644
+index 6ec52af9a475..079977841522 100644
 --- a/package/kernel/mac80211/patches/subsys/320-mac80211-add-AQL-support-for-broadcast-packets.patch
 +++ b/package/kernel/mac80211/patches/subsys/320-mac80211-add-AQL-support-for-broadcast-packets.patch
 @@ -12,7 +12,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
  
  --- a/include/net/cfg80211.h
  +++ b/include/net/cfg80211.h
--@@ -3423,6 +3423,7 @@ enum wiphy_params_flags {
+-@@ -3426,6 +3426,7 @@ enum wiphy_params_flags {
 +@@ -3324,6 +3324,7 @@ enum wiphy_params_flags {
   /* The per TXQ device queue limit in airtime */
   #define IEEE80211_DEFAULT_AQL_TXQ_LIMIT_L	5000
@@ -1523,7 +1524,7 @@ index 9513dc14bc34..481b18cdf4c0 100644
   
  --- a/net/mac80211/ieee80211_i.h
  +++ b/net/mac80211/ieee80211_i.h
--@@ -1351,10 +1351,12 @@ struct ieee80211_local {
+-@@ -1360,10 +1360,12 @@ struct ieee80211_local {
 +@@ -1328,10 +1328,12 @@ struct ieee80211_local {
   	spinlock_t handle_wake_tx_queue_lock;
   
@@ -1541,69 +1542,67 @@ index 9513dc14bc34..481b18cdf4c0 100644
   		spin_lock_init(&local->active_txq_lock[i]);
  --- a/net/mac80211/sta_info.c
  +++ b/net/mac80211/sta_info.c
--@@ -2353,13 +2353,28 @@ EXPORT_SYMBOL(ieee80211_sta_recalc_aggre
+-@@ -2360,13 +2360,28 @@ EXPORT_SYMBOL(ieee80211_sta_recalc_aggre
 +@@ -2343,13 +2343,28 @@ EXPORT_SYMBOL(ieee80211_sta_recalc_aggre
   
   void ieee80211_sta_update_pending_airtime(struct ieee80211_local *local,
   					  struct sta_info *sta, u8 ac,
-@@ -127,7 +127,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -127,7 +127,8 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   			atomic_add(tx_airtime,
  --- a/net/mac80211/tx.c
  +++ b/net/mac80211/tx.c
 -@@ -2554,7 +2554,7 @@ static u16 ieee80211_store_ack_skb(struc
++
 +@@ -2536,7 +2536,7 @@ static u16 ieee80211_store_ack_skb(struc
   
   		spin_lock_irqsave(&local->ack_status_lock, flags);
   		id = idr_alloc(&local->ack_status_frames, ack_skb,
-@@ -136,9 +136,9 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -136,7 +137,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   		spin_unlock_irqrestore(&local->ack_status_lock, flags);
   
   		if (id >= 0) {
--@@ -3982,20 +3982,20 @@ begin:
+-@@ -3983,20 +3983,20 @@ begin:
 +@@ -3958,20 +3958,20 @@ begin:
   encap_out:
-- 	info->control.vif = vif;
-+	IEEE80211_SKB_CB(skb)->control.vif = vif;
+  	info->control.vif = vif;
   
- -	if (tx.sta &&
- -	    wiphy_ext_feature_isset(local->hw.wiphy, NL80211_EXT_FEATURE_AQL)) {
-@@ -167,7 +167,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -167,7 +168,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   	}
   
   	return skb;
--@@ -4047,6 +4047,7 @@ struct ieee80211_txq *ieee80211_next_txq
+-@@ -4048,6 +4048,7 @@ struct ieee80211_txq *ieee80211_next_txq
 +@@ -4026,6 +4026,7 @@ struct ieee80211_txq *ieee80211_next_txq
   	struct ieee80211_txq *ret = NULL;
   	struct txq_info *txqi = NULL, *head = NULL;
   	bool found_eligible_txq = false;
-@@ -175,7 +175,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -175,7 +176,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   
   	spin_lock_bh(&local->active_txq_lock[ac]);
   
--@@ -4070,26 +4071,26 @@ struct ieee80211_txq *ieee80211_next_txq
+-@@ -4071,26 +4072,26 @@ struct ieee80211_txq *ieee80211_next_txq
 +@@ -4049,26 +4050,26 @@ struct ieee80211_txq *ieee80211_next_txq
   	if (!head)
   		head = txqi;
   
-@@ -214,7 +214,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -214,7 +215,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   	if (txqi->schedule_round == local->schedule_round[ac])
   		goto out;
   
--@@ -4154,7 +4155,8 @@ bool ieee80211_txq_airtime_check(struct
+-@@ -4157,7 +4158,8 @@ bool ieee80211_txq_airtime_check(struct
 +@@ -4133,7 +4134,8 @@ bool ieee80211_txq_airtime_check(struct
   		return true;
   
   	if (!txq->sta)
-@@ -224,7 +224,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -224,7 +225,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   
   	if (unlikely(txq->tid == IEEE80211_NUM_TIDS))
   		return true;
--@@ -4203,15 +4205,15 @@ bool ieee80211_txq_may_transmit(struct i
+-@@ -4206,15 +4208,15 @@ bool ieee80211_txq_may_transmit(struct i
 +@@ -4182,15 +4184,15 @@ bool ieee80211_txq_may_transmit(struct i
   
   	spin_lock_bh(&local->active_txq_lock[ac]);
   
-@@ -245,16 +245,25 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -245,16 +246,25 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   		if (iter == txqi)
  --- a/include/net/mac80211.h
  +++ b/include/net/mac80211.h
@@ -1635,7 +1634,7 @@ index 9513dc14bc34..481b18cdf4c0 100644
  --- a/net/mac80211/sta_info.h
  +++ b/net/mac80211/sta_info.h
  @@ -147,7 +147,8 @@ struct airtime_info {
-@@ -269,7 +278,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -269,7 +279,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   
  --- a/net/mac80211/status.c
  +++ b/net/mac80211/status.c
@@ -1644,7 +1643,7 @@ index 9513dc14bc34..481b18cdf4c0 100644
   		ieee80211_sta_update_pending_airtime(local, sta,
   						     skb_get_queue_mapping(skb),
   						     tx_time_est,
-@@ -278,7 +287,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+@@ -278,7 +288,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   		rcu_read_unlock();
   	}
   
@@ -1654,7 +1653,7 @@ index 9513dc14bc34..481b18cdf4c0 100644
   		 * in ieee80211_report_used_skb().
   		 */
 diff --git a/package/network/services/hostapd/files/hostapd.uc b/package/network/services/hostapd/files/hostapd.uc
-index f4f479c0f672..afe103d86f44 100644
+index 5c172de5dfcc..42a6de686fad 100644
 --- a/package/network/services/hostapd/files/hostapd.uc
 +++ b/package/network/services/hostapd/files/hostapd.uc
 @@ -275,17 +275,6 @@ function iface_pending_init(phydev, config)
@@ -1684,7 +1683,7 @@ index f4f479c0f672..afe103d86f44 100644
  	for (let i = 0; i < length(config.bss); i++) {
  		let bss = config.bss[i];
  		if (bss.default_macaddr)
-@@ -573,7 +562,11 @@ function iface_reload_config(name, phydev, config, old_config)
+@@ -575,7 +564,11 @@ function iface_reload_config(name, phydev, config, old_config)
  	}
  
  	// Step 6: assign BSSID for newly created interfaces
@@ -1697,7 +1696,7 @@ index f4f479c0f672..afe103d86f44 100644
  	for (let i = 0; i < length(config.bss); i++) {
  		if (bss_list[i])
  			continue;
-@@ -749,7 +742,7 @@ function iface_load_config(phy, radio, filename)
+@@ -751,7 +744,7 @@ function iface_load_config(phy, radio, filename)
  		}
  
  		if (val[0] == "#num_global_macaddr")
@@ -1706,7 +1705,7 @@ index f4f479c0f672..afe103d86f44 100644
  		else if (val[0] == "#macaddr_base")
  			config[substr(val[0], 1)] = val[1];
  		else if (val[0] == "mbssid")
-@@ -1036,13 +1029,13 @@ return {
+@@ -1040,13 +1033,13 @@ return {
  		if (phy.radio_idx != null && phy.radio_idx >= 0)
  			wdev_set_radio_mask(name, 1 << phy.radio_idx);
  	},
@@ -3544,14 +3543,14 @@ index 13fd2b1b518a..c8c978fb1d75 100644
   	wpas_notify_supplicant_deinitialized(global);
   
 diff --git a/package/network/services/hostapd/patches/701-reload_config_inline.patch b/package/network/services/hostapd/patches/701-reload_config_inline.patch
-index 54045476477f..260e832ddba7 100644
+index 24d3aa86d057..fa6661f2e75a 100644
 --- a/package/network/services/hostapd/patches/701-reload_config_inline.patch
 +++ b/package/network/services/hostapd/patches/701-reload_config_inline.patch
 @@ -8,7 +8,7 @@ as adding/removing interfaces.
  
  --- a/hostapd/config_file.c
  +++ b/hostapd/config_file.c
--@@ -5207,7 +5207,12 @@ struct hostapd_config * hostapd_config_r
+-@@ -5207,7 +5207,14 @@ struct hostapd_config * hostapd_config_r
 +@@ -5065,7 +5065,12 @@ struct hostapd_config * hostapd_config_r
   	int errors = 0;
   	size_t i;

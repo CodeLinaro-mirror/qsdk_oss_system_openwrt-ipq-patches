@@ -185,13 +185,13 @@ index a8ffce1e30dc..000000000000
 - 			       "Failed to register to thermal zone (err = %ld)\n",
 diff --git a/package/kernel/mac80211/patches/build/220-brcmfmac_usb_driver_backport.patch b/package/kernel/mac80211/patches/build/220-brcmfmac_usb_driver_backport.patch
 deleted file mode 100644
-index 25dab4690542..000000000000
+index 185b71f1ff05..000000000000
 --- a/package/kernel/mac80211/patches/build/220-brcmfmac_usb_driver_backport.patch
 +++ /dev/null
 @@ -1,14 +0,0 @@
 ---- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/usb.c
 -+++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/usb.c
--@@ -1574,7 +1574,11 @@ static int brcmf_usb_reset_device(struct
+-@@ -1576,7 +1576,11 @@ static int brcmf_usb_reset_device(struct
 - 
 - void brcmf_usb_exit(void)
 - {
@@ -699,6 +699,3 @@ index dae7ad180c91..000000000000
 - 	wpa_printf(MSG_DEBUG, "nl80211: Set WDS STA addr=" MACSTR
 - 		   " aid=%d val=%d name=%s", MAC2STR(addr), aid, val, name);
 - 	if (val) {
--- 
-2.34.1
-
