@@ -1,0 +1,25 @@
+From 5a2a40cf346479e5d68e4b48803299a9b9615004 Mon Sep 17 00:00:00 2001
+From: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+Date: Mon, 24 Nov 2025 12:37:57 +0530
+Subject: [PATCH] feeds.conf luci commit update for FFWD
+
+Change-Id: I9e1fa32c75b8b526bda1f5bd61763efbf0c5cfa6
+Signed-off-by: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+---
+ feeds.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index d34e5a89148f..9907bed512d8 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -1,5 +1,5 @@
+ src-link packages ../qca/feeds/packages
+-src-git luci https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^6da5e65981734021932b8d339ce7a386eb8f8476 https://github.com/openwrt/luci.git^6da5e65981734021932b8d339ce7a386eb8f8476
++src-git luci https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^257ca434b8bec900a65d9fd17f1f4c3ee9253469 https://github.com/openwrt/luci.git^257ca434b8bec900a65d9fd17f1f4c3ee9253469
+ src-link routing ../qca/feeds/routing
+ src-link bootloader ../qca/feeds/bootloader
+ src-link qcom_utils_internal ../qca/feeds/qcom-utils-internal
+-- 
+2.34.1
+
