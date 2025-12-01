@@ -1,0 +1,30 @@
+From 6eff735bab0e2bff89498fef9d13dac5257d5e99 Mon Sep 17 00:00:00 2001
+From: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+Date: Thu, 27 Nov 2025 16:35:58 +0530
+Subject: [PATCH] download.mk:submodule cloning optional and  SOURCE_VERSION on
+ checkout
+
+Change-Id: I87c93e178cca3398871894b41e8518d9deab2d41
+Signed-off-by: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+---
+ include/download.mk | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/download.mk b/include/download.mk
+index 918081800ebb..3c27a09022a7 100644
+--- a/include/download.mk
++++ b/include/download.mk
+@@ -145,8 +145,8 @@ endif
+ define git_mirror_download
+ 	GIT_NAME=$$$$(echo $(URL) | sed -e s:.*/::g -e s/.git$$$$//g); \
+ 	[ -n "${CONFIG_GIT_MIRROR}" ] && \
+-	git clone $(if $(BRANCH),-b $(BRANCH)) $(CONFIG_GIT_MIRROR)$$$$GIT_NAME $(SUBDIR) --recursive && \
+-	(cd $(SUBDIR) && git remote -v && git checkout $(VERSION))
++	git clone $(if $(BRANCH),-b $(BRANCH)) $(CONFIG_GIT_MIRROR)$$$$GIT_NAME $(SUBDIR) $(if $(filter skip,$(SUBMODULES)),,--recursive) && \
++	(cd $(SUBDIR) && git remote -v && git checkout $(SOURCE_VERSION))
+ endef
+ 
+ define DownloadMethod/unknown
+-- 
+2.34.1
+
