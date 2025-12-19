@@ -1,0 +1,34 @@
+From a18c69a524dc7e941a5f819c2652ab485e7e2454 Mon Sep 17 00:00:00 2001
+From: Maharaja Kennadyrajan <mkenna@qti.qualcomm.com>
+Date: Mon, 15 Dec 2025 13:00:23 +0530
+Subject: [PATCH] wpa_supplicant: enable CONFIG_BGSCAN_SIMPLE for background
+ scanning
+
+This change updates wpa_supplicant-full.config to enable the
+CONFIG_BGSCAN_SIMPLE option, which allows periodic background scans
+based on signal strength. This feature improves roaming performance
+within an ESS by triggering scans when signal quality drops, helping
+maintain connectivity and optimize channel selection.
+
+Change-Id: I2f4339ce1833d18a3223db40df8a9e9c174600e3
+Signed-off-by: Maharaja Kennadyrajan <mkenna@qti.qualcomm.com>
+---
+ .../network/services/hostapd/files/wpa_supplicant-full.config   | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/package/network/services/hostapd/files/wpa_supplicant-full.config b/package/network/services/hostapd/files/wpa_supplicant-full.config
+index e2df466123af..63d0b54d0d41 100644
+--- a/package/network/services/hostapd/files/wpa_supplicant-full.config
++++ b/package/network/services/hostapd/files/wpa_supplicant-full.config
+@@ -612,7 +612,7 @@ CONFIG_MESH=y
+ # operations for roaming within an ESS (same SSID). See the bgscan parameter in
+ # the wpa_supplicant.conf file for more details.
+ # Periodic background scans based on signal strength
+-#CONFIG_BGSCAN_SIMPLE=y
++CONFIG_BGSCAN_SIMPLE=y
+ # Learn channels used by the network and try to avoid bgscans on other
+ # channels (experimental)
+ #CONFIG_BGSCAN_LEARN=y
+-- 
+2.34.1
+
