@@ -1,0 +1,28 @@
+From 05aa71808e0bce3ed72a5ed185c1c711ceb7785c Mon Sep 17 00:00:00 2001
+From: Harshitha Prem <hprem@qti.qualcomm.com>
+Date: Tue, 9 Dec 2025 15:44:47 +0530
+Subject: [PATCH] QSDK:PROTOCOL: feeds.conf: link the hostapd path
+
+Add symlink for hostapd package path
+
+Change-Id: Ic622a7f07e8db4cdc815029e1d1df38f24d5de05
+Signed-off-by: Harshitha Prem <hprem@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 9907bed512d8..f85904902bc9 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -15,6 +15,7 @@ src-link ssdk ../qca/feeds/ssdk
+ src-link wifi_debug_tools ../qca/feeds/wifi-debug-tools
+ src-link wifi_fw_headers ../qca/feeds/wifi-fw-headers
+ src-link wlan_open ../qca/feeds/wlan-open
++src-link wlan_hostapd ../qca/feeds/wlan-hostapd
+ src-link athdiag ../qca/feeds/athdiag
+ src-link wlan ../qca/feeds/wlan
+ src-link nss_sap ../qca/feeds/nss-sap
+-- 
+2.34.1
+
