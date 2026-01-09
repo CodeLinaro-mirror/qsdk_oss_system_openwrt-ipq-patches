@@ -1,0 +1,26 @@
+From eccb608e6e7d32271bd972c904b854a70162f83f Mon Sep 17 00:00:00 2001
+From: amansing <amansing@qti.qualcomm.com>
+Date: Tue, 23 Dec 2025 09:47:40 +0530
+Subject: [PATCH] feeds.conf: enable SPT open source feeds
+
+Added SPT open source feed entries to include required packages
+from SPT repositories for build integration.
+
+Change-Id: I964e382c7214947e8993db02167c12fecca42981
+Signed-off-by: amansing <amansing@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 02c0fffd99fe..b5b17a441145 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -75,3 +75,4 @@ src-link feed_net_services ../qca/feeds/feed_net_services
+ src-link feed_prplmesh ../qca/feeds/feed_prplmesh
+ src-link wapid_cfg80211_internal ../qca/feeds/wapid-cfg80211-internal
+ src-link libmmap_telemetry ../qca/feeds/libmmap-telemetry
++src-link spt ../qca/src/sptoss/feeds
+-- 
+2.34.1
+
