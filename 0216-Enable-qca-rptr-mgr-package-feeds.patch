@@ -1,0 +1,28 @@
+From 9938445daf500e704e447871de2ea763297d72a7 Mon Sep 17 00:00:00 2001
+From: sivaraman <sivad@qti.qualcomm.com>
+Date: Mon, 12 Jan 2026 11:53:41 +0530
+Subject: [PATCH] Enable qca-rptr-mgr package feeds
+
+Feeds config change for enabling qca-rptr-mgr package
+
+Change-Id: Ia24fdc90150c66017bb1bba8a151c227edbda6d8
+Signed-off-by: sivaraman <sivad@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 02c0fffd99fe..166d90e57c7d 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -53,6 +53,7 @@ src-link optic_drivers_prop ../qca/feeds/optic-drivers-prop
+ src-link em_ext_ctrl ../qca/feeds/em-ext-ctrl
+ src-link qca_son_mem_debug ../qca/feeds/qca-son-mem-debug
+ src-link afc ../qca/feeds/afc
++src-link qca_rptr_mgr ../qca/feeds/qca-rptr-mgr
+ src-link qca_rsrcmgr ../qca/feeds/qca-rsrcmgr
+ src-link qca_afc_daemon ../qca/feeds/qca-afc-daemon
+ src-link lte_data_oss ../qca/feeds/lte-data-oss
+-- 
+2.34.1
+
