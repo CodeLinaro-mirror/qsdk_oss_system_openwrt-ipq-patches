@@ -1,0 +1,27 @@
+From eeb84f418bc55ce2f88ab746705584c223065a02 Mon Sep 17 00:00:00 2001
+From: Ashwant Krishna R <ashwantk@qti.qualcomm.com>
+Date: Thu, 5 Feb 2026 10:51:06 +0530
+Subject: [PATCH] Enable qca-wifi-apps package feeds
+
+Add the qca-wifi-apps source feed to the feeds.conf
+configuration. Including this feed ensures that packages from the
+qca-wifi-apps repository are available during the build process.
+
+Change-Id: I5b4dd74b80c30ff5e91e20db422ce934623b55b9
+Signed-off-by: Ashwant Krishna R <ashwantk@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 73430a5d6855..26e807bba24f 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -77,3 +77,4 @@ src-link feed_prplmesh ../qca/feeds/feed_prplmesh
+ src-link wapid_cfg80211_internal ../qca/feeds/wapid-cfg80211-internal
+ src-link libmmap_telemetry ../qca/feeds/libmmap-telemetry
+ src-link spt ../qca/src/sptoss/feeds
++src-link qca_wifi_apps ../qca/feeds/qca-wifi-apps
+-- 
+2.34.1
+
