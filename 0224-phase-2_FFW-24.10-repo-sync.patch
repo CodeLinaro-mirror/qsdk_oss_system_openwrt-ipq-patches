@@ -1,0 +1,948 @@
+From 11d5264b5a13dbdb6252e23803b0a422e466537c Mon Sep 17 00:00:00 2001
+From: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+Date: Fri, 27 Feb 2026 13:08:59 +0530
+Subject: [PATCH] phase-2_FFW-24.10-repo-sync
+
+Signed-off-by: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+---
+ package/base-files/files/sbin/sysupgrade      |  36 +-
+ package/kernel/mac80211/Makefile              |   2 +-
+ ...tersection-support-for-regulatory-ru.patch |  70 +---
+ .../patches/subsys/130-disable_auto_vif.patch |  27 ++
+ ...domize-BA-session-dialog-token-alloc.patch |  42 +++
+ ...11-add-option-for-vif-allowed-radios.patch | 309 ++++++++++++++++++
+ ...pport-EHT-1024-aggregation-size-in-T.patch | 308 +++++++++++++++++
+ 7 files changed, 724 insertions(+), 70 deletions(-)
+ create mode 100644 package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch
+ create mode 100644 package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch
+ create mode 100644 package/kernel/mac80211/patches/subsys/330-wifi-cfg80211-add-option-for-vif-allowed-radios.patch
+ create mode 100644 package/kernel/mac80211/patches/subsys/342-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch
+
+diff --git a/package/base-files/files/sbin/sysupgrade b/package/base-files/files/sbin/sysupgrade
+index f31c4bc2e98a..0d513c8fd801 100755
+--- a/package/base-files/files/sbin/sysupgrade
++++ b/package/base-files/files/sbin/sysupgrade
+@@ -33,6 +33,7 @@ export VERBOSE=1
+ export SAVE_CONFIG=1
+ export IGNORE_MINOR_COMPAT=0
+ export FORCE=0
++export ALIVE=0
+ export CONFFILES=/tmp/sysupgrade.conffiles
+ 
+ # parse options
+@@ -47,6 +48,7 @@ while [ -n "$1" ]; do
+ 		-p) SAVE_PARTITIONS=0;;
+ 		-k) SAVE_INSTALLED_PKGS=1;;
+ 		-u) SKIP_UNCHANGED=1;;
++		-a|--alive) export ALIVE=1;;
+ 		-b|--create-backup) CONF_BACKUP="$2" NEED_IMAGE=1; shift;;
+ 		-r|--restore-backup) CONF_RESTORE="$2" NEED_IMAGE=1; shift;;
+ 		-l|--list-backup) CONF_BACKUP_LIST=1;;
+@@ -65,6 +67,9 @@ while [ -n "$1" ]; do
+ 	shift;
+ done
+ 
++export ARGV="$*"
++export ARGC="$#"
++
+ print_help() {
+ 	cat <<EOF
+ Usage: $0 [<upgrade-option>...] <image file or URL>
+@@ -77,6 +82,7 @@ upgrade-option:
+ 	-o           attempt to preserve all changed files in /, except those
+ 	             from packages but including changed confs.
+ 	-u           skip from backup files that are equal to those in /rom
++	-a           alive upgrade valid only when trymode is enabled
+ 	-n           do not save configuration over reflash
+ 	-p           do not attempt to restore the partition table after flash.
+ 	-k           include in backup a list of current installed packages at
+@@ -339,6 +345,8 @@ if [ -n "$CONF_RESTORE" ]; then
+ 	exit $?
+ fi
+ 
++echo $ALIVE > /tmp/.alive_upgrade
++
+ type platform_check_image >/dev/null 2>/dev/null || {
+ 	echo "Firmware upgrade is not implemented for this platform." >&2
+ 	exit 1
+@@ -404,12 +412,8 @@ if [ $TEST -eq 1 ]; then
+ 	exit 0
+ fi
+ 
+-install_bin /sbin/upgraded
+-v "Commencing upgrade. Closing all shell sessions."
+-
+-if [ -n "$FAILSAFE" ]; then
+-	printf '%s\x00%s\x00%s' "$RAM_ROOT" "$IMAGE" "$COMMAND" >/tmp/sysupgrade
+-	lock -u /tmp/.failsafe
++if [ $ALIVE -eq 1 ]; then
++	do_upgrade
+ else
+ 	json_init
+ 	json_add_string prefix "$RAM_ROOT"
+@@ -422,5 +426,23 @@ else
+ 	[ $USE_CURR_PART -eq 1 ] && json_add_boolean use_curr_part 1
+ 	json_close_object
+ 
+-	ubus call system sysupgrade "$(json_dump)"
++	install_bin /sbin/upgraded
++	v "Commencing upgrade. Closing all shell sessions."
++
++	if [ -n "$FAILSAFE" ]; then
++		printf '%s\x00%s\x00%s' "$RAM_ROOT" "$IMAGE" "$COMMAND" >/tmp/sysupgrade
++		lock -u /tmp/.failsafe
++	else
++		json_init
++		json_add_string prefix "$RAM_ROOT"
++		json_add_string path "$IMAGE"
++		[ $FORCE -eq 1 ] && json_add_boolean force 1
++		[ $SAVE_CONFIG -eq 1 ] && json_add_string backup "$CONF_TAR"
++		json_add_string command "$COMMAND"
++		json_add_object options
++		json_add_int save_partitions "$SAVE_PARTITIONS"
++		json_close_object
++
++		ubus call system sysupgrade "$(json_dump)"
++	fi
+ fi
+diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
+index 71bf91134c2e..9e4b0f489104 100644
+--- a/package/kernel/mac80211/Makefile
++++ b/package/kernel/mac80211/Makefile
+@@ -11,7 +11,7 @@ include $(INCLUDE_DIR)/kernel.mk
+ PKG_NAME:=mac80211
+ 
+ PKG_VERSION:=6.6.15
+-PKG_RELEASE:=1
++PKG_RELEASE:=2
+ PKG_LICENSE:=GPL-2.0-only
+ PKG_LICENSE_FILES:=COPYING
+ 
+diff --git a/package/kernel/mac80211/patches/ath11k/905-ath11k-remove-intersection-support-for-regulatory-ru.patch b/package/kernel/mac80211/patches/ath11k/905-ath11k-remove-intersection-support-for-regulatory-ru.patch
+index 48a043f7699d..74317e0262a4 100644
+--- a/package/kernel/mac80211/patches/ath11k/905-ath11k-remove-intersection-support-for-regulatory-ru.patch
++++ b/package/kernel/mac80211/patches/ath11k/905-ath11k-remove-intersection-support-for-regulatory-ru.patch
+@@ -154,7 +154,7 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
+  ath11k_reg_get_regdom_str(enum nl80211_dfs_regions dfs_region)
+  {
+ @@ -619,9 +496,9 @@ ath11k_reg_update_weather_radar_band(str
+-
++ 
+  struct ieee80211_regdomain *
+  ath11k_reg_build_regd(struct ath11k_base *ab,
+ -		      struct cur_regulatory_info *reg_info, bool intersect)
+@@ -252,65 +252,12 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
+ -	} else {
+ -		new_regd = tmp_regd;
+ -	}
+--
+++	new_regd->n_reg_rules = i;
++ 
+ -ret:
+  	return new_regd;
+  }
+  
+-@@ -844,17 +699,6 @@ void ath11k_regd_update_chan_list_work(s
+- 	}
+- }
+- 
+--static bool ath11k_reg_is_world_alpha(char *alpha)
+--{
+--	if (alpha[0] == '0' && alpha[1] == '0')
+--		return true;
+--
+--	if (alpha[0] == 'n' && alpha[1] == 'a')
+--		return true;
+--
+--	return false;
+--}
+--
+- static enum wmi_vdev_type ath11k_reg_get_ar_vdev_type(struct ath11k *ar)
+- {
+- 	struct ath11k_vif *arvif;
+-@@ -877,7 +721,6 @@ int ath11k_reg_handle_chan_list(struct a
+- 				enum ieee80211_ap_reg_power power_type)
+- {
+- 	struct ieee80211_regdomain *regd;
+--	bool intersect = false;
+- 	int pdev_idx;
+- 	struct ath11k *ar;
+- 	enum wmi_vdev_type vdev_type;
+-@@ -929,24 +772,14 @@ int ath11k_reg_handle_chan_list(struct a
+- 		    (char *)reg_info->alpha2, 2))
+- 		goto retfail;
+- 
+--	/* Intersect new rules with default regd if a new country setting was
+--	 * requested, i.e a default regd was already set during initialization
+--	 * and the regd coming from this event has a valid country info.
+--	 */
+--	if (ab->default_regd[pdev_idx] &&
+--	    !ath11k_reg_is_world_alpha((char *)
+--		ab->default_regd[pdev_idx]->alpha2) &&
+--	    !ath11k_reg_is_world_alpha((char *)reg_info->alpha2))
+--		intersect = true;
+--
+- 	ar = ab->pdevs[pdev_idx].ar;
+- 	vdev_type = ath11k_reg_get_ar_vdev_type(ar);
+- 
+- 	ath11k_dbg(ab, ATH11K_DBG_WMI,
+--		   "wmi handle chan list power type %d vdev type %d intersect %d\n",
+--		   power_type, vdev_type, intersect);
+-+		   "wmi handle chan list power type %d vdev type %d\n",
+-+		   power_type, vdev_type);
+- 
+--	regd = ath11k_reg_build_regd(ab, reg_info, intersect, vdev_type, power_type);
+-+	regd = ath11k_reg_build_regd(ab, reg_info, vdev_type, power_type);
+- 	if (!regd) {
+- 		ath11k_warn(ab, "failed to build regd from reg_info\n");
+- 		goto fallback;
+ --- a/drivers/net/wireless/ath/ath11k/reg.h
+ +++ b/drivers/net/wireless/ath/ath11k/reg.h
+ @@ -33,7 +33,7 @@ void ath11k_reg_free(struct ath11k_base
+@@ -327,7 +274,7 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
+ @@ -7060,24 +7060,12 @@ static void ath11k_wmi_htc_tx_complete(s
+  		wake_up(&wmi->tx_ce_desc_wq);
+  }
+-
++ 
+ -static bool ath11k_reg_is_world_alpha(char *alpha)
+ -{
+ -	if (alpha[0] == '0' && alpha[1] == '0')
+@@ -340,20 +287,19 @@ Signed-off-by: Aditya Kumar Singh <quic_adisi@quicinc.com>
+ -}
+ -
+  static int ath11k_reg_chan_list_event(struct ath11k_base *ab,
+- 				struct sk_buff *skb,
+- 				enum wmi_reg_chan_list_cmd_type id)
+-
++ 				      struct sk_buff *skb,
++ 				      enum wmi_reg_chan_list_cmd_type id)
+  {
+  	struct cur_regulatory_info *reg_info = NULL;
+  	struct ieee80211_regdomain *regd = NULL;
+ -	bool intersect = false;
+  	int ret = 0, pdev_idx, i, j;
+  	struct ath11k *ar;
+-
++ 
+ @@ -7141,17 +7129,7 @@ static int ath11k_reg_chan_list_event(st
+  		    (char *)reg_info->alpha2, 2))
+  		goto mem_free;
+-
++ 
+ -	/* Intersect new rules with default regd if a new country setting was
+ -	 * requested, i.e a default regd was already set during initialization
+ -	 * and the regd coming from this event has a valid country info.
+diff --git a/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch b/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch
+new file mode 100644
+index 000000000000..43507f2985e4
+--- /dev/null
++++ b/package/kernel/mac80211/patches/subsys/130-disable_auto_vif.patch
+@@ -0,0 +1,27 @@
++--- a/net/mac80211/main.c
+++++ b/net/mac80211/main.c
++@@ -1393,24 +1393,6 @@ int ieee80211_register_hw(struct ieee802
++ 	debugfs_hw_add(local);
++ 	rate_control_add_debugfs(local);
++ 
++-	rtnl_lock();
++-	wiphy_lock(hw->wiphy);
++-
++-	/* add one default STA interface if supported */
++-	if (local->hw.wiphy->interface_modes & BIT(NL80211_IFTYPE_STATION) &&
++-	    !ieee80211_hw_check(hw, NO_AUTO_VIF)) {
++-		struct vif_params params = {0};
++-
++-		result = ieee80211_if_add(local, "wlan%d", NET_NAME_ENUM, NULL,
++-					  NL80211_IFTYPE_STATION, &params);
++-		if (result)
++-			wiphy_warn(local->hw.wiphy,
++-				   "Failed to add default virtual iface\n");
++-	}
++-
++-	wiphy_unlock(hw->wiphy);
++-	rtnl_unlock();
++-
++ #ifdef CONFIG_INET
++ 	local->ifa_notifier.notifier_call = ieee80211_ifa_changed;
++ 	result = register_inetaddr_notifier(&local->ifa_notifier);
+diff --git a/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch b/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch
+new file mode 100644
+index 000000000000..1034e2c928fd
+--- /dev/null
++++ b/package/kernel/mac80211/patches/subsys/301-mac80211-sta-randomize-BA-session-dialog-token-alloc.patch
+@@ -0,0 +1,42 @@
++From b478e06a16a8baa00c5ecc87c1d636981f2206d5 Mon Sep 17 00:00:00 2001
++From: Johannes Berg <johannes.berg@intel.com>
++Date: Tue, 29 Oct 2019 10:25:25 +0100
++Subject: [PATCH] mac80211: sta: randomize BA session dialog token allocator
++
++We currently always start the dialog token generator at zero,
++so the first dialog token we use is always 1. This would be
++OK if we had a perfect guarantee that we always do a proper
++deauth/re-auth handshake, but in IBSS mode this doesn't always
++happen properly.
++
++To make problems with block ack (aggregation) sessions getting
++stuck less likely, randomize the dialog token so if we start a
++new session but the peer still has old state for us, it can
++better detect this.
++
++This is really just a workaround to make things a bit more
++robust than they are now - a better fix would be to do a full
++authentication handshake in IBSS mode upon having discovered a
++new station, and on the receiver resetting the state (removing
++and re-adding the station) on receiving the authentication
++packet.
++
++Signed-off-by: Johannes Berg <johannes.berg@intel.com>
++---
++ net/mac80211/sta_info.c | 1 +
++ 1 file changed, 1 insertion(+)
++
++--- a/net/mac80211/sta_info.c
+++++ b/net/mac80211/sta_info.c
++@@ -561,6 +561,11 @@ __sta_info_alloc(struct ieee80211_sub_if
++ 	INIT_WORK(&sta->drv_deliver_wk, sta_deliver_ps_frames);
++ 	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
++ 	mutex_init(&sta->ampdu_mlme.mtx);
+++#if LINUX_VERSION_IS_LESS(6,2,0)
+++	sta->ampdu_mlme.dialog_token_allocator = prandom_u32_max(U8_MAX);
+++#else
+++	sta->ampdu_mlme.dialog_token_allocator = get_random_u32_below(U8_MAX);
+++#endif
++ #ifdef CPTCFG_MAC80211_MESH
++ 	if (ieee80211_vif_is_mesh(&sdata->vif)) {
++ 		sta->mesh = kzalloc(sizeof(*sta->mesh), gfp);
+diff --git a/package/kernel/mac80211/patches/subsys/330-wifi-cfg80211-add-option-for-vif-allowed-radios.patch b/package/kernel/mac80211/patches/subsys/330-wifi-cfg80211-add-option-for-vif-allowed-radios.patch
+new file mode 100644
+index 000000000000..4ecbc514fc9d
+--- /dev/null
++++ b/package/kernel/mac80211/patches/subsys/330-wifi-cfg80211-add-option-for-vif-allowed-radios.patch
+@@ -0,0 +1,309 @@
++From: Felix Fietkau <nbd@nbd.name>
++Date: Wed, 17 Jul 2024 15:43:52 +0200
++Subject: [PATCH] wifi: cfg80211: add option for vif allowed radios
++
++This allows users to prevent a vif from affecting radios other than the
++configured ones. This can be useful in cases where e.g. an AP is running
++on one radio, and triggering a scan on another radio should not disturb it.
++
++Changing the allowed radios list for a vif is supported, but only while
++it is down.
++
++While it is possible to achieve the same by always explicitly specifying
++a frequency list for scan requests and ensuring that the wrong channel/band
++is never accidentally set on an unrelated interface, this change makes
++multi-radio wiphy setups a lot easier to deal with for CLI users.
++
++By itself, this patch only enforces the radio mask for scanning requests
++and remain-on-channel. Follow-up changes build on this to limit configured
++frequencies.
++
++Signed-off-by: Felix Fietkau <nbd@nbd.name>
++---
++
++--- a/include/net/cfg80211.h
+++++ b/include/net/cfg80211.h
++@@ -6274,6 +6274,7 @@ enum ieee80211_ap_reg_power {
++  *	entered.
++  * @links.cac_time_ms: CAC time in ms
++  * @valid_links: bitmap describing what elements of @links are valid
+++ * @radio_mask: Bitmask of radios that this interface is allowed to operate on.
++  */
++ struct wireless_dev {
++ 	struct wiphy *wiphy;
++@@ -6386,6 +6387,8 @@ struct wireless_dev {
++ 		unsigned int cac_time_ms;
++ 	} links[IEEE80211_MLD_MAX_NUM_LINKS];
++ 	u16 valid_links;
+++
+++	u32 radio_mask;
++ };
++ 
++ static inline const u8 *wdev_address(struct wireless_dev *wdev)
++@@ -6572,6 +6575,17 @@ bool cfg80211_radio_chandef_valid(const
++ 				  const struct cfg80211_chan_def *chandef);
++ 
++ /**
+++ * cfg80211_wdev_channel_allowed - Check if the wdev may use the channel
+++ *
+++ * @wdev: the wireless device
+++ * @chan: channel to check
+++ *
+++ * Return: whether or not the wdev may use the channel
+++ */
+++bool cfg80211_wdev_channel_allowed(struct wireless_dev *wdev,
+++				   struct ieee80211_channel *chan);
+++
+++/**
++  * ieee80211_get_response_rate - get basic rate for a given rate
++  *
++  * @sband: the band to look for rates in
++--- a/include/uapi/linux/nl80211.h
+++++ b/include/uapi/linux/nl80211.h
++@@ -2868,6 +2868,9 @@ enum nl80211_commands {
++  *	nested item, it contains attributes defined in
++  *	&enum nl80211_if_combination_attrs.
++  *
+++ * @NL80211_ATTR_VIF_RADIO_MASK: Bitmask of allowed radios (u32).
+++ *	A value of 0 means all radios.
+++ *
++  * @NUM_NL80211_ATTR: total number of nl80211_attrs available
++  * @NL80211_ATTR_MAX: highest attribute number currently defined
++  * @__NL80211_ATTR_AFTER_LAST: internal use
++@@ -3416,6 +3419,8 @@ enum nl80211_attrs {
++ 	NL80211_ATTR_WIPHY_RADIOS,
++ 	NL80211_ATTR_WIPHY_INTERFACE_COMBINATIONS,
++ 
+++	NL80211_ATTR_VIF_RADIO_MASK,
+++
++ 	/* add attributes here, update the policy in nl80211.c */
++ 
++ 	__NL80211_ATTR_AFTER_LAST,
++--- a/net/wireless/nl80211.c
+++++ b/net/wireless/nl80211.c
++@@ -832,6 +832,7 @@ static const struct nla_policy nl80211_p
++ 	[NL80211_ATTR_MLO_TTLM_DLINK] = NLA_POLICY_EXACT_LEN(sizeof(u16) * 8),
++ 	[NL80211_ATTR_MLO_TTLM_ULINK] = NLA_POLICY_EXACT_LEN(sizeof(u16) * 8),
++ 	[NL80211_ATTR_ASSOC_SPP_AMSDU] = { .type = NLA_FLAG },
+++	[NL80211_ATTR_VIF_RADIO_MASK] = { .type = NLA_U32 },
++ };
++ 
++ /* policy for the key attributes */
++@@ -4003,7 +4004,8 @@ static int nl80211_send_iface(struct sk_
++ 	    nla_put_u32(msg, NL80211_ATTR_GENERATION,
++ 			rdev->devlist_generation ^
++ 			(cfg80211_rdev_list_generation << 2)) ||
++-	    nla_put_u8(msg, NL80211_ATTR_4ADDR, wdev->use_4addr))
+++	    nla_put_u8(msg, NL80211_ATTR_4ADDR, wdev->use_4addr) ||
+++	    nla_put_u32(msg, NL80211_ATTR_VIF_RADIO_MASK, wdev->radio_mask))
++ 		goto nla_put_failure;
++ 
++ 	if (rdev->ops->get_channel && !wdev->valid_links) {
++@@ -4324,6 +4326,29 @@ static int nl80211_valid_4addr(struct cf
++ 	return -EOPNOTSUPP;
++ }
++ 
+++static int nl80211_parse_vif_radio_mask(struct genl_info *info,
+++					u32 *radio_mask)
+++{
+++	struct cfg80211_registered_device *rdev = info->user_ptr[0];
+++	struct nlattr *attr = info->attrs[NL80211_ATTR_VIF_RADIO_MASK];
+++	u32 mask, allowed;
+++
+++	if (!attr) {
+++		*radio_mask = 0;
+++		return 0;
+++	}
+++
+++	allowed = BIT(rdev->wiphy.n_radio) - 1;
+++	mask = nla_get_u32(attr);
+++	if (mask & ~allowed)
+++		return -EINVAL;
+++	if (!mask)
+++		mask = allowed;
+++	*radio_mask = mask;
+++
+++	return 1;
+++}
+++
++ static int nl80211_set_interface(struct sk_buff *skb, struct genl_info *info)
++ {
++ 	struct cfg80211_registered_device *rdev = info->user_ptr[0];
++@@ -4331,6 +4356,8 @@ static int nl80211_set_interface(struct
++ 	int err;
++ 	enum nl80211_iftype otype, ntype;
++ 	struct net_device *dev = info->user_ptr[1];
+++	struct wireless_dev *wdev = dev->ieee80211_ptr;
+++	u32 radio_mask = 0;
++ 	bool change = false;
++ 
++ 	memset(&params, 0, sizeof(params));
++@@ -4344,8 +4371,6 @@ static int nl80211_set_interface(struct
++ 	}
++ 
++ 	if (info->attrs[NL80211_ATTR_MESH_ID]) {
++-		struct wireless_dev *wdev = dev->ieee80211_ptr;
++-
++ 		if (ntype != NL80211_IFTYPE_MESH_POINT)
++ 			return -EINVAL;
++ 		if (otype != NL80211_IFTYPE_MESH_POINT)
++@@ -4376,6 +4401,12 @@ static int nl80211_set_interface(struct
++ 	if (err > 0)
++ 		change = true;
++ 
+++	err = nl80211_parse_vif_radio_mask(info, &radio_mask);
+++	if (err < 0)
+++		return err;
+++	if (err && netif_running(dev))
+++		return -EBUSY;
+++
++ 	if (change)
++ 		err = cfg80211_change_iface(rdev, dev, ntype, &params);
++ 	else
++@@ -4384,11 +4415,11 @@ static int nl80211_set_interface(struct
++ 	if (!err && params.use_4addr != -1)
++ 		dev->ieee80211_ptr->use_4addr = params.use_4addr;
++ 
++-	if (change && !err) {
++-		struct wireless_dev *wdev = dev->ieee80211_ptr;
+++	if (radio_mask)
+++		wdev->radio_mask = radio_mask;
++ 
+++	if (change && !err)
++ 		nl80211_notify_iface(rdev, wdev, NL80211_CMD_SET_INTERFACE);
++-	}
++ 
++ 	return err;
++ }
++@@ -4399,6 +4430,7 @@ static int _nl80211_new_interface(struct
++ 	struct vif_params params;
++ 	struct wireless_dev *wdev;
++ 	struct sk_buff *msg;
+++	u32 radio_mask;
++ 	int err;
++ 	enum nl80211_iftype type = NL80211_IFTYPE_UNSPECIFIED;
++ 
++@@ -4436,6 +4468,10 @@ static int _nl80211_new_interface(struct
++ 	if (err < 0)
++ 		return err;
++ 
+++	err = nl80211_parse_vif_radio_mask(info, &radio_mask);
+++	if (err < 0)
+++		return err;
+++
++ 	msg = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
++ 	if (!msg)
++ 		return -ENOMEM;
++@@ -4477,6 +4513,9 @@ static int _nl80211_new_interface(struct
++ 		break;
++ 	}
++ 
+++	if (radio_mask)
+++		wdev->radio_mask = radio_mask;
+++
++ 	if (nl80211_send_iface(msg, info->snd_portid, info->snd_seq, 0,
++ 			       rdev, wdev, NL80211_CMD_NEW_INTERFACE) < 0) {
++ 		nlmsg_free(msg);
++@@ -9192,6 +9231,9 @@ static bool cfg80211_off_channel_oper_al
++ 
++ 	lockdep_assert_wiphy(wdev->wiphy);
++ 
+++	if (!cfg80211_wdev_channel_allowed(wdev, chan))
+++		return false;
+++
++ 	if (!cfg80211_beaconing_iface_active(wdev))
++ 		return true;
++ 
++@@ -9404,7 +9446,8 @@ static int nl80211_trigger_scan(struct s
++ 			}
++ 
++ 			/* ignore disabled channels */
++-			if (chan->flags & IEEE80211_CHAN_DISABLED)
+++			if (chan->flags & IEEE80211_CHAN_DISABLED ||
+++			    !cfg80211_wdev_channel_allowed(wdev, chan))
++ 				continue;
++ 
++ 			request->channels[i] = chan;
++@@ -9424,7 +9467,8 @@ static int nl80211_trigger_scan(struct s
++ 
++ 				chan = &wiphy->bands[band]->channels[j];
++ 
++-				if (chan->flags & IEEE80211_CHAN_DISABLED)
+++				if (chan->flags & IEEE80211_CHAN_DISABLED ||
+++				    !cfg80211_wdev_channel_allowed(wdev, chan))
++ 					continue;
++ 
++ 				request->channels[i] = chan;
++--- a/net/wireless/scan.c
+++++ b/net/wireless/scan.c
++@@ -953,7 +953,8 @@ static int cfg80211_scan_6ghz(struct cfg
++ 		struct ieee80211_channel *chan =
++ 			ieee80211_get_channel(&rdev->wiphy, ap->center_freq);
++ 
++-		if (!chan || chan->flags & IEEE80211_CHAN_DISABLED)
+++		if (!chan || chan->flags & IEEE80211_CHAN_DISABLED ||
+++		    !cfg80211_wdev_channel_allowed(rdev_req->wdev, chan))
++ 			continue;
++ 
++ 		for (i = 0; i < rdev_req->n_channels; i++) {
++@@ -3513,9 +3514,12 @@ int cfg80211_wext_siwscan(struct net_dev
++ 			continue;
++ 
++ 		for (j = 0; j < wiphy->bands[band]->n_channels; j++) {
+++			struct ieee80211_channel *chan;
+++
++ 			/* ignore disabled channels */
++-			if (wiphy->bands[band]->channels[j].flags &
++-						IEEE80211_CHAN_DISABLED)
+++			chan = &wiphy->bands[band]->channels[j];
+++			if (chan->flags & IEEE80211_CHAN_DISABLED ||
+++			    !cfg80211_wdev_channel_allowed(creq->wdev, chan))
++ 				continue;
++ 
++ 			/* If we have a wireless request structure and the
++--- a/net/wireless/util.c
+++++ b/net/wireless/util.c
++@@ -2970,3 +2970,32 @@ bool cfg80211_radio_chandef_valid(const
++ 	return true;
++ }
++ EXPORT_SYMBOL(cfg80211_radio_chandef_valid);
+++
+++bool cfg80211_wdev_channel_allowed(struct wireless_dev *wdev,
+++				   struct ieee80211_channel *chan)
+++{
+++	struct wiphy *wiphy = wdev->wiphy;
+++	const struct wiphy_radio *radio;
+++	struct cfg80211_chan_def chandef;
+++	u32 radio_mask;
+++	int i;
+++
+++	radio_mask = wdev->radio_mask;
+++	if (!wiphy->n_radio || radio_mask == BIT(wiphy->n_radio) - 1)
+++		return true;
+++
+++	cfg80211_chandef_create(&chandef, chan, NL80211_CHAN_HT20);
+++	for (i = 0; i < wiphy->n_radio; i++) {
+++		if (!(radio_mask & BIT(i)))
+++			continue;
+++
+++		radio = &wiphy->radio[i];
+++		if (!cfg80211_radio_chandef_valid(radio, &chandef))
+++			continue;
+++
+++		return true;
+++	}
+++
+++	return false;
+++}
+++EXPORT_SYMBOL(cfg80211_wdev_channel_allowed);
++--- a/net/wireless/core.c
+++++ b/net/wireless/core.c
++@@ -1431,6 +1431,8 @@ void cfg80211_init_wdev(struct wireless_
++ 	/* allow mac80211 to determine the timeout */
++ 	wdev->ps_timeout = -1;
++ 
+++	wdev->radio_mask = BIT(wdev->wiphy->n_radio) - 1;
+++
++ 	if ((wdev->iftype == NL80211_IFTYPE_STATION ||
++ 	     wdev->iftype == NL80211_IFTYPE_P2P_CLIENT ||
++ 	     wdev->iftype == NL80211_IFTYPE_ADHOC) && !wdev->use_4addr)
+diff --git a/package/kernel/mac80211/patches/subsys/342-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch b/package/kernel/mac80211/patches/subsys/342-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch
+new file mode 100644
+index 000000000000..e4159d2b3d61
+--- /dev/null
++++ b/package/kernel/mac80211/patches/subsys/342-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch
+@@ -0,0 +1,308 @@
++From 406c5548c661df0bff6bb6ee79bf9d49faf23e31 Mon Sep 17 00:00:00 2001
++From: MeiChia Chiu <MeiChia.Chiu@mediatek.com>
++Date: Tue, 12 Nov 2024 16:38:46 +0800
++Subject: [PATCH] wifi: mac80211: Support EHT 1024 aggregation size in TX
++
++Support EHT 1024 aggregation size in TX
++
++The 1024 agg size for RX is supported but not for TX.
++This patch adds this support and refactors common parsing logics for
++addbaext in both process_addba_resp and process_addba_req into a
++function.
++
++Reviewed-by: Shayne Chen <shayne.chen@mediatek.com>
++Reviewed-by: Money Wang <money.wang@mediatek.com>
++Co-developed-by: Peter Chiu <chui-hao.chiu@mediatek.com>
++Signed-off-by: Peter Chiu <chui-hao.chiu@mediatek.com>
++Signed-off-by: MeiChia Chiu <MeiChia.Chiu@mediatek.com>
++Link: https://patch.msgid.link/20241112083846.32063-1-MeiChia.Chiu@mediatek.com
++[pass elems/len instead of mgmt/len/is_req]
++Signed-off-by: Johannes Berg <johannes.berg@intel.com>
++---
++ include/linux/ieee80211.h  |  2 +
++ net/mac80211/agg-rx.c      | 94 +++++++++++++++++++++++---------------
++ net/mac80211/agg-tx.c      | 31 +++++++++----
++ net/mac80211/ht.c          |  2 +-
++ net/mac80211/ieee80211_i.h |  9 +++-
++ 5 files changed, 90 insertions(+), 48 deletions(-)
++
++--- a/include/linux/ieee80211.h
+++++ b/include/linux/ieee80211.h
++@@ -1492,6 +1492,8 @@ struct ieee80211_mgmt {
++ 					__le16 status;
++ 					__le16 capab;
++ 					__le16 timeout;
+++					/* followed by BA Extension */
+++					u8 variable[];
++ 				} __packed addba_resp;
++ 				struct{
++ 					u8 action_code;
++--- a/net/mac80211/agg-rx.c
+++++ b/net/mac80211/agg-rx.c
++@@ -170,28 +170,63 @@ static void sta_rx_agg_reorder_timer_exp
++ 	rcu_read_unlock();
++ }
++ 
++-static void ieee80211_add_addbaext(struct ieee80211_sub_if_data *sdata,
++-				   struct sk_buff *skb,
++-				   const struct ieee80211_addba_ext_ie *req,
++-				   u16 buf_size)
+++void ieee80211_add_addbaext(struct sk_buff *skb,
+++			    const u8 req_addba_ext_data,
+++			    u16 buf_size)
++ {
++-	struct ieee80211_addba_ext_ie *resp;
+++	struct ieee80211_addba_ext_ie *addba_ext;
++ 	u8 *pos;
++ 
++ 	pos = skb_put_zero(skb, 2 + sizeof(struct ieee80211_addba_ext_ie));
++ 	*pos++ = WLAN_EID_ADDBA_EXT;
++ 	*pos++ = sizeof(struct ieee80211_addba_ext_ie);
++-	resp = (struct ieee80211_addba_ext_ie *)pos;
++-	resp->data = req->data & IEEE80211_ADDBA_EXT_NO_FRAG;
+++	addba_ext = (struct ieee80211_addba_ext_ie *)pos;
++ 
++-	resp->data |= u8_encode_bits(buf_size >> IEEE80211_ADDBA_EXT_BUF_SIZE_SHIFT,
++-				     IEEE80211_ADDBA_EXT_BUF_SIZE_MASK);
+++	addba_ext->data = IEEE80211_ADDBA_EXT_NO_FRAG;
+++	if (req_addba_ext_data)
+++		addba_ext->data &= req_addba_ext_data;
+++
+++	addba_ext->data |=
+++		u8_encode_bits(buf_size >> IEEE80211_ADDBA_EXT_BUF_SIZE_SHIFT,
+++			       IEEE80211_ADDBA_EXT_BUF_SIZE_MASK);
+++}
+++
+++u8 ieee80211_retrieve_addba_ext_data(struct sta_info *sta,
+++				     const void *elem_data, ssize_t elem_len,
+++				     u16 *buf_size)
+++{
+++	struct ieee802_11_elems *elems;
+++	u8 buf_size_1k, data = 0;
+++
+++	if (!sta->sta.deflink.he_cap.has_he)
+++		return 0;
+++
+++	if (elem_len <= 0)
+++		return 0;
+++
+++	elems = ieee802_11_parse_elems(elem_data, elem_len, true, NULL);
+++
+++	if (elems && !elems->parse_error && elems->addba_ext_ie) {
+++		data = elems->addba_ext_ie->data;
+++
+++		if (!sta->sta.deflink.eht_cap.has_eht || !buf_size)
+++			goto free;
+++
+++		buf_size_1k = u8_get_bits(elems->addba_ext_ie->data,
+++					  IEEE80211_ADDBA_EXT_BUF_SIZE_MASK);
+++		*buf_size |= (u16)buf_size_1k <<
+++			     IEEE80211_ADDBA_EXT_BUF_SIZE_SHIFT;
+++	}
+++free:
+++	kfree(elems);
+++
+++	return data;
++ }
++ 
++ static void ieee80211_send_addba_resp(struct sta_info *sta, u8 *da, u16 tid,
++ 				      u8 dialog_token, u16 status, u16 policy,
++ 				      u16 buf_size, u16 timeout,
++-				      const struct ieee80211_addba_ext_ie *addbaext)
+++				      const u8 req_addba_ext_data)
++ {
++ 	struct ieee80211_sub_if_data *sdata = sta->sdata;
++ 	struct ieee80211_local *local = sdata->local;
++@@ -223,8 +258,8 @@ static void ieee80211_send_addba_resp(st
++ 	mgmt->u.action.u.addba_resp.timeout = cpu_to_le16(timeout);
++ 	mgmt->u.action.u.addba_resp.status = cpu_to_le16(status);
++ 
++-	if (sta->sta.deflink.he_cap.has_he && addbaext)
++-		ieee80211_add_addbaext(sdata, skb, addbaext, buf_size);
+++	if (sta->sta.deflink.he_cap.has_he)
+++		ieee80211_add_addbaext(skb, req_addba_ext_data, buf_size);
++ 
++ 	ieee80211_tx_skb(sdata, skb);
++ }
++@@ -233,7 +268,7 @@ void __ieee80211_start_rx_ba_session(str
++ 				     u8 dialog_token, u16 timeout,
++ 				     u16 start_seq_num, u16 ba_policy, u16 tid,
++ 				     u16 buf_size, bool tx, bool auto_seq,
++-				     const struct ieee80211_addba_ext_ie *addbaext)
+++				     const u8 addba_ext_data)
++ {
++ 	struct ieee80211_local *local = sta->sdata->local;
++ 	struct tid_ampdu_rx *tid_agg_rx;
++@@ -419,7 +454,7 @@ end:
++ 	if (tx)
++ 		ieee80211_send_addba_resp(sta, sta->sta.addr, tid,
++ 					  dialog_token, status, 1, buf_size,
++-					  timeout, addbaext);
+++					  timeout, addba_ext_data);
++ }
++ 
++ void ieee80211_process_addba_request(struct ieee80211_local *local,
++@@ -428,9 +463,7 @@ void ieee80211_process_addba_request(str
++ 				     size_t len)
++ {
++ 	u16 capab, tid, timeout, ba_policy, buf_size, start_seq_num;
++-	struct ieee802_11_elems *elems = NULL;
++-	u8 dialog_token;
++-	int ies_len;
+++	u8 dialog_token, addba_ext_data;
++ 
++ 	/* extract session parameters from addba request frame */
++ 	dialog_token = mgmt->u.action.u.addba_req.dialog_token;
++@@ -443,28 +476,17 @@ void ieee80211_process_addba_request(str
++ 	tid = (capab & IEEE80211_ADDBA_PARAM_TID_MASK) >> 2;
++ 	buf_size = (capab & IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK) >> 6;
++ 
++-	ies_len = len - offsetof(struct ieee80211_mgmt,
++-				 u.action.u.addba_req.variable);
++-	if (ies_len) {
++-		elems = ieee802_11_parse_elems(mgmt->u.action.u.addba_req.variable,
++-					       ies_len, true, NULL);
++-		if (!elems || elems->parse_error)
++-			goto free;
++-	}
++-
++-	if (sta->sta.deflink.eht_cap.has_eht && elems && elems->addba_ext_ie) {
++-		u8 buf_size_1k = u8_get_bits(elems->addba_ext_ie->data,
++-					     IEEE80211_ADDBA_EXT_BUF_SIZE_MASK);
++-
++-		buf_size |= buf_size_1k << IEEE80211_ADDBA_EXT_BUF_SIZE_SHIFT;
++-	}
+++	addba_ext_data =
+++		ieee80211_retrieve_addba_ext_data(sta,
+++						  mgmt->u.action.u.addba_req.variable,
+++						  len -
+++						  offsetof(typeof(*mgmt),
+++							   u.action.u.addba_req.variable),
+++						  &buf_size);
++ 
++ 	__ieee80211_start_rx_ba_session(sta, dialog_token, timeout,
++ 					start_seq_num, ba_policy, tid,
++-					buf_size, true, false,
++-					elems ? elems->addba_ext_ie : NULL);
++-free:
++-	kfree(elems);
+++					buf_size, true, false, addba_ext_data);
++ }
++ 
++ void ieee80211_manage_rx_ba_offl(struct ieee80211_vif *vif,
++--- a/net/mac80211/agg-tx.c
+++++ b/net/mac80211/agg-tx.c
++@@ -58,23 +58,24 @@
++  * complete.
++  */
++ 
++-static void ieee80211_send_addba_request(struct ieee80211_sub_if_data *sdata,
++-					 const u8 *da, u16 tid,
+++static void ieee80211_send_addba_request(struct sta_info *sta, u16 tid,
++ 					 u8 dialog_token, u16 start_seq_num,
++ 					 u16 agg_size, u16 timeout)
++ {
+++	struct ieee80211_sub_if_data *sdata = sta->sdata;
++ 	struct ieee80211_local *local = sdata->local;
++ 	struct sk_buff *skb;
++ 	struct ieee80211_mgmt *mgmt;
++ 	u16 capab;
++ 
++-	skb = dev_alloc_skb(sizeof(*mgmt) + local->hw.extra_tx_headroom);
++-
+++	skb = dev_alloc_skb(sizeof(*mgmt) +
+++			    2 + sizeof(struct ieee80211_addba_ext_ie) +
+++			    local->hw.extra_tx_headroom);
++ 	if (!skb)
++ 		return;
++ 
++ 	skb_reserve(skb, local->hw.extra_tx_headroom);
++-	mgmt = ieee80211_mgmt_ba(skb, da, sdata);
+++	mgmt = ieee80211_mgmt_ba(skb, sta->sta.addr, sdata);
++ 
++ 	skb_put(skb, 1 + sizeof(mgmt->u.action.u.addba_req));
++ 
++@@ -93,6 +94,9 @@ static void ieee80211_send_addba_request
++ 	mgmt->u.action.u.addba_req.start_seq_num =
++ 					cpu_to_le16(start_seq_num << 4);
++ 
+++	if (sta->sta.deflink.he_cap.has_he)
+++		ieee80211_add_addbaext(skb, 0, agg_size);
+++
++ 	ieee80211_tx_skb_tid(sdata, skb, tid, -1);
++ }
++ 
++@@ -460,8 +464,11 @@ static void ieee80211_send_addba_with_ti
++ 	sta->ampdu_mlme.addba_req_num[tid]++;
++ 	spin_unlock_bh(&sta->lock);
++ 
++-	if (sta->sta.deflink.he_cap.has_he) {
+++	if (sta->sta.deflink.eht_cap.has_eht) {
++ 		buf_size = local->hw.max_tx_aggregation_subframes;
+++	} else if (sta->sta.deflink.he_cap.has_he) {
+++		buf_size = min_t(u16, local->hw.max_tx_aggregation_subframes,
+++				 IEEE80211_MAX_AMPDU_BUF_HE);
++ 	} else {
++ 		/*
++ 		 * We really should use what the driver told us it will
++@@ -473,9 +480,8 @@ static void ieee80211_send_addba_with_ti
++ 	}
++ 
++ 	/* send AddBA request */
++-	ieee80211_send_addba_request(sdata, sta->sta.addr, tid,
++-				     tid_tx->dialog_token, tid_tx->ssn,
++-				     buf_size, tid_tx->timeout);
+++	ieee80211_send_addba_request(sta, tid, tid_tx->dialog_token,
+++				     tid_tx->ssn, buf_size, tid_tx->timeout);
++ 
++ 	WARN_ON(test_and_set_bit(HT_AGG_STATE_SENT_ADDBA, &tid_tx->state));
++ }
++@@ -970,6 +976,13 @@ void ieee80211_process_addba_resp(struct
++ 	amsdu = capab & IEEE80211_ADDBA_PARAM_AMSDU_MASK;
++ 	tid = u16_get_bits(capab, IEEE80211_ADDBA_PARAM_TID_MASK);
++ 	buf_size = u16_get_bits(capab, IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK);
+++
+++	ieee80211_retrieve_addba_ext_data(sta,
+++					  mgmt->u.action.u.addba_resp.variable,
+++					  len - offsetof(typeof(*mgmt),
+++							 u.action.u.addba_resp.variable),
+++					  &buf_size);
+++
++ 	buf_size = min(buf_size, local->hw.max_tx_aggregation_subframes);
++ 
++ 	txq = sta->sta.txq[tid];
++--- a/net/mac80211/ht.c
+++++ b/net/mac80211/ht.c
++@@ -379,7 +379,7 @@ void ieee80211_ba_session_work(struct wi
++ 				       sta->ampdu_mlme.tid_rx_manage_offl))
++ 			__ieee80211_start_rx_ba_session(sta, 0, 0, 0, 1, tid,
++ 							IEEE80211_MAX_AMPDU_BUF_HT,
++-							false, true, NULL);
+++							false, true, 0);
++ 
++ 		if (test_and_clear_bit(tid + IEEE80211_NUM_TIDS,
++ 				       sta->ampdu_mlme.tid_rx_manage_offl))
++--- a/net/mac80211/ieee80211_i.h
+++++ b/net/mac80211/ieee80211_i.h
++@@ -2131,14 +2131,19 @@ int ieee80211_send_smps_action(struct ie
++ 			       const u8 *bssid, int link_id);
++ bool ieee80211_smps_is_restrictive(enum ieee80211_smps_mode smps_mode_old,
++ 				   enum ieee80211_smps_mode smps_mode_new);
++-
+++void ieee80211_add_addbaext(struct sk_buff *skb,
+++			    const u8 req_addba_ext_data,
+++			    u16 buf_size);
+++u8 ieee80211_retrieve_addba_ext_data(struct sta_info *sta,
+++				     const void *elem_data, ssize_t elem_len,
+++				     u16 *buf_size);
++ void __ieee80211_stop_rx_ba_session(struct sta_info *sta, u16 tid,
++ 				    u16 initiator, u16 reason, bool stop);
++ void __ieee80211_start_rx_ba_session(struct sta_info *sta,
++ 				     u8 dialog_token, u16 timeout,
++ 				     u16 start_seq_num, u16 ba_policy, u16 tid,
++ 				     u16 buf_size, bool tx, bool auto_seq,
++-				     const struct ieee80211_addba_ext_ie *addbaext);
+++				     const u8 addba_ext_data);
++ void ieee80211_sta_tear_down_BA_sessions(struct sta_info *sta,
++ 					 enum ieee80211_agg_stop_reason reason);
++ void ieee80211_process_delba(struct ieee80211_sub_if_data *sdata,
+-- 
+2.34.1
+
