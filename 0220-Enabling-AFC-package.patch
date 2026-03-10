@@ -1,0 +1,29 @@
+From 02f6589dee4b64cf988a7779c7e094adc9d1a105 Mon Sep 17 00:00:00 2001
+From: Adesh Keremane <adeshk@qti.qualcomm.com>
+Date: Mon, 9 Feb 2026 09:53:12 -0800
+Subject: [PATCH] Enabling AFC package
+
+Change-Id: I71e753167b18f89bdf483971da34a05b619bca94
+Signed-off-by: Adesh Keremane <adeshk@qti.qualcomm.com>
+---
+ feeds.conf | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 73430a5d6855..eb7b5ad08398 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -52,8 +52,10 @@ src-link optic_drivers_oss ../qca/feeds/optic-drivers-oss
+ src-link optic_drivers_prop ../qca/feeds/optic-drivers-prop
+ src-link em_ext_ctrl ../qca/feeds/em-ext-ctrl
+ src-link qca_son_mem_debug ../qca/feeds/qca-son-mem-debug
++src-link afc ../qca/feeds/afc
+ src-link qca_rptr_mgr ../qca/feeds/qca-rptr-mgr
+ src-link qca_rsrcmgr ../qca/feeds/qca-rsrcmgr
++src-link qca_afc_daemon ../qca/feeds/qca-afc-daemon
+ src-link lte_data_oss ../qca/feeds/lte-data-oss
+ src-link lte_data_prop ../qca/feeds/lte-data-prop
+ src-link data_modem_monitor ../qca/feeds/data-modem-monitor
+-- 
+2.34.1
+

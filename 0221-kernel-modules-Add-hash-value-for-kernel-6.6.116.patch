@@ -1,0 +1,23 @@
+From 8fbbea469f6bdbb0d0fdf35e05d866c6a4a09201 Mon Sep 17 00:00:00 2001
+From: Saahil Tomar <saahtoma@qti.qualcomm.com>
+Date: Mon, 17 Nov 2025 03:17:33 +0530
+Subject: [PATCH] kernel: modules: Add hash value for kernel 6.6.116
+
+Change-Id: I190b83199c223199c0718d7b098dc451bed62f79
+Signed-off-by: Saahil Tomar <saahtoma@qti.qualcomm.com>
+---
+ include/kernel-6.6 | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/kernel-6.6 b/include/kernel-6.6
+index 07ba30cb3aaf..6bedc400989d 100644
+--- a/include/kernel-6.6
++++ b/include/kernel-6.6
+@@ -1,2 +1,2 @@
+-LINUX_VERSION-6.6 = .88
+-LINUX_KERNEL_HASH-6.6.88 = 19df89b63ef7e950de7297dabfac0569183bf87636f4c300a25336c7da490650
++LINUX_VERSION-6.6 = .116
++LINUX_KERNEL_HASH-6.6.116 = a9a59742c29be284c205dc87cbe9b065f9688488132c8f5a6057a5539230a51d
+-- 
+2.34.1
+

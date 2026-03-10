@@ -1,0 +1,25 @@
+From db6a6988db529a6c474d4bbf587b417f483ec589 Mon Sep 17 00:00:00 2001
+From: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+Date: Mon, 23 Feb 2026 17:10:26 +0530
+Subject: [PATCH] feeds.conf commit update for phase-2 FFWD
+
+Change-Id: If559e7c673564da597e2bb76a826a31dac42d212
+Signed-off-by: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+---
+ feeds.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index 56325cc985ba..e0fd2dd63ba2 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -1,5 +1,5 @@
+ src-link packages ../qca/feeds/packages
+-src-git luci https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^257ca434b8bec900a65d9fd17f1f4c3ee9253469 https://github.com/openwrt/luci.git^257ca434b8bec900a65d9fd17f1f4c3ee9253469
++src-git luci https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^ec3d81891b2399829f0254c7b4b6db336619cbdb https://github.com/openwrt/luci.git^ec3d81891b2399829f0254c7b4b6db336619cbdb
+ src-link routing ../qca/feeds/routing
+ src-link bootloader ../qca/feeds/bootloader
+ src-link qcom_utils_internal ../qca/feeds/qcom-utils-internal
+-- 
+2.34.1
+

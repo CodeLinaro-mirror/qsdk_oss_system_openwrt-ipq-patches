@@ -1,0 +1,47 @@
+From ab3e3505262fb1292adc87d0a4a13220221ebc7c Mon Sep 17 00:00:00 2001
+From: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+Date: Tue, 17 Feb 2026 16:57:47 +0530
+Subject: [PATCH] download.pl : Removal of find in the case of tarball download
+ from NFS
+
+Change-Id: I09fafa2f7123a91f177493456833ab3306ba0896
+Signed-off-by: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+---
+ scripts/download.pl | 20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
+
+diff --git a/scripts/download.pl b/scripts/download.pl
+index 0391cf803a38..2087f1fb988c 100755
+--- a/scripts/download.pl
++++ b/scripts/download.pl
+@@ -179,24 +179,10 @@ sub download
+ 			make_path($target);
+ 		}
+ 
+-		if (! open TMPDLS, "find $mirror -not -path '*/[@.]*' -follow -name $filename 2>/dev/null |") {
+-			print("Failed to search for $filename in $mirror\n");
+-			return;
+-		}
+-
+-		my $link;
+-
+-		while (defined(my $line = readline TMPDLS)) {
+-			chomp ($link = $line);
+-			if ($. > 1) {
+-				print("$. or more instances of $filename in $mirror found . Only one instance allowed.\n");
+-				return;
+-			}
+-		}
+-
+-		close TMPDLS;
++		# Direct path to the file instead of using find command
++		my $link = "$mirror/$filename";
+ 
+-		if (! $link) {
++		if (! -f $link) {
+ 			print("No instances of $filename found in $mirror.\n");
+ 			return;
+ 		}
+-- 
+2.34.1
+

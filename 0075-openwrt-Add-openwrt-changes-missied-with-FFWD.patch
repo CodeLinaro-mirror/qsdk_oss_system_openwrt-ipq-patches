@@ -10,23 +10,23 @@ Signed-off-by: Aravind Mosam <amosam@qti.qualcomm.com>
  2 files changed, 8 insertions(+), 126 deletions(-)
 
 diff --git a/package/kernel/mac80211/Makefile b/package/kernel/mac80211/Makefile
-index d4fcd11ebe2e..9e870b0db911 100644
+index fdd703ca849c..e57e64405ecb 100644
 --- a/package/kernel/mac80211/Makefile
 +++ b/package/kernel/mac80211/Makefile
 @@ -10,13 +10,13 @@ include $(INCLUDE_DIR)/kernel.mk
-
+ 
  PKG_NAME:=mac80211
-
--PKG_VERSION:=6.12.44
+ 
+-PKG_VERSION:=6.12.52
 +PKG_VERSION:=6.6.15
- PKG_RELEASE:=2
+ PKG_RELEASE:=1
  PKG_LICENSE:=GPL-2.0-only
  PKG_LICENSE_FILES:=COPYING
-
+ 
  PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources/
--PKG_HASH:=85a9f92ddba3bf2970a089e7af576c1135217c387205f4481ea9131c0c45c509
+-PKG_HASH:=ed6ef4c67e08b294ed1101c7cc5ae584a5f338c99ef95362fa3921eb6d207f5d
 +PKG_HASH:=3bbc461121134fda9089c084a5eed577d05e7837a157edf9a3797937172a3ece
-
+ 
  PKG_SOURCE:=backports-$(PKG_VERSION).tar.xz
  PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/$(if $(BUILD_VARIANT),$(PKG_NAME)-$(BUILD_VARIANT)/)backports-$(PKG_VERSION)
 @@ -372,6 +372,7 @@ endif
@@ -38,7 +38,7 @@ index d4fcd11ebe2e..9e870b0db911 100644
  	  cmp $(PKG_BUILD_DIR)/include/linux/rt2x00_platform.h $(LINUX_DIR)/include/linux/rt2x00_platform.h
      endef
 diff --git a/package/kernel/mac80211/realtek.mk b/package/kernel/mac80211/realtek.mk
-index 221158bee613..28ea6a65718b 100644
+index 6ac4b1aee987..a2c46ccb1469 100644
 --- a/package/kernel/mac80211/realtek.mk
 +++ b/package/kernel/mac80211/realtek.mk
 @@ -1,12 +1,11 @@
@@ -57,7 +57,7 @@ index 221158bee613..28ea6a65718b 100644
  
  config-$(call config_package,rtlwifi) += RTL_CARDS RTLWIFI
  config-$(call config_package,rtlwifi-pci) += RTLWIFI_PCI
-@@ -30,7 +29,6 @@ config-y += STAGING
+@@ -34,7 +33,6 @@ config-y += STAGING
  config-$(call config_package,rtw88) += RTW88 RTW88_CORE
  config-$(call config_package,rtw88-pci) += RTW88_PCI
  config-$(call config_package,rtw88-usb) += RTW88_USB
@@ -93,7 +93,7 @@ index 221158bee613..28ea6a65718b 100644
  define KernelPackage/rtlwifi/config
  	config PACKAGE_RTLWIFI_DEBUG
  		bool "Realtek wireless debugging"
-@@ -200,7 +186,7 @@ endef
+@@ -228,7 +212,7 @@ endef
  define KernelPackage/rtw88
    $(call KernelPackage/mac80211/Default)
    TITLE:=Realtek RTW88 common part
@@ -102,7 +102,7 @@ index 221158bee613..28ea6a65718b 100644
    FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw88/rtw88_core.ko
    AUTOLOAD:=$(call AutoProbe,rtw88_core)
    HIDDEN:=1
-@@ -215,15 +201,6 @@ define KernelPackage/rtw88-pci
+@@ -243,15 +227,6 @@ define KernelPackage/rtw88-pci
    HIDDEN:=1
  endef
  
@@ -118,7 +118,7 @@ index 221158bee613..28ea6a65718b 100644
  define KernelPackage/rtw88-usb
    $(call KernelPackage/mac80211/Default)
    TITLE:=Realtek RTW88 USB chips support
-@@ -322,23 +299,7 @@ define KernelPackage/rtw88-8723de
+@@ -402,23 +377,7 @@ define KernelPackage/rtw88-8723de
    TITLE:=Realtek RTL8723DE support
    DEPENDS+= +kmod-rtw88-pci +kmod-rtw88-8723d
    FILES:= $(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw88/rtw88_8723de.ko
@@ -237,6 +237,3 @@ index 221158bee613..28ea6a65718b 100644
  define KernelPackage/rtw89-8922ae
    $(call KernelPackage/mac80211/Default)
    TITLE:=Realtek RTL8922AE support
--- 
-2.34.1
-
