@@ -1,0 +1,23 @@
+From 665ed36f32e5d68aa092afd33d1d121487a0f863 Mon Sep 17 00:00:00 2001
+From: Nandhini Sekar <nandseka@qti.qualcomm.com>
+Date: Thu, 9 Apr 2026 15:23:08 +0530
+Subject: [PATCH] Enabling Debug UIO package feeds
+
+Change-Id: Ifd3d54248f249799b45feda3e48797dd63835b77
+Signed-off-by: Nandhini Sekar <nandseka@qti.qualcomm.com>
+---
+ feeds.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index e0fd2dd63ba2..c645e93f2ec0 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -80,3 +80,4 @@ src-link wapid_cfg80211_internal ../qca/feeds/wapid-cfg80211-internal
+ src-link libmmap_telemetry ../qca/feeds/libmmap-telemetry
+ src-link spt ../qca/src/sptoss/feeds
+ src-link qca_wifi_apps ../qca/feeds/qca-wifi-apps
++src-link qca_debug_uio ../qca/feeds/qca-debug-uio
+-- 
+2.34.1
+
