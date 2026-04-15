@@ -1,0 +1,27 @@
+From 117a1156aa2f6caeccf8b13bc81918775049e24d Mon Sep 17 00:00:00 2001
+From: Vinu Bharath R <vinubhar@qti.qualcomm.com>
+Date: Tue, 31 Mar 2026 15:03:40 +0530
+Subject: [PATCH] Add qmesh-lib and qmesh-apps to feeds.conf
+
+Change-Id: I165c5559b01105db45054b44cb13756d4cf2332e
+Signed-off-by: Vinu Bharath R <vinubhar@qti.qualcomm.com>
+---
+ feeds.conf | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index c645e93f2ec0..b96ef5ce6fb2 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -76,6 +76,8 @@ src-link feed_net_services ../qca/feeds/feed_net_services
+ src-link feed_board_configuration ../qca/feeds/feed_board_configuration
+ src-link feed_netmodel ../qca/feeds/feed_netmodel
+ src-link feed_prplmesh ../qca/feeds/feed_prplmesh
++src-link qmesh_lib ../qca/feeds/qmesh-lib
++src-link qmesh_apps ../qca/feeds/qmesh-apps
+ src-link wapid_cfg80211_internal ../qca/feeds/wapid-cfg80211-internal
+ src-link libmmap_telemetry ../qca/feeds/libmmap-telemetry
+ src-link spt ../qca/src/sptoss/feeds
+-- 
+2.34.1
+
