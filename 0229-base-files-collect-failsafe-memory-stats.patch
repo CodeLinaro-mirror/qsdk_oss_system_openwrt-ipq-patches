@@ -1,0 +1,26 @@
+From 1d816d4c9e21738f086bbb0072523d97df5061b5 Mon Sep 17 00:00:00 2001
+From: Ram Chandra Jangir <rjangir@qti.qualcomm.com>
+Date: Thu, 7 May 2026 21:37:19 +0530
+Subject: [PATCH] base-files: collect failsafe memory stats
+
+Change-Id: Ic6fe267183286fe30c1dd0b0938032a507e9a8da
+Signed-off-by: Ram Chandra Jangir <rjangir@qti.qualcomm.com>
+---
+ package/base-files/files/lib/preinit/30_failsafe_wait | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/package/base-files/files/lib/preinit/30_failsafe_wait b/package/base-files/files/lib/preinit/30_failsafe_wait
+index c792089ece1a..26bbb0514a54 100644
+--- a/package/base-files/files/lib/preinit/30_failsafe_wait
++++ b/package/base-files/files/lib/preinit/30_failsafe_wait
+@@ -100,6 +100,7 @@ failsafe_wait() {
+ 		[ -f "/tmp/failsafe_button" ] && FAILSAFE=true && echo "- failsafe button "$(cat /tmp/failsafe_button)" was pressed -"
+ 		[ "$FAILSAFE" = "true" ] && export FAILSAFE && touch /tmp/failsafe
+ 	fi
++	cat /proc/meminfo  >/tmp/meminfo.failsafe
+ }
+ 
+ boot_hook_add preinit_main failsafe_wait
+-- 
+2.34.1
+
