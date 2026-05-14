@@ -1,0 +1,35 @@
+From 7faea9898fc78133cbdaca3a36a930907efc3516 Mon Sep 17 00:00:00 2001
+From: Deepak Kumar <deepaku@qti.qualcomm.com>
+Date: Thu, 14 May 2026 11:57:51 +0530
+Subject: [PATCH] uboot-envtools: change default bootcmd to bootipq in
+ tools-only_defconfig
+
+uboot-envtools is currently configured using tools-only_defconfig, which
+sets the default bootcmd to "run distro_bootcmd". On IPQ platforms, this
+causes incorrect fallback behavior
+
+Update the build to modify tools-only_defconfig so that the default
+CONFIG_BOOTCOMMAND is set to "bootipq", aligning envtools fallback behavior
+with the platform U-Boot defconfig.
+
+Change-Id: I5c0b9dfe66bf52578df4d6bdc889e01201f86260
+Signed-off-by: Deepak Kumar <deepaku@qti.qualcomm.com>
+---
+ package/boot/uboot-envtools/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/package/boot/uboot-envtools/Makefile b/package/boot/uboot-envtools/Makefile
+index 61939be6de90..31fbfdd9de52 100644
+--- a/package/boot/uboot-envtools/Makefile
++++ b/package/boot/uboot-envtools/Makefile
+@@ -45,6 +45,7 @@ define Package/uboot-envtools/description
+ endef
+ 
+ define Build/Configure
++	sed -i 's/CONFIG_BOOTCOMMAND="run distro_bootcmd"/CONFIG_BOOTCOMMAND="bootipq"/' $(PKG_BUILD_DIR)/configs/tools-only_defconfig
+ 	$(call Build/Compile/Default,tools-only_defconfig)
+ endef
+ 
+-- 
+2.34.1
+
