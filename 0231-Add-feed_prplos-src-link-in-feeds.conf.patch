@@ -1,0 +1,29 @@
+From a3966ee89c44b9e9dcf8efcac201794a3f1f86d6 Mon Sep 17 00:00:00 2001
+From: Suvidh Subodh Hegde <suvidhsu@qti.qualcomm.com>
+Date: Mon, 6 Jul 2026 18:49:47 +0530
+Subject: [PATCH] Add feed_prplos src-link in feeds.conf
+
+Change-Id: I6319152f976cf7fd4f67e1c3e7731ce1263752ca
+Signed-off-by: Suvidh Subodh Hegde <suvidhsu@qti.qualcomm.com>
+---
+ feeds.conf | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index b96ef5ce6fb2..44cead7c3bce 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -72,9 +72,7 @@ src-link fault_detection ../qca/feeds/faultdetection
+ src-link btdaemon ../qca/feeds/btdaemon
+ src-link powerboost ../qca/feeds/powerboost
+ src-link feed_amx ../qca/feeds/feed_amx
+-src-link feed_net_services ../qca/feeds/feed_net_services
+-src-link feed_board_configuration ../qca/feeds/feed_board_configuration
+-src-link feed_netmodel ../qca/feeds/feed_netmodel
++src-link feed_prplos ../qca/feeds/feed_prplos
+ src-link feed_prplmesh ../qca/feeds/feed_prplmesh
+ src-link qmesh_lib ../qca/feeds/qmesh-lib
+ src-link qmesh_apps ../qca/feeds/qmesh-apps
+-- 
+2.34.1
+
