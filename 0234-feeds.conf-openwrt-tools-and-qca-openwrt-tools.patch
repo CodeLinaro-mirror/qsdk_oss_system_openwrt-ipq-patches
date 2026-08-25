@@ -1,0 +1,25 @@
+From ffea57e2c94857970d3d019f670d1818b7e26a14 Mon Sep 17 00:00:00 2001
+From: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+Date: Fri, 21 Aug 2026 11:30:28 +0530
+Subject: [PATCH] feeds.conf : openwrt-tools and qca-openwrt-tools
+
+Change-Id: I5b7f22bd2b6433de3e6c5063edd397cbadb3d2ab
+Signed-off-by: Naveen Raj Ranganathan <naver@qti.qualcomm.com>
+---
+ feeds.conf | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/feeds.conf b/feeds.conf
+index 44cead7c3bce..5dcd8754494f 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -81,3 +81,6 @@ src-link libmmap_telemetry ../qca/feeds/libmmap-telemetry
+ src-link spt ../qca/src/sptoss/feeds
+ src-link qca_wifi_apps ../qca/feeds/qca-wifi-apps
+ src-link qca_debug_uio ../qca/feeds/qca-debug-uio
++src-link openwrt_tools ../qca/feeds/openwrt-tools
++src-link qca_openwrt_tools ../qca/feeds/qca-openwrt-tools
++
+-- 
+2.34.1
+
