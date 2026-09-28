@@ -1,0 +1,23 @@
+From be12bde60441f8e4c3b1f75d345318e1cd6e1d70 Mon Sep 17 00:00:00 2001
+From: Sridharan S N <sridsn@qti.qualcomm.com>
+Date: Thu, 24 Sep 2026 20:30:32 +0530
+Subject: [PATCH] kernel: modules: Add hash value for kernel 6.6.147
+
+Change-Id: I65fbcf7fe6d9fb0befe6f682067f2b3176a15ba9
+Signed-off-by: Sridharan S N <sridsn@qti.qualcomm.com>
+---
+ include/kernel-6.6 | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/kernel-6.6 b/include/kernel-6.6
+index 12de780cf1c9..5596e036171a 100644
+--- a/include/kernel-6.6
++++ b/include/kernel-6.6
+@@ -1,2 +1,2 @@
+-LINUX_VERSION-6.6 = .144
+-LINUX_KERNEL_HASH-6.6.144 = ec19b8307b495078cdc03749e63cb3802ac23cf6122c82eb9719feeb4557ecc3
++LINUX_VERSION-6.6 = .147
++LINUX_KERNEL_HASH-6.6.147 = e76329b7ee046883d55a1868253cffe67c526a6da6140ebecd3cd6ac44db4abb
+-- 
+2.34.1
+
