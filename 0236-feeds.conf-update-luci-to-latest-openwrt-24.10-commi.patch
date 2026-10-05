@@ -1,0 +1,27 @@
+From 9f70f7695f5dbd6cd70055632ea1d823def63a8a Mon Sep 17 00:00:00 2001
+From: Haritha Muthukumar <hmuthuku@qti.qualcomm.com>
+Date: Thu, 23 Jul 2026 16:05:08 +0530
+Subject: [PATCH] feeds.conf: update luci to latest openwrt-24.10 commit
+ d0400718c508
+
+Change-Id: If8e7158e3f4da6d619ffa525b95302eadd22e6f6
+Signed-off-by: Haritha Muthukumar <hmuthuku@qti.qualcomm.com>
+Depends-on: Ie9b9d39c36832bd64dcc2972f602e5237bc8debc
+---
+ feeds.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/feeds.conf b/feeds.conf
+index 44cead7c3bce..c90eb0e6c444 100644
+--- a/feeds.conf
++++ b/feeds.conf
+@@ -1,5 +1,5 @@
+ src-link packages ../qca/feeds/packages
+-src-git luci https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^ec3d81891b2399829f0254c7b4b6db336619cbdb https://github.com/openwrt/luci.git^ec3d81891b2399829f0254c7b4b6db336619cbdb
++src-git luci https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git^d0400718c508ec4ad9bed8a89f69386f678645d3 https://github.com/openwrt/luci.git^d0400718c508ec4ad9bed8a89f69386f678645d3
+ src-link routing ../qca/feeds/routing
+ src-link bootloader ../qca/feeds/bootloader
+ src-link qcom_utils_internal ../qca/feeds/qcom-utils-internal
+-- 
+2.34.1
+
